@@ -1,39 +1,25 @@
 import { Modal } from '@components/UI/Modal'
 import { Tooltip } from '@components/UI/Tooltip'
 import GetModuleIcon from '@components/utils/GetModuleIcon'
-import { EnabledModule } from '@generated/types'
 import { CashIcon } from '@heroicons/react/outline'
-import { FEE_DATA_TYPE, getModule } from '@lib/getModule'
+import { getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
 import { motion } from 'framer-motion'
-import { Dispatch, FC, useState } from 'react'
+import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCollectModuleStore } from 'src/store/collectmodule'
 import { PUBLICATION } from 'src/tracking'
 
 import Modules from './Modules'
 
-interface Props {
-  feeData: FEE_DATA_TYPE
-  setFeeData: Dispatch<FEE_DATA_TYPE>
-  setSelectedModule: Dispatch<EnabledModule>
-  selectedModule: EnabledModule
-}
-
-const SelectCollectModule: FC<Props> = ({
-  feeData,
-  setFeeData,
-  setSelectedModule,
-  selectedModule
-}) => {
+const SelectCollectModule: FC = () => {
   const { t } = useTranslation('common')
+  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
   const [showModal, setShowModal] = useState<boolean>(false)
 
   return (
     <>
-      <Tooltip
-        placement="top"
-        content={getModule(selectedModule.moduleName).name}
-      >
+      <Tooltip placement="top" content={getModule(selectedModule.moduleName).name}>
         <motion.button
           whileTap={{ scale: 0.9 }}
           type="button"
@@ -54,13 +40,7 @@ const SelectCollectModule: FC<Props> = ({
         show={showModal}
         onClose={() => setShowModal(false)}
       >
-        <Modules
-          feeData={feeData}
-          setFeeData={setFeeData}
-          selectedModule={selectedModule}
-          setSelectedModule={setSelectedModule}
-          setShowModal={setShowModal}
-        />
+        <Modules setShowModal={setShowModal} />
       </Modal>
     </>
   )

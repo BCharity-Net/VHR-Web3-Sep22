@@ -54,7 +54,7 @@ export interface Data {
 }
 
 const OrgDonors: FC<Props> = ({ profile, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -114,9 +114,7 @@ const OrgDonors: FC<Props> = ({ profile, callback }) => {
                 limit: tableLimit,
                 cursor: pageInfo?.next
               },
-              reactionRequest: currentUser
-                ? { profileId: currentUser?.id }
-                : null,
+              reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
               profileId: currentUser?.id ?? null
             }
           }).then((result: any) => {

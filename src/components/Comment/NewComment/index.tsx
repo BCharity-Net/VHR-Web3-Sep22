@@ -10,20 +10,11 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { MentionTextArea } from '@components/UI/MentionTextArea'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityAttachment, BCharityPublication } from '@generated/bcharitytypes'
-import {
-  CreateCommentBroadcastItemResult,
-  EnabledModule
-} from '@generated/types'
+import { CreateCommentBroadcastItemResult } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { ChatAlt2Icon, PencilAltIcon } from '@heroicons/react/outline'
-import {
-  defaultFeeData,
-  defaultModuleData,
-  FEE_DATA_TYPE,
-  getModule
-} from '@lib/getModule'
-import Logger from '@lib/logger'
+import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -33,15 +24,10 @@ import dynamic from 'next/dynamic'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { APP_NAME, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useCollectModuleStore } from 'src/store/collectmodule'
+import { usePublicationStore } from 'src/store/publication'
 import { COMMENT } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -52,24 +38,15 @@ const Attachment = dynamic(() => import('../../Shared/Attachment'), {
 const Giphy = dynamic(() => import('../../Shared/Giphy'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
-const SelectCollectModule = dynamic(
-  () => import('../../Shared/SelectCollectModule'),
-  {
-    loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
-  }
-)
-const SelectReferenceModule = dynamic(
-  () => import('../../Shared/SelectReferenceModule'),
-  {
-    loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
-  }
-)
+const SelectCollectModule = dynamic(() => import('../../Shared/SelectCollectModule'), {
+  loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
+})
+const SelectReferenceModule = dynamic(() => import('../../Shared/SelectReferenceModule'), {
+  loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
+})
 
 export const CREATE_COMMENT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCommentTypedData(
-    $options: TypedDataOptions
-    $request: CreatePublicCommentRequest!
-  ) {
+  mutation CreateCommentTypedData($options: TypedDataOptions, $request: CreatePublicCommentRequest!) {
     createCommentTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -111,22 +88,22 @@ interface Props {
   type: 'comment' | 'group post'
 }
 
-const NewComment: FC<Props> = ({
-  setShowModal,
-  hideCard = false,
-  publication,
-  type
-}) => {
+const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, type }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [commentContent, setCommentContent] = useState<string>('')
-  const [preview, setPreview] = useState<boolean>(false)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const publicationContent = usePublicationStore((state) => state.publicationContent)
+  const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
+  const previewPublication = usePublicationStore((state) => state.previewPublication)
+  const setPreviewPublication = usePublicationStore((state) => state.setPreviewPublication)
+  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
+  const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
+  const feeData = useCollectModuleStore((state) => state.feeData)
+  const setFeeData = useCollectModuleStore((state) => state.setFeeData)
   const [commentContentError, setCommentContentError] = useState<string>('')
-  const [selectedModule, setSelectedModule] =
-    useState<EnabledModule>(defaultModuleData)
   const [onlyFollowers, setOnlyFollowers] = useState<boolean>(false)
-  const [feeData, setFeeData] = useState<FEE_DATA_TYPE>(defaultFeeData)
   const [isUploading, setIsUploading] = useState<boolean>(false)
   const [attachments, setAttachments] = useState<BCharityAttachment[]>([])
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -135,8 +112,8 @@ const NewComment: FC<Props> = ({
     }
   })
   const onCompleted = () => {
-    setPreview(false)
-    setCommentContent('')
+    setPreviewPublication(false)
+    setPublicationContent('')
     setAttachments([])
     setSelectedModule(defaultModuleData)
     setFeeData(defaultFeeData)
@@ -160,17 +137,15 @@ const NewComment: FC<Props> = ({
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(COMMENT.NEW, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
+      Mixpanel.track(COMMENT.NEW, { result: 'broadcast_error' })
+    }
+  })
   const [createCommentTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COMMENT_TYPED_DATA_MUTATION,
     {
@@ -179,7 +154,6 @@ const NewComment: FC<Props> = ({
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createCommentTypedData')
         const { id, typedData } = createCommentTypedData
         const {
           profileId,
@@ -220,8 +194,7 @@ const NewComment: FC<Props> = ({
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -234,8 +207,8 @@ const NewComment: FC<Props> = ({
   )
 
   const createComment = async () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
-    if (commentContent.length === 0 && attachments.length === 0) {
+    if (!isAuthenticated) return toast.error(SIGN_WALLET)
+    if (publicationContent.length === 0 && attachments.length === 0) {
       Mixpanel.track(COMMENT.NEW, { result: 'empty' })
       return setCommentContentError('Comment should not be empty!')
     }
@@ -244,20 +217,16 @@ const NewComment: FC<Props> = ({
     setIsUploading(true)
     // TODO: Add animated_url support
     const id = await uploadToArweave({
-      version: '1.0.0',
+      version: '2.0.0',
       metadata_id: uuid(),
-      description: trimify(commentContent),
-      content: trimify(commentContent),
+      description: trimify(publicationContent),
+      content: trimify(publicationContent),
       external_url: `https://bcharity.vercel.app/u/${currentUser?.handle}`,
       image: attachments.length > 0 ? attachments[0]?.item : null,
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
       name: `Comment by @${currentUser?.handle}`,
       mainContentFocus:
-        attachments.length > 0
-          ? attachments[0]?.type === 'video/mp4'
-            ? 'VIDEO'
-            : 'IMAGE'
-          : 'TEXT',
+        attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
       contentWarning: null, // TODO
       attributes: [
         {
@@ -267,6 +236,7 @@ const NewComment: FC<Props> = ({
         }
       ],
       media: attachments,
+      locale: 'en',
       createdOn: new Date(),
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
@@ -275,8 +245,7 @@ const NewComment: FC<Props> = ({
         options: { overrideSigNonce: userSigNonce },
         request: {
           profileId: currentUser?.id,
-          publicationId:
-          publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id,
+          publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: feeData.recipient
             ? {
@@ -304,21 +273,13 @@ const NewComment: FC<Props> = ({
     <Card className={hideCard ? 'border-0 !shadow-none !bg-transparent' : ''}>
       <div className="px-5 pt-5 pb-3">
         <div className="space-y-1">
-          {error && (
-            <ErrorMessage
-              className="mb-3"
-              title="Transaction failed!"
-              error={error}
-            />
-          )}
-          {preview ? (
+          {error && <ErrorMessage className="mb-3" title="Transaction failed!" error={error} />}
+          {previewPublication ? (
             <div className="pb-3 mb-2 border-b linkify dark:border-b-gray-700/80">
-              <Markup>{commentContent}</Markup>
+              <Markup>{publicationContent}</Markup>
             </div>
           ) : (
             <MentionTextArea
-              publication={commentContent}
-              setPublication={setCommentContent}
               error={commentContentError}
               setError={setCommentContentError}
               placeholder={t('Tell something cool')}
@@ -326,50 +287,25 @@ const NewComment: FC<Props> = ({
           )}
           <div className="block items-center sm:flex">
             <div className="flex items-center space-x-4">
-              <Attachment
-                attachments={attachments}
-                setAttachments={setAttachments}
-              />
+              <Attachment attachments={attachments} setAttachments={setAttachments} />
               <Giphy setGifAttachment={(gif: IGif) => setGifAttachment(gif)} />
-              <SelectCollectModule
-                feeData={feeData}
-                setFeeData={setFeeData}
-                selectedModule={selectedModule}
-                setSelectedModule={setSelectedModule}
-              />
-              <SelectReferenceModule
-                onlyFollowers={onlyFollowers}
-                setOnlyFollowers={setOnlyFollowers}
-              />
-              {commentContent && (
-                <Preview preview={preview} setPreview={setPreview} />
-              )}
+              <SelectCollectModule />
+              <SelectReferenceModule onlyFollowers={onlyFollowers} setOnlyFollowers={setOnlyFollowers} />
+              {publicationContent && <Preview />}
             </div>
             <div className="flex items-center pt-2 ml-auto space-x-2 sm:pt-0">
               {data?.hash ?? broadcastData?.broadcast?.txHash ? (
                 <PubIndexStatus
                   setShowModal={setShowModal}
                   type={type === 'comment' ? 'Comment' : 'Post'}
-                  txHash={
-                    data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-                  }
+                  txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
                 />
               ) : null}
               <Button
                 className="ml-auto"
-                disabled={
-                  isUploading ||
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  isUploading ||
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : type === 'group post' ? (
                     <PencilAltIcon className="w-4 h-4" />
@@ -382,9 +318,7 @@ const NewComment: FC<Props> = ({
                 {isUploading
                   ? t('Uploading')
                   : typedDataLoading
-                  ? `${t('Generating')} ${
-                      type === 'comment' ? t('Comment') : t('Post')
-                    }`
+                  ? `${t('Generating')} ${type === 'comment' ? t('Comment') : t('Post')}`
                   : signLoading
                   ? t('Sign1')
                   : writeLoading || broadcastLoading
@@ -395,11 +329,7 @@ const NewComment: FC<Props> = ({
               </Button>
             </div>
           </div>
-          <Attachments
-            attachments={attachments}
-            setAttachments={setAttachments}
-            isNew
-          />
+          <Attachments attachments={attachments} setAttachments={setAttachments} isNew />
         </div>
       </div>
     </Card>

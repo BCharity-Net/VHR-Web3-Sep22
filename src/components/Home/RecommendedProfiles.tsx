@@ -8,7 +8,6 @@ import { Profile } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
 import { LightningBoltIcon, SparklesIcon } from '@heroicons/react/solid'
-import Logger from '@lib/logger'
 import randomizeArray from '@lib/randomizeArray'
 import React, { FC } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,7 +24,7 @@ const RECOMMENDED_PROFILES_QUERY = gql`
 `
 
 const Title = () => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { t } = useTranslation('common')
 
   return (
@@ -47,14 +46,7 @@ const Title = () => {
 
 const RecommendedProfiles: FC = () => {
   const { t } = useTranslation('common')
-  const { data, loading, error } = useQuery(RECOMMENDED_PROFILES_QUERY, {
-    onCompleted(data) {
-      Logger.log(
-        '[Query]',
-        `Fetched ${data?.recommendedProfiles?.length} recommended profiles`
-      )
-    }
-  })
+  const { data, loading, error } = useQuery(RECOMMENDED_PROFILES_QUERY)
 
   if (loading)
     return (
@@ -97,11 +89,7 @@ const RecommendedProfiles: FC = () => {
             ?.slice(0, 5)
             ?.map((profile: Profile) => (
               <div key={profile?.id} className="truncate">
-                <UserProfile
-                  profile={profile}
-                  isFollowing={profile.isFollowedByMe}
-                  showFollow
-                />
+                <UserProfile profile={profile} isFollowing={profile.isFollowedByMe} showFollow />
               </div>
             ))}
         </CardBody>

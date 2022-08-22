@@ -6,15 +6,11 @@ import Cookies from 'js-cookie'
 import mixpanel from 'mixpanel-browser'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { useTheme } from 'next-themes'
 import { FC, ReactNode, Suspense, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import {
-  CHAIN_ID,
-  IS_DEVELOPMENT,
-  MIXPANEL_TOKEN,
-  STATIC_ASSETS
-} from 'src/constants'
+import { CHAIN_ID, MIXPANEL_API_HOST, MIXPANEL_TOKEN, STATIC_ASSETS } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { useAccount, useDisconnect, useNetwork } from 'wagmi'
 
@@ -24,8 +20,8 @@ const Navbar = dynamic(() => import('./Shared/Navbar'), { suspense: true })
 
 if (MIXPANEL_TOKEN) {
   mixpanel.init(MIXPANEL_TOKEN, {
-    debug: IS_DEVELOPMENT,
-    ignore_dnt: true
+    ignore_dnt: true,
+    api_host: MIXPANEL_API_HOST
   })
 }
 
@@ -49,15 +45,14 @@ interface Props {
 }
 
 const SiteLayout: FC<Props> = ({ children }) => {
+  const { pathname, asPath } = useRouter()
   const { resolvedTheme } = useTheme()
   const setProfiles = useAppStore((state) => state.setProfiles)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isConnected = useAppPersistStore((state) => state.isConnected)
   const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const setIsAuthenticated = useAppPersistStore(
-    (state) => state.setIsAuthenticated
-  )
+  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const currentUser = useAppPersistStore((state) => state.currentUser)
   const setCurrentUser = useAppPersistStore((state) => state.setCurrentUser)
 
@@ -72,9 +67,7 @@ const SiteLayout: FC<Props> = ({ children }) => {
       const profiles: Profile[] = data?.profiles?.items
         ?.slice()
         ?.sort((a: Profile, b: Profile) => Number(a.id) - Number(b.id))
-        ?.sort((a: Profile, b: Profile) =>
-          !(a.isDefault !== b.isDefault) ? 0 : a.isDefault ? -1 : 1
-        )
+        ?.sort((a: Profile, b: Profile) => (!(a.isDefault !== b.isDefault) ? 0 : a.isDefault ? -1 : 1))
 
       setUserSigNonce(data?.userSigNonces?.lensHubOnChainSigNonce)
 
@@ -85,7 +78,7 @@ const SiteLayout: FC<Props> = ({ children }) => {
       }
     }
   })
-  
+
   useEffect(() => {
     const accessToken = Cookies.get('accessToken')
     const refreshToken = Cookies.get('refreshToken')
@@ -142,17 +135,12 @@ const SiteLayout: FC<Props> = ({ children }) => {
       logout()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isConnected,
-    isAuthenticated,
-    isDisconnected,
-    address,
-    chain,
-    currentUser,
-    disconnect,
-    setCurrentUser
-  ])
-  
+  }, [isConnected, isAuthenticated, isDisconnected, address, chain, currentUser, disconnect, setCurrentUser])
+
+  useEffect(() => {
+    Mixpanel.track('Pagview', { path: asPath })
+  }, [asPath])
+
   const toastOptions = {
     style: {
       background: resolvedTheme === 'dark' ? '#18181B' : '',
@@ -180,10 +168,7 @@ const SiteLayout: FC<Props> = ({ children }) => {
   return (
     <>
       <Head>
-        <meta
-          name="theme-color"
-          content={resolvedTheme === 'dark' ? '#1b1b1d' : '#ffffff'}
-        />
+        <meta name="theme-color" content={resolvedTheme === 'dark' ? '#1b1b1d' : '#ffffff'} />
       </Head>
       <Toaster position="bottom-right" toastOptions={toastOptions} />
       <Suspense fallback={<Loading />}>

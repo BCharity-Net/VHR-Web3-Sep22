@@ -69,7 +69,7 @@ interface Data {
 }
 
 const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -144,16 +144,13 @@ const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
               }
             }
           }).then((result: any) => {
-            const results = result?.data?.notifications?.items.filter(
-              (i: any) => {
-                return (
-                  i.__typename === 'NewMentionNotification' &&
-                  i.mentionPublication.metadata.attributes[0].value ===
-                    'hours' &&
-                  !i.mentionPublication.hidden
-                )
-              }
-            )
+            const results = result?.data?.notifications?.items.filter((i: any) => {
+              return (
+                i.__typename === 'NewMentionNotification' &&
+                i.mentionPublication.metadata.attributes[0].value === 'hours' &&
+                !i.mentionPublication.hidden
+              )
+            })
             const pubId: string[] = [],
               vhrTxn: string[] = [],
               addresses: string[] = []

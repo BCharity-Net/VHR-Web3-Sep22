@@ -2,7 +2,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
 import { BCharityAttachment } from '@generated/bcharitytypes'
 import { PhotographIcon } from '@heroicons/react/outline'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import { motion } from 'framer-motion'
 import { ChangeEvent, Dispatch, FC, useId, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -46,13 +46,10 @@ const Attachment: FC<Props> = ({ attachments, setAttachments }) => {
     setLoading(true)
 
     try {
-      if (
-        evt.target.files &&
-        (hasVideos(evt.target.files) || evt.target.files.length > 4)
-      ) {
+      if (evt.target.files && (hasVideos(evt.target.files) || evt.target.files.length > 4)) {
         toast.error('Please choose either 1 video or up to 4 photos.')
       } else {
-        const attachment = await uploadAssetsToIPFS(evt.target.files)
+        const attachment = await uploadMediaToIPFS(evt.target.files)
         if (attachment) {
           setAttachments(attachment)
         }
@@ -64,11 +61,7 @@ const Attachment: FC<Props> = ({ attachments, setAttachments }) => {
 
   return (
     <div>
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        type="button"
-        aria-label={t('Choose attachment')}
-      >
+      <motion.button whileTap={{ scale: 0.9 }} type="button" aria-label={t('Choose attachment')}>
         <label className="flex gap-1 items-center cursor-pointer" htmlFor={id}>
           {loading ? (
             <Spinner size="sm" />

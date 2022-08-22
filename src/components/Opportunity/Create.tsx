@@ -12,7 +12,7 @@ import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
@@ -20,7 +20,7 @@ import imagekitURL from '@lib/imagekitURL'
 import Logger from '@lib/logger'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import { NextPage } from 'next'
 import React, { ChangeEvent, FC, useState } from 'react'
@@ -65,8 +65,7 @@ const newOpportunitySchema = object({
       message: 'Total volunteers should be larger than zero'
     })
     .regex(/^\d+(?:\.\d{1})?$/, {
-      message:
-        'Total volunteers should be a whole number or to one decimal place'
+      message: 'Total volunteers should be a whole number or to one decimal place'
     }),
 
   city: string()
@@ -77,9 +76,7 @@ const newOpportunitySchema = object({
     .min(1, { message: 'You must write a category!' })
     .max(40, { message: 'Category name should not exceed 40 characters!' }),
 
-  startDate: string()
-    .max(10, { message: 'Invalid date' })
-    .min(10, { message: 'Invalid date' }),
+  startDate: string().max(10, { message: 'Invalid date' }).min(10, { message: 'Invalid date' }),
 
   endDate: string()
     .max(10, { message: 'Invalid date' })
@@ -167,7 +164,7 @@ const Opportunity: NextPage = () => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         const result = JSON.stringify(attachment)
         setMedia(result)
@@ -179,70 +176,61 @@ const Opportunity: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('Relay Error =>', error.message)
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(
-    CREATE_POST_TYPED_DATA_MUTATION,
-    {
-      async onCompleted({
-        createPostTypedData
-      }: {
-        createPostTypedData: CreatePostBroadcastItemResult
-      }) {
-        Logger.log('Mutation =>', 'Generated createPostTypedData')
-        const { id, typedData } = createPostTypedData
-        const {
+      Logger.error('Relay Error =>', error.message)
+    }
+  })
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
+    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+      Logger.log('Mutation =>', 'Generated createPostTypedData')
+      const { id, typedData } = createPostTypedData
+      const {
+        profileId,
+        contentURI,
+        collectModule,
+        collectModuleInitData,
+        referenceModule,
+        referenceModuleInitData,
+        deadline
+      } = typedData?.value
+
+      try {
+        const signature = await signTypedDataAsync({
+          domain: omit(typedData?.domain, '__typename'),
+          types: omit(typedData?.types, '__typename'),
+          value: omit(typedData?.value, '__typename')
+        })
+        setUserSigNonce(userSigNonce + 1)
+        const { v, r, s } = splitSignature(signature)
+        const sig = { v, r, s, deadline }
+        const inputStruct = {
           profileId,
           contentURI,
           collectModule,
           collectModuleInitData,
           referenceModule,
           referenceModuleInitData,
-          deadline
-        } = typedData?.value
+          sig
+        }
+        if (RELAY_ON) {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ variables: { request: { id, signature } } })
 
-        try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { v, r, s } = splitSignature(signature)
-          const sig = { v, r, s, deadline }
-          const inputStruct = {
-            profileId,
-            contentURI,
-            collectModule,
-            collectModuleInitData,
-            referenceModule,
-            referenceModuleInitData,
-            sig
-          }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
-
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          } else {
-            write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } catch (error) {}
-      },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        } else {
+          write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
+      } catch (error) {}
+    },
+    onError(error) {
+      toast.error(error.message ?? ERROR_MESSAGE)
     }
-  )
+  })
 
   const createOpportunities = async (
     program: string,
@@ -347,22 +335,18 @@ const Opportunity: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Create Volunteering Opportunities • ${APP_NAME}`} />
+      <Seo title={`Create Volunteering Opportunities • ${APP_NAME}`} />
       <GridItemFour>
         <SettingsHelper
           heading={t('Create Volunteering Opportunities')}
-          description={t(
-            'Organizations can create volunteering opportunities for volunteers to apply!'
-          )}
+          description={t('Organizations can create volunteering opportunities for volunteers to apply!')}
         />
       </GridItemFour>
       <GridItemEight>
         <Card>
           {data?.hash ?? broadcastData?.broadcast?.txHash ? (
             <Pending
-              txHash={
-                data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-              }
+              txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
               indexing="Volunteer Opportunity creation in progress, please wait!"
               indexed="Volunteer Opportunity created successfully"
               type="opportunity"
@@ -492,11 +476,7 @@ const Opportunity: NextPage = () => {
                 <div className="space-y-3">
                   <Media media={media} />
                   <div className="flex items-center space-x-3">
-                    <ChooseFiles
-                      onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                        handleUpload(evt)
-                      }
-                    />
+                    <ChooseFiles onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)} />
                     {uploading && <Spinner size="sm" />}
                   </div>
                 </div>
@@ -504,19 +484,9 @@ const Opportunity: NextPage = () => {
               <Button
                 className="ml-auto"
                 type="submit"
-                disabled={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <PlusIcon className="w-4 h-4" />

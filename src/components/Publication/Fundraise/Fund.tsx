@@ -9,36 +9,21 @@ import { BCharityCollectModule, BCharityPublication } from '@generated/bcharityt
 import { CreateCollectBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CashIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { FUNDRAISE } from 'src/tracking'
-import {
-  useAccount,
-  useBalance,
-  useContractWrite,
-  useSignTypedData
-} from 'wagmi'
+import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
 import IndexStatus from '../../Shared/IndexStatus'
 
 const CREATE_COLLECT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCollectTypedData(
-    $options: TypedDataOptions
-    $request: CreateCollectRequest!
-  ) {
+  mutation CreateCollectTypedData($options: TypedDataOptions, $request: CreateCollectRequest!) {
     createCollectTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -76,8 +61,9 @@ interface Props {
 
 const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [allowed, setAllowed] = useState<boolean>(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -93,34 +79,26 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   })
   let hasAmount = false
 
-  if (
-    balanceData &&
-    parseFloat(balanceData?.formatted) <
-      parseFloat(collectModule?.amount?.value)
-  ) {
+  if (balanceData && parseFloat(balanceData?.formatted) < parseFloat(collectModule?.amount?.value)) {
     hasAmount = false
   } else {
     hasAmount = true
   }
 
-  const { data: allowanceData, loading: allowanceLoading } = useQuery(
-    ALLOWANCE_SETTINGS_QUERY,
-    {
-      variables: {
-        request: {
-          currencies: collectModule?.amount?.asset?.address,
-          followModules: [],
-          collectModules: collectModule?.type,
-          referenceModules: []
-        }
-      },
-      skip: !collectModule?.amount?.asset?.address || !isAuthenticated,
-      onCompleted(data) {
-        setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
-        Logger.log('[Query]', `Fetched allowance data`)
+  const { data: allowanceData, loading: allowanceLoading } = useQuery(ALLOWANCE_SETTINGS_QUERY, {
+    variables: {
+      request: {
+        currencies: collectModule?.amount?.asset?.address,
+        followModules: [],
+        collectModules: collectModule?.type,
+        referenceModules: []
       }
+    },
+    skip: !collectModule?.amount?.asset?.address || !isAuthenticated,
+    onCompleted(data) {
+      setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
-  )
+  })
 
   const onCompleted = () => {
     setRevenue(revenue + parseFloat(collectModule?.amount?.value))
@@ -145,17 +123,15 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(FUNDRAISE.FUND, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
+      Mixpanel.track(FUNDRAISE.FUND, { result: 'broadcast_error' })
+    }
+  })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -164,7 +140,6 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createCollectTypedData')
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
 
@@ -190,8 +165,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -223,19 +197,10 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
           <Button
             className="sm:mt-0 sm:ml-auto"
             onClick={createCollect}
-            disabled={
-              !hasAmount ||
-              typedDataLoading ||
-              signLoading ||
-              writeLoading ||
-              broadcastLoading
-            }
+            disabled={!hasAmount || typedDataLoading || signLoading || writeLoading || broadcastLoading}
             variant="success"
             icon={
-              typedDataLoading ||
-              signLoading ||
-              writeLoading ||
-              broadcastLoading ? (
+              typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                 <Spinner variant="success" size="xs" />
               ) : (
                 <CashIcon className="w-4 h-4" />
@@ -246,13 +211,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
           </Button>
           {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
             <div className="mt-2">
-              <IndexStatus
-                txHash={
-                  writeData?.hash
-                    ? writeData?.hash
-                    : broadcastData?.broadcast?.txHash
-                }
-              />
+              <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
             </div>
           ) : null}
         </>

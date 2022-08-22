@@ -3,9 +3,8 @@ import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import { Card } from '@components/UI/Card'
 import { PageLoading } from '@components/UI/PageLoading'
 import { Spinner } from '@components/UI/Spinner'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { Erc20 } from '@generated/types'
-import Logger from '@lib/logger'
 import { NextPage } from 'next'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,9 +17,7 @@ import Sidebar from '../Sidebar'
 import Allowance from './Allowance'
 
 export const ALLOWANCE_SETTINGS_QUERY = gql`
-  query ApprovedModuleAllowanceAmount(
-    $request: ApprovedModuleAllowanceAmountRequest!
-  ) {
+  query ApprovedModuleAllowanceAmount($request: ApprovedModuleAllowanceAmountRequest!) {
     approvedModuleAllowanceAmount(request: $request) {
       currency
       module
@@ -54,16 +51,13 @@ const getAllowancePayload = (currency: string) => {
 
 const AllowanceSettings: NextPage = () => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [currencyLoading, setCurrencyLoading] = useState<boolean>(false)
   const { data, loading, error, refetch } = useQuery(ALLOWANCE_SETTINGS_QUERY, {
     variables: {
       request: getAllowancePayload(DEFAULT_COLLECT_TOKEN)
     },
-    skip: !currentUser?.id,
-    onCompleted() {
-      Logger.log('[Query]', `Fetched allowance settings`)
-    }
+    skip: !currentUser?.id
   })
 
   if (error) return <Custom500 />
@@ -72,7 +66,7 @@ const AllowanceSettings: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Allowance settings • ${APP_NAME}`} />
+      <Seo title={`Allowance settings • ${APP_NAME}`} />
       <GridItemFour>
         <Sidebar />
       </GridItemFour>
@@ -80,9 +74,7 @@ const AllowanceSettings: NextPage = () => {
         <Card>
           <div className="mx-5 mt-5">
             <div className="space-y-5">
-              <div className="text-lg font-bold">
-                {t('Allow/revoke modules')}
-              </div>
+              <div className="text-lg font-bold">{t('Allow/revoke modules')}</div>
               <p>{t('Allowance description')}</p>
             </div>
             <div className="mt-6 label">{t('Select currency')}</div>

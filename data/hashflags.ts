@@ -1,6 +1,7 @@
 export const hashflags: any = {
   bcharity: 'bcharity',
   lenster: 'lenster',
+  lenstube: 'lenstube',
   bitcoin: 'bitcoin',
   ethereum: 'ethereum',
   lens: 'lens',
@@ -10,6 +11,6 @@ export const hashflags: any = {
   blacklivesmatter: 'blm',
   bhm: 'blm',
   pride: 'pride',
-  lgbt: 'lgbt',
+  lgbt: 'pride',
   voted: 'voted'
 }

@@ -56,7 +56,7 @@ interface Props {
 }
 
 const Profile: FC<ProfileProps> = ({ id, nft, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   useQuery(PROFILE_FEED_QUERY, {
     variables: {
@@ -89,13 +89,7 @@ const NFT: FC<Props> = ({ nft, callback }) => {
     }
   })
 
-  return (
-    <div>
-      {!loading && (
-        <Profile id={data.profile.id} nft={nft} callback={callback} />
-      )}
-    </div>
-  )
+  return <div>{!loading && <Profile id={data.profile.id} nft={nft} callback={callback} />}</div>
 }
 
 export default NFT

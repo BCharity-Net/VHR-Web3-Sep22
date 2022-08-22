@@ -27,7 +27,9 @@ const PING_QUERY = gql`
 
 const Navbar: FC = () => {
   const { t } = useTranslation('common')
-  const { isAuthenticated, currentUser, staffMode } = useAppPersistStore()
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const staffMode = useAppPersistStore((state) => state.staffMode)
   const { data: pingData } = useQuery(PING_QUERY, {
     pollInterval: 3000,
     skip: !currentUser
@@ -47,8 +49,7 @@ const Navbar: FC = () => {
             className={clsx(
               'w-full text-left px-2 md:px-3 py-1 rounded-md font-black cursor-pointer text-sm tracking-wide',
               {
-                'text-black dark:text-white bg-gray-200 dark:bg-gray-800':
-                  current,
+                'text-black dark:text-white bg-gray-200 dark:bg-gray-800': current,
                 'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800':
                   !current
               }
@@ -67,25 +68,13 @@ const Navbar: FC = () => {
     return (
       <>
         <NavItem url="/" name={t('Home')} current={pathname == '/'} />
-        <NavItem
-          url="/explore"
-          name={t('Explore')}
-          current={pathname == '/explore'}
-        />
+        <NavItem url="/explore" name={t('Explore')} current={pathname == '/explore'} />
 
         <NavItem url="/vhrs" name={t('VHRs')} current={pathname == '/vhrs'} />
 
-        <NavItem
-          url="/groups"
-          name={t('Groups')}
-          current={pathname == '/groups'}
-        />
+        <NavItem url="/groups" name={t('Groups')} current={pathname == '/groups'} />
 
-        <NavItem
-          url="/fundraisers"
-          name={t('Fundraisers')}
-          current={pathname == '/fundraisers'}
-        />
+        <NavItem url="/fundraisers" name={t('Fundraisers')} current={pathname == '/fundraisers'} />
         <MoreNavItems />
       </>
     )

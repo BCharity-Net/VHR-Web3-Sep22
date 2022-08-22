@@ -1,12 +1,6 @@
 import Head from 'next/head'
 import React, { FC } from 'react'
-import {
-  APP_NAME,
-  ARWEAVE_GATEWAY,
-  DEFAULT_OG,
-  DESCRIPTION,
-  STATIC_ASSETS
-} from 'src/constants'
+import { APP_NAME, ARWEAVE_GATEWAY, DEFAULT_OG, DESCRIPTION, STATIC_ASSETS } from 'src/constants'
 
 interface Props {
   title?: string
@@ -18,10 +12,7 @@ const SEO: FC<Props> = ({ title = APP_NAME, description = DESCRIPTION }) => {
     <Head>
       <title>{title}</title>
       <meta name="description" content={description} />
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=5"
-      />
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
 
       <link rel="preconnect" href="https://ik.imagekit.io" />
       <link rel="dns-prefetch" href="https://ik.imagekit.io" />

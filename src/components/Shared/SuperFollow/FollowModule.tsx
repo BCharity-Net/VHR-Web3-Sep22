@@ -6,16 +6,11 @@ import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { WarningMessage } from '@components/UI/WarningMessage'
 import { BCharityFollowModule } from '@generated/bcharitytypes'
-import {
-  CreateFollowBroadcastItemResult,
-  FeeFollowModuleSettings,
-  Profile
-} from '@generated/types'
+import { CreateFollowBroadcastItemResult, FeeFollowModuleSettings, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { StarIcon, UserIcon } from '@heroicons/react/outline'
 import formatAddress from '@lib/formatAddress'
 import getTokenImage from '@lib/getTokenImage'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -32,12 +27,7 @@ import {
 } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
-import {
-  useAccount,
-  useBalance,
-  useContractWrite,
-  useSignTypedData
-} from 'wagmi'
+import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
 import Loader from '../Loader'
 import Slug from '../Slug'
@@ -98,22 +88,15 @@ interface Props {
   profile: Profile
   setFollowing: Dispatch<boolean>
   setShowFollowModal: Dispatch<boolean>
-  followersCount?: number
-  setFollowersCount?: Dispatch<number>
   again: boolean
 }
 
-const FollowModule: FC<Props> = ({
-  profile,
-  setFollowing,
-  setShowFollowModal,
-  followersCount,
-  setFollowersCount,
-  again
-}) => {
+const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, again }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [allowed, setAllowed] = useState<boolean>(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -123,9 +106,6 @@ const FollowModule: FC<Props> = ({
   })
 
   const onCompleted = () => {
-    if (followersCount && setFollowersCount) {
-      setFollowersCount(followersCount + 1)
-    }
     setFollowing(true)
     setShowFollowModal(false)
     toast.success('Followed successfully!')
@@ -147,35 +127,25 @@ const FollowModule: FC<Props> = ({
 
   const { data, loading } = useQuery(SUPER_FOLLOW_QUERY, {
     variables: { request: { profileId: profile?.id } },
-    skip: !profile?.id,
-    onCompleted() {
-      Logger.log(
-        '[Query]',
-        `Fetched super follow details Profile:${profile?.id}`
-      )
-    }
+    skip: !profile?.id
   })
 
   const followModule: FeeFollowModuleSettings = data?.profile?.followModule
 
-  const { data: allowanceData, loading: allowanceLoading } = useQuery(
-    ALLOWANCE_SETTINGS_QUERY,
-    {
-      variables: {
-        request: {
-          currencies: followModule?.amount?.asset?.address,
-          followModules: 'FeeFollowModule',
-          collectModules: [],
-          referenceModules: []
-        }
-      },
-      skip: !followModule?.amount?.asset?.address || !currentUser,
-      onCompleted(data) {
-        setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
-        Logger.log('[Query]', `Fetched allowance data`)
+  const { data: allowanceData, loading: allowanceLoading } = useQuery(ALLOWANCE_SETTINGS_QUERY, {
+    variables: {
+      request: {
+        currencies: followModule?.amount?.asset?.address,
+        followModules: 'FeeFollowModule',
+        collectModules: [],
+        referenceModules: []
       }
+    },
+    skip: !followModule?.amount?.asset?.address || !currentUser,
+    onCompleted(data) {
+      setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
-  )
+  })
 
   const { data: balanceData } = useBalance({
     addressOrName: currentUser?.ownedBy,
@@ -185,28 +155,21 @@ const FollowModule: FC<Props> = ({
   })
   let hasAmount = false
 
-  if (
-    balanceData &&
-    parseFloat(balanceData?.formatted) < parseFloat(followModule?.amount?.value)
-  ) {
+  if (balanceData && parseFloat(balanceData?.formatted) < parseFloat(followModule?.amount?.value)) {
     hasAmount = false
   } else {
     hasAmount = true
   }
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(
-    BROADCAST_MUTATION,
-    {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(PROFILE.SUPER_FOLLOW, { result: 'broadcast_error' })
+  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
+      Mixpanel.track(PROFILE.SUPER_FOLLOW, { result: 'broadcast_error' })
     }
-  )
+  })
   const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
@@ -215,7 +178,6 @@ const FollowModule: FC<Props> = ({
       }: {
         createFollowTypedData: CreateFollowBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createFollowTypedData')
         const { id, typedData } = createFollowTypedData
         const { deadline } = typedData?.value
 
@@ -241,8 +203,7 @@ const FollowModule: FC<Props> = ({
               errors
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -283,8 +244,7 @@ const FollowModule: FC<Props> = ({
     <div className="p-5">
       <div className="pb-2 space-y-1.5">
         <div className="text-lg font-bold">
-          Super follow <Slug slug={profile?.handle} prefix="@" />{' '}
-          {again ? 'again' : ''}
+          Super follow <Slug slug={profile?.handle} prefix="@" /> {again ? 'again' : ''}
         </div>
         <div className="text-gray-500">
           Follow {again ? 'again' : ''} {t('Get perks')}
@@ -300,9 +260,7 @@ const FollowModule: FC<Props> = ({
           title={followModule?.amount?.asset?.name}
         />
         <span className="space-x-1">
-          <span className="text-2xl font-bold">
-            {followModule?.amount?.value}
-          </span>
+          <span className="text-2xl font-bold">{followModule?.amount?.value}</span>
           <span className="text-xs">{followModule?.amount?.asset?.symbol}</span>
         </span>
       </div>
@@ -364,17 +322,9 @@ const FollowModule: FC<Props> = ({
               variant="super"
               outline
               onClick={createFollow}
-              disabled={
-                typedDataLoading ||
-                signLoading ||
-                writeLoading ||
-                broadcastLoading
-              }
+              disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
               icon={
-                typedDataLoading ||
-                signLoading ||
-                writeLoading ||
-                broadcastLoading ? (
+                typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                   <Spinner variant="super" size="xs" />
                 ) : (
                   <StarIcon className="w-4 h-4" />
@@ -386,9 +336,7 @@ const FollowModule: FC<Props> = ({
           ) : (
             <WarningMessage
               className="mt-5"
-              message={
-                <Uniswap module={followModule as BCharityFollowModule} />
-              }
+              message={<Uniswap module={followModule as BCharityFollowModule} />}
             />
           )
         ) : (

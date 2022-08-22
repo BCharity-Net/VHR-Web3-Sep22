@@ -24,21 +24,18 @@ interface Props {
 const Collect: FC<Props> = ({ publication }) => {
   const [count, setCount] = useState<number>(0)
   const [showCollectModal, setShowCollectModal] = useState<boolean>(false)
-  const isFreeCollect =
-    publication?.collectModule?.__typename === 'FreeCollectModuleSettings'
+  const isFreeCollect = publication?.collectModule?.__typename === 'FreeCollectModuleSettings'
 
   useEffect(() => {
-    if (
-      publication?.mirrorOf?.stats?.totalAmountOfCollects ||
-      publication?.stats?.totalAmountOfCollects
-    ) {
+    if (publication?.mirrorOf?.stats?.totalAmountOfCollects || publication?.stats?.totalAmountOfCollects) {
       setCount(
         publication.__typename === 'Mirror'
           ? publication?.mirrorOf?.stats?.totalAmountOfCollects
           : publication?.stats?.totalAmountOfCollects
       )
     }
-  }, [publication])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <>
@@ -57,24 +54,18 @@ const Collect: FC<Props> = ({ publication }) => {
               content={count > 0 ? `${humanize(count)} Collects` : 'Collect'}
               withDelay
             >
-              <CollectionIcon className="w-[18px]" />
+              <CollectionIcon className="w-[15px] sm:w-[18px]" />
             </Tooltip>
           </div>
-          {count > 0 && <div className="text-xs">{nFormatter(count)}</div>}
+          {count > 0 && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
         </div>
       </motion.button>
       <Modal
-        title={
-          isFreeCollect
-            ? 'Free Collect'
-            : getModule(publication?.collectModule?.type).name
-        }
+        title={isFreeCollect ? 'Free Collect' : getModule(publication?.collectModule?.type).name}
         icon={
           <div className="text-brand">
             <GetModuleIcon
-              module={
-                isFreeCollect ? 'FreeCollectModule' : publication?.collectModule?.type
-              }
+              module={isFreeCollect ? 'FreeCollectModule' : publication?.collectModule?.type}
               size={5}
             />
           </div>

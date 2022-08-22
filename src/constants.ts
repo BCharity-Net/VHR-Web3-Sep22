@@ -11,19 +11,18 @@ export const DESCRIPTION =
 export const DEFAULT_OG = 'https://github.com/bcharity/assets'
 
 // Git
-export const GIT_COMMIT_SHA =
-  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
+export const GIT_COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
 export const GIT_COMMIT_REF = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF
 
 // Misc
 export const CONTACT_EMAIL = 'admin@bcharity.net'
 export const PUBLIC_URL = process.env.NEXT_PUBLIC_URL
 export const RELAY_ON =
-  PUBLIC_URL === 'https://bcharity.net' ||
-  PUBLIC_URL === 'http://localhost:4783'
+  PUBLIC_URL === 'https://bcharity.net' || PUBLIC_URL === 'http://localhost:4783'
     ? process.env.NEXT_PUBLIC_RELAY_ON === 'true'
     : false
 export const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? ''
+export const MIXPANEL_API_HOST = 'https://api-eu.mixpanel.com'
 export const CATEGORIES = [
   'Education',
   'Environment',
@@ -47,29 +46,24 @@ export const CATEGORIES = [
 // Messages
 export const ERROR_MESSAGE = 'Something went wrong!'
 export const CONNECT_WALLET = 'Please connect your wallet.'
+export const SIGN_WALLET = 'Please sign in your wallet.'
 export const WRONG_NETWORK = IS_MAINNET
   ? 'Please change network to Polygon mainnet.'
   : 'Please change network to Polygon Mumbai testnet.'
 export const SIGN_ERROR = 'Failed to sign data'
 
 // URLs
-export const STATIC_ASSETS =
-  'https://cdn.statically.io/gh/liraymond04/bcharity-assets/main/images'
-export const API_URL = IS_MAINNET
-  ? 'https://api.lens.dev'
-  : 'https://api-mumbai.lens.dev'
-export const POLYGONSCAN_URL = IS_MAINNET
-  ? 'https://polygonscan.com'
-  : 'https://mumbai.polygonscan.com'
+export const STATIC_ASSETS = 'https://cdn.statically.io/gh/liraymond04/bcharity-assets/main/images'
+export const API_URL = IS_MAINNET ? 'https://api.lens.dev' : 'https://api-mumbai.lens.dev'
+export const POLYGONSCAN_URL = IS_MAINNET ? 'https://polygonscan.com' : 'https://mumbai.polygonscan.com'
 export const VHR_TOP_HOLDERS_URL =
   'https://mumbai.polygonscan.com/token/tokenholderchart/0x28ee241ab245699968f2980d3d1b1d23120ab8be'
-export const RARIBLE_URL = IS_MAINNET
-  ? 'https://rarible.com'
-  : 'https://rinkeby.rarible.com'
+export const RARIBLE_URL = IS_MAINNET ? 'https://rarible.com' : 'https://rinkeby.rarible.com'
 export const IMAGEKIT_URL_PROD = 'https://ik.imagekit.io/gznuz6k7b/'
 export const IMAGEKIT_URL_DEV = 'https://ik.imagekit.io/ivzeeb1pg/'
 export const ARWEAVE_GATEWAY = 'https://arweave.net'
 export const IMAGEKIT_URL = IS_PRODUCTION ? IMAGEKIT_URL_PROD : IMAGEKIT_URL_DEV
+export const IPFS_GATEWAY = 'https://cf-ipfs.com/ipfs/'
 
 // Web3
 export const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY
@@ -78,8 +72,7 @@ export const ALCHEMY_RPC = IS_MAINNET
   : `https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_KEY}`
 
 export const INFURA_PROJECT_ID = process.env.NEXT_PUBLIC_INFURA_PROJECT_ID
-export const INFURA_PROJECT_SECRET =
-  process.env.NEXT_PUBLIC_INFURA_PROJECT_SECRET
+export const INFURA_PROJECT_SECRET = process.env.NEXT_PUBLIC_INFURA_PROJECT_SECRET
 
 export const ARWEAVE_KEY = process.env.NEXT_PUBLIC_ARWEAVE_KEY
 
@@ -125,11 +118,8 @@ export const GOOD_TO_DAI_DONATE_RATE = 0.003
 
 export const WMATIC_GOOD_LP = '0xbe796a61F8d6E4CA823485D9D47BDBBD5eCbf909'
 export const WMATIC_TOKEN = '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889'
-export const DAI_CHECK_FOR_CONVERSION =
-  '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F'
+export const DAI_CHECK_FOR_CONVERSION = '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F'
 
 // Bundlr
 export const BUNDLR_CURRENCY = 'matic'
-export const BUNDLR_NODE_URL = IS_MAINNET
-  ? 'https://node1.bundlr.network'
-  : 'https://devnet.bundlr.network'
+export const BUNDLR_NODE_URL = IS_MAINNET ? 'https://node2.bundlr.network' : 'https://devnet.bundlr.network'

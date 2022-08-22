@@ -7,10 +7,11 @@ import { Spinner } from '@components/UI/Spinner'
 import { Following, PaginatedResultInfo, Profile } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION } from 'src/tracking'
 
 const FOLLOWING_QUERY = gql`
   query Following($request: FollowingRequest!) {
@@ -45,7 +46,6 @@ const Following: FC<Props> = ({ profile }) => {
     onCompleted(data) {
       setPageInfo(data?.following?.pageInfo)
       setFollowing(data?.following?.items)
-      Logger.log('[Query]', `Fetched first 10 following Profile:${profile?.id}`)
     }
   })
 
@@ -62,10 +62,7 @@ const Following: FC<Props> = ({ profile }) => {
       })
       setPageInfo(data?.following?.pageInfo)
       setFollowing([...following, ...data?.following?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 following Profile:${profile?.id} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.FOLLOWING, { pageInfo })
     }
   })
 
@@ -87,11 +84,7 @@ const Following: FC<Props> = ({ profile }) => {
 
   return (
     <div className="overflow-y-auto max-h-[80vh]">
-      <ErrorMessage
-        className="m-5"
-        title="Failed to load following"
-        error={error}
-      />
+      <ErrorMessage className="m-5" title="Failed to load following" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
           {following?.map((following: Following) => (

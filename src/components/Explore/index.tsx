@@ -2,7 +2,7 @@ import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import RecommendedProfiles from '@components/Home/RecommendedProfiles'
 import Footer from '@components/Shared/Footer'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -21,15 +21,14 @@ const Explore: NextPage = () => {
   } = useRouter()
   const { t } = useTranslation('common')
   const [feedType, setFeedType] = useState<string>(
-    type &&
-      ['top_commented', 'top_collected', 'latest'].includes(type as string)
+    type && ['top_commented', 'top_collected', 'latest'].includes(type as string)
       ? type?.toString().toUpperCase()
       : 'TOP_COMMENTED'
   )
 
   return (
     <GridLayout>
-      <SEO title={t('Explore web')} description={t('Web description')} />
+      <Seo title={t('Explore web')} description={t('Web description')} />
       <GridItemEight className="space-y-5" data-test="explore-feed">
         <FeedType setFeedType={setFeedType} feedType={feedType} />
         <Feed feedType={feedType} />

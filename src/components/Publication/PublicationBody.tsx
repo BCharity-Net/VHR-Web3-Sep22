@@ -33,13 +33,11 @@ interface Props {
 
 const PublicationBody: FC<Props> = ({ publication }) => {
   const [showVerifyModal, setShowVerifyModal] = useState<boolean>(false)
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { t } = useTranslation('common')
   const { pathname } = useRouter()
   const publicationType = publication?.metadata?.attributes[0]?.value
-  const [showMore, setShowMore] = useState<boolean>(
-    publication?.metadata?.content?.length > 450
-  )
+  const [showMore, setShowMore] = useState<boolean>(publication?.metadata?.content?.length > 450)
 
   return (
     <div className="break-words">
@@ -51,17 +49,10 @@ const PublicationBody: FC<Props> = ({ publication }) => {
             ) : (
               <UsersIcon className="w-4 h-4 text-brand" />
             )}
-            {publication?.collectedBy ? (
-              <span>{t('Joined')}</span>
-            ) : (
-              <span>{t('Launched group')}</span>
-            )}
+            {publication?.collectedBy ? <span>{t('Joined')}</span> : <span>{t('Launched group')}</span>}
           </span>
           <Link href={`/groups/${publication?.id}`}>
-            <a
-              href={`/groups/${publication?.id}`}
-              className="flex items-center space-x-1.5 font-bold"
-            >
+            <a href={`/groups/${publication?.id}`} className="flex items-center space-x-1.5 font-bold">
               <img
                 src={imagekitURL(
                   publication?.metadata?.cover?.original?.url
@@ -99,11 +90,7 @@ const PublicationBody: FC<Props> = ({ publication }) => {
             </div>
           </div>
           {showMore && pathname !== '/posts/[id]' && (
-            <button
-              type="button"
-              className="mt-2 text-sm font-bold"
-              onClick={() => setShowMore(!showMore)}
-            >
+            <button type="button" className="mt-2 text-sm font-bold" onClick={() => setShowMore(!showMore)}>
               {t('Show more')}
             </button>
           )}

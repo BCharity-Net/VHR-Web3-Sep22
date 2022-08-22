@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppPersistStore } from 'src/store/app'
 
 const Footer: FC = () => {
-  const { staffMode } = useAppPersistStore()
+  const staffMode = useAppPersistStore((state) => state.staffMode)
   const { t } = useTranslation('common')
 
   return (
@@ -14,32 +14,16 @@ const Footer: FC = () => {
         staffMode ? 'top-28' : 'top-20'
       }`}
     >
-      <a
-        href="https://polygive.gitbook.io/bcharity/"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://polygive.gitbook.io/bcharity/" target="_blank" rel="noreferrer noopener">
         {t('About')}
       </a>
-      <a
-        href="https://discord.gg/4vKS59q5kV"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://discord.gg/4vKS59q5kV" target="_blank" rel="noreferrer noopener">
         Discord
       </a>
-      <a
-        href="https://twitter.com/BCharityFi"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://twitter.com/BCharityFi" target="_blank" rel="noreferrer noopener">
         {t('Twitter')}
       </a>
-      <a
-        href="https://t.me/BCharitynet"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://t.me/BCharitynet" target="_blank" rel="noreferrer noopener">
         {t('Telegram')}
       </a>
       <a href="" target="_blank" rel="noreferrer noopener">
@@ -48,18 +32,10 @@ const Footer: FC = () => {
       <a href="" target="_blank" rel="noreferrer noopener">
         {t('Status')}
       </a>
-      <a
-        href="https://snapshot.org/#/igive.eth"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://snapshot.org/#/igive.eth" target="_blank" rel="noreferrer noopener">
         {t('Vote')}
       </a>
-      <a
-        href="https://github.com/BCharity-Net/SocialFi"
-        target="_blank"
-        rel="noreferrer noopener"
-      >
+      <a href="https://github.com/BCharity-Net/SocialFi" target="_blank" rel="noreferrer noopener">
         GitHub
       </a>
       <Link href="/thanks">
@@ -77,12 +53,8 @@ const Footer: FC = () => {
         </a>
       </span>
       <span className="font-bold text-gray-600 dark:text-gray-600">
-        <a
-          href="https://github.com/lensterxyz/lenster"
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          {t('Copyright-lenster')}
+        <a href="https://github.com/lensterxyz/lenster" target="_blank" rel="noreferrer noopener">
+          {new Date().getFullYear()} {t('Copyright-lenster')}
         </a>
       </span>
       {/* <a

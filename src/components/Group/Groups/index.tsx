@@ -1,10 +1,9 @@
 import { gql, useQuery } from '@apollo/client'
 import { GridItemFour, GridLayout } from '@components/GridLayout'
 import { PageLoading } from '@components/UI/PageLoading'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { GroupFields } from '@gql/GroupFields'
 import { ChartBarIcon, FireIcon, SparklesIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { NextPage } from 'next'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -66,12 +65,6 @@ const Groups: NextPage = () => {
         publicationTypes: ['POST'],
         limit: 8
       }
-    },
-    onCompleted() {
-      Logger.log(
-        '[Query]',
-        `Fetched 10 TOP_COMMENTED, TOP_COLLECTED and LATEST groups`
-      )
     }
   })
 
@@ -80,7 +73,7 @@ const Groups: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Groups • ${APP_NAME}`} />
+      <Seo title={`Groups • ${APP_NAME}`} />
       <GridItemFour>
         <div className="flex items-center mb-2 space-x-1.5 font-bold text-gray-500">
           <FireIcon className="w-5 h-5 text-yellow-500" />

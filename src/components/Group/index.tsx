@@ -1,9 +1,8 @@
 import { gql, useQuery } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { GroupFields } from '@gql/GroupFields'
-import Logger from '@lib/logger'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -35,23 +34,16 @@ const ViewGroup: NextPage = () => {
   } = useRouter()
   const { data, loading, error } = useQuery(GROUP_QUERY, {
     variables: { request: { publicationId: id } },
-    skip: !id,
-    onCompleted() {
-      Logger.log('[Query]', `Fetched group details Group:${id}`)
-    }
+    skip: !id
   })
 
   if (error) return <Custom500 />
   if (loading || !data) return <GroupPageShimmer />
-  if (
-    !data.publication ||
-    data.publication?.metadata?.attributes[0]?.value !== 'group'
-  )
-    return <Custom404 />
+  if (!data.publication || data.publication?.metadata?.attributes[0]?.value !== 'group') return <Custom404 />
 
   return (
     <GridLayout>
-      <SEO title={`${data?.publication?.metadata?.name} • BCharity`} />
+      <Seo title={`${data?.publication?.metadata?.name} • BCharity`} />
       <GridItemFour>
         <Details group={data.publication} />
       </GridItemFour>

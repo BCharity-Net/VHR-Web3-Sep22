@@ -12,11 +12,12 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGINATION } from 'src/tracking'
 
 const HOME_FEED_QUERY = gql`
   query HomeFeed(
@@ -49,7 +50,7 @@ const HOME_FEED_QUERY = gql`
 
 const Feed: FC = () => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(HOME_FEED_QUERY, {
@@ -62,7 +63,6 @@ const Feed: FC = () => {
     onCompleted(data) {
       setPageInfo(data?.timeline?.pageInfo)
       setPublications(data?.timeline?.items)
-      Logger.log('[Query]', `Fetched first 10 timeline publications`)
     }
   })
 
@@ -81,10 +81,7 @@ const Feed: FC = () => {
       })
       setPageInfo(data?.timeline?.pageInfo)
       setPublications([...publications, ...data?.timeline?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 timeline publications Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.HOME_FEED, { pageInfo })
     }
   })
 

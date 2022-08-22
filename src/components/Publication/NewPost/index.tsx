@@ -9,17 +9,11 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { MentionTextArea } from '@components/UI/MentionTextArea'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityAttachment } from '@generated/bcharitytypes'
-import { CreatePostBroadcastItemResult, EnabledModule } from '@generated/types'
+import { CreatePostBroadcastItemResult } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PencilAltIcon } from '@heroicons/react/outline'
-import {
-  defaultFeeData,
-  defaultModuleData,
-  FEE_DATA_TYPE,
-  getModule
-} from '@lib/getModule'
-import Logger from '@lib/logger'
+import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -29,15 +23,10 @@ import dynamic from 'next/dynamic'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { APP_NAME, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useCollectModuleStore } from 'src/store/collectmodule'
+import { usePublicationStore } from 'src/store/publication'
 import { POST } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -48,27 +37,18 @@ const Attachment = dynamic(() => import('../../Shared/Attachment'), {
 const Giphy = dynamic(() => import('../../Shared/Giphy'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
-const SelectCollectModule = dynamic(
-  () => import('../../Shared/SelectCollectModule'),
-  {
-    loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
-  }
-)
-const SelectReferenceModule = dynamic(
-  () => import('../../Shared/SelectReferenceModule'),
-  {
-    loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
-  }
-)
+const SelectCollectModule = dynamic(() => import('../../Shared/SelectCollectModule'), {
+  loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
+})
+const SelectReferenceModule = dynamic(() => import('../../Shared/SelectReferenceModule'), {
+  loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
+})
 const Preview = dynamic(() => import('../../Shared/Preview'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
 
 export const CREATE_POST_TYPED_DATA_MUTATION = gql`
-  mutation CreatePostTypedData(
-    $options: TypedDataOptions
-    $request: CreatePublicPostRequest!
-  ) {
+  mutation CreatePostTypedData($options: TypedDataOptions, $request: CreatePublicPostRequest!) {
     createPostTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -107,15 +87,20 @@ interface Props {
 
 const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [postContent, setPostContent] = useState<string>('')
-  const [preview, setPreview] = useState<boolean>(false)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const publicationContent = usePublicationStore((state) => state.publicationContent)
+  const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
+  const previewPublication = usePublicationStore((state) => state.previewPublication)
+  const setPreviewPublication = usePublicationStore((state) => state.setPreviewPublication)
+  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
+  const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
+  const feeData = useCollectModuleStore((state) => state.feeData)
+  const setFeeData = useCollectModuleStore((state) => state.setFeeData)
   const [postContentError, setPostContentError] = useState<string>('')
-  const [selectedModule, setSelectedModule] =
-    useState<EnabledModule>(defaultModuleData)
   const [onlyFollowers, setOnlyFollowers] = useState<boolean>(false)
-  const [feeData, setFeeData] = useState<FEE_DATA_TYPE>(defaultFeeData)
   const [isUploading, setIsUploading] = useState<boolean>(false)
   const [attachments, setAttachments] = useState<BCharityAttachment[]>([])
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -125,8 +110,8 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   })
 
   const onCompleted = () => {
-    setPreview(false)
-    setPostContent('')
+    setPreviewPublication(false)
+    setPublicationContent('')
     setAttachments([])
     setSelectedModule(defaultModuleData)
     setFeeData(defaultFeeData)
@@ -150,76 +135,65 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(POST.NEW, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(
-    CREATE_POST_TYPED_DATA_MUTATION,
-    {
-      async onCompleted({
-        createPostTypedData
-      }: {
-        createPostTypedData: CreatePostBroadcastItemResult
-      }) {
-        Logger.log('[Mutation]', 'Generated createPostTypedData')
-        const { id, typedData } = createPostTypedData
-        const {
+      Mixpanel.track(POST.NEW, { result: 'broadcast_error' })
+    }
+  })
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
+    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+      const { id, typedData } = createPostTypedData
+      const {
+        profileId,
+        contentURI,
+        collectModule,
+        collectModuleInitData,
+        referenceModule,
+        referenceModuleInitData,
+        deadline
+      } = typedData?.value
+
+      try {
+        const signature = await signTypedDataAsync({
+          domain: omit(typedData?.domain, '__typename'),
+          types: omit(typedData?.types, '__typename'),
+          value: omit(typedData?.value, '__typename')
+        })
+        setUserSigNonce(userSigNonce + 1)
+        const { v, r, s } = splitSignature(signature)
+        const sig = { v, r, s, deadline }
+        const inputStruct = {
           profileId,
           contentURI,
           collectModule,
           collectModuleInitData,
           referenceModule,
           referenceModuleInitData,
-          deadline
-        } = typedData?.value
+          sig
+        }
+        if (RELAY_ON) {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ variables: { request: { id, signature } } })
 
-        try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { v, r, s } = splitSignature(signature)
-          const sig = { v, r, s, deadline }
-          const inputStruct = {
-            profileId,
-            contentURI,
-            collectModule,
-            collectModuleInitData,
-            referenceModule,
-            referenceModuleInitData,
-            sig
-          }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
-
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          } else {
-            write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } catch (error) {}
-      },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        } else {
+          write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
+      } catch (error) {}
+    },
+    onError(error) {
+      toast.error(error.message ?? ERROR_MESSAGE)
     }
-  )
+  })
 
   const createPost = async () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
-    if (postContent.length === 0 && attachments.length === 0) {
+    if (!isAuthenticated) return toast.error(SIGN_WALLET)
+    if (publicationContent.length === 0 && attachments.length === 0) {
       Mixpanel.track(POST.NEW, { result: 'empty' })
       return setPostContentError('Post should not be empty!')
     }
@@ -228,20 +202,16 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     setIsUploading(true)
     // TODO: Add animated_url support
     const id = await uploadToArweave({
-      version: '1.0.0',
+      version: '2.0.0',
       metadata_id: uuid(),
-      description: trimify(postContent),
-      content: trimify(postContent),
+      description: trimify(publicationContent),
+      content: trimify(publicationContent),
       external_url: `https://lenster.xyz/u/${currentUser?.handle}`,
       image: attachments.length > 0 ? attachments[0]?.item : null,
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
       name: `Post by @${currentUser?.handle}`,
       mainContentFocus:
-        attachments.length > 0
-          ? attachments[0]?.type === 'video/mp4'
-            ? 'VIDEO'
-            : 'IMAGE'
-          : 'TEXT',
+        attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
       contentWarning: null, // TODO
       attributes: [
         {
@@ -251,6 +221,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
         }
       ],
       media: attachments,
+      locale: 'en',
       createdOn: new Date(),
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
@@ -287,21 +258,13 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     <Card className={hideCard ? 'border-0 !shadow-none !bg-transparent' : ''}>
       <div className="px-5 pt-5 pb-3">
         <div className="space-y-1">
-          {error && (
-            <ErrorMessage
-              className="mb-3"
-              title={t('Transaction Failed')}
-              error={error}
-            />
-          )}
-          {preview ? (
+          {error && <ErrorMessage className="mb-3" title={t('Transaction Failed')} error={error} />}
+          {previewPublication ? (
             <div className="pb-3 mb-2 border-b linkify dark:border-b-gray-700/80">
-              <Markup>{postContent}</Markup>
+              <Markup>{publicationContent}</Markup>
             </div>
           ) : (
             <MentionTextArea
-              publication={postContent}
-              setPublication={setPostContent}
               error={postContentError}
               setError={setPostContentError}
               placeholder="What's happening?"
@@ -309,50 +272,25 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
           )}
           <div className="block items-center sm:flex">
             <div className="flex items-center space-x-4">
-              <Attachment
-                attachments={attachments}
-                setAttachments={setAttachments}
-              />
+              <Attachment attachments={attachments} setAttachments={setAttachments} />
               <Giphy setGifAttachment={(gif: IGif) => setGifAttachment(gif)} />
-              <SelectCollectModule
-                feeData={feeData}
-                setFeeData={setFeeData}
-                selectedModule={selectedModule}
-                setSelectedModule={setSelectedModule}
-              />
-              <SelectReferenceModule
-                onlyFollowers={onlyFollowers}
-                setOnlyFollowers={setOnlyFollowers}
-              />
-              {postContent && (
-                <Preview preview={preview} setPreview={setPreview} />
-              )}
+              <SelectCollectModule />
+              <SelectReferenceModule onlyFollowers={onlyFollowers} setOnlyFollowers={setOnlyFollowers} />
+              {publicationContent && <Preview />}
             </div>
             <div className="flex items-center pt-2 ml-auto space-x-2 sm:pt-0">
               {data?.hash ?? broadcastData?.broadcast?.txHash ? (
                 <PubIndexStatus
                   setShowModal={setShowModal}
                   type="Post"
-                  txHash={
-                    data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-                  }
+                  txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
                 />
               ) : null}
               <Button
                 className="ml-auto"
-                disabled={
-                  isUploading ||
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  isUploading ||
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <PencilAltIcon className="w-4 h-4" />
@@ -372,11 +310,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
               </Button>
             </div>
           </div>
-          <Attachments
-            attachments={attachments}
-            setAttachments={setAttachments}
-            isNew
-          />
+          <Attachments attachments={attachments} setAttachments={setAttachments} isNew />
         </div>
       </div>
     </Card>

@@ -7,7 +7,6 @@ import { CreateMirrorBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { SwitchHorizontalIcon } from '@heroicons/react/outline'
 import humanize from '@lib/humanize'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
 import omit from '@lib/omit'
@@ -16,22 +15,13 @@ import clsx from 'clsx'
 import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
 const CREATE_MIRROR_TYPED_DATA_MUTATION = gql`
-  mutation CreateMirrorTypedData(
-    $options: TypedDataOptions
-    $request: CreateMirrorRequest!
-  ) {
+  mutation CreateMirrorTypedData($options: TypedDataOptions, $request: CreateMirrorRequest!) {
     createMirrorTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -70,21 +60,21 @@ interface Props {
 const Mirror: FC<Props> = ({ publication }) => {
   const [count, setCount] = useState<number>(0)
   const [mirrored, setMirrored] = useState<boolean>(publication?.mirrors?.length > 0)
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   useEffect(() => {
-    if (
-      publication?.mirrorOf?.stats?.totalAmountOfMirrors ||
-      publication?.stats?.totalAmountOfMirrors
-    ) {
+    if (publication?.mirrorOf?.stats?.totalAmountOfMirrors || publication?.stats?.totalAmountOfMirrors) {
       setCount(
         publication.__typename === 'Mirror'
           ? publication?.mirrorOf?.stats?.totalAmountOfMirrors
           : publication?.stats?.totalAmountOfMirrors
       )
     }
-  }, [publication])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
@@ -112,19 +102,15 @@ const Mirror: FC<Props> = ({ publication }) => {
     }
   })
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(
-    BROADCAST_MUTATION,
-    {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(PUBLICATION.MIRROR, { result: 'broadcast_error' })
+  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
+      Mixpanel.track(PUBLICATION.MIRROR, { result: 'broadcast_error' })
     }
-  )
+  })
   const [createMirrorTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_MIRROR_TYPED_DATA_MUTATION,
     {
@@ -133,7 +119,6 @@ const Mirror: FC<Props> = ({ publication }) => {
       }: {
         createMirrorTypedData: CreateMirrorBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createMirrorTypedData')
         const { id, typedData } = createMirrorTypedData
         const {
           profileId,
@@ -168,8 +153,7 @@ const Mirror: FC<Props> = ({ publication }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -206,34 +190,22 @@ const Mirror: FC<Props> = ({ publication }) => {
       aria-label="Mirror"
       data-test="publication-mirror"
     >
-      <div
-        className={clsx(
-          mirrored ? 'text-green-500' : 'text-brand',
-          'flex items-center space-x-1'
-        )}
-      >
+      <div className={clsx(mirrored ? 'text-green-500' : 'text-brand', 'flex items-center space-x-1')}>
         <div
           className={clsx(
             mirrored ? 'hover:bg-green-300' : 'hover:bg-brand-300',
             'p-1.5 rounded-full hover:bg-opacity-20'
           )}
         >
-          {typedDataLoading ||
-          signLoading ||
-          writeLoading ||
-          broadcastLoading ? (
+          {typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
             <Spinner size="xs" />
           ) : (
-            <Tooltip
-              placement="top"
-              content={count > 0 ? `${humanize(count)} Mirrors` : 'Mirror'}
-              withDelay
-            >
-              <SwitchHorizontalIcon className="w-[18px]" />
+            <Tooltip placement="top" content={count > 0 ? `${humanize(count)} Mirrors` : 'Mirror'} withDelay>
+              <SwitchHorizontalIcon className="w-[15px] sm:w-[18px]" />
             </Tooltip>
           )}
         </div>
-        {count > 0 && <div className="text-xs">{nFormatter(count)}</div>}
+        {count > 0 && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
       </div>
     </motion.button>
   )

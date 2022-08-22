@@ -34,14 +34,8 @@ export interface Data {
   postID: string
 }
 
-const FundraiseTable: FC<Props> = ({
-  profile,
-  handleQueryComplete,
-  getColumns,
-  query,
-  request
-}) => {
-  const { currentUser } = useAppPersistStore()
+const FundraiseTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request }) => {
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -116,40 +110,29 @@ const FundraiseTable: FC<Props> = ({
       })
       setPageInfo(data?.publications?.pageInfo)
       setPublications([...publications, ...data?.publications?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 fundraise publications Next:${pageInfo?.next}`
-      )
+      Logger.log('[Query]', `Fetched next 10 fundraise publications Next:${pageInfo?.next}`)
     }
   })
 
   const columns = getColumns()
 
   const Table = () => {
-    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-      useTable(
-        {
-          columns,
-          data: tableData
-        },
-        useFilters
-      )
+    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
+      {
+        columns,
+        data: tableData
+      },
+      useFilters
+    )
 
     return (
-      <table
-        className="w-full text-md text-center mb-2 mt-2"
-        {...getTableProps()}
-      >
+      <table className="w-full text-md text-center mb-2 mt-2" {...getTableProps()}>
         <thead>
           {headerGroups.map((headerGroup, index) => {
             return index === 0 ? (
               <tr>
-                <th
-                  className="p-4"
-                  {...headerGroup.headers[0].getHeaderProps()}
-                >
-                  {headerGroup.headers[0] &&
-                    headerGroup.headers[0].render('Header')}
+                <th className="p-4" {...headerGroup.headers[0].getHeaderProps()}>
+                  {headerGroup.headers[0] && headerGroup.headers[0].render('Header')}
                   <div className="flex items-stretch justify-center">
                     <TotalDonors pubIdData={pubIdData} />
                   </div>
@@ -160,9 +143,7 @@ const FundraiseTable: FC<Props> = ({
                 {headerGroup.headers.map((column) => (
                   <th className="p-4" {...column.getHeaderProps()}>
                     {column.render('Header')}
-                    <div>
-                      {column.canFilter ? column.render('Filter') : null}
-                    </div>
+                    <div>{column.canFilter ? column.render('Filter') : null}</div>
                   </th>
                 ))}
               </tr>

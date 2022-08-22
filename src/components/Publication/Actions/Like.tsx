@@ -8,7 +8,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { CONNECT_WALLET } from 'src/constants'
+import { SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 
@@ -29,23 +29,25 @@ interface Props {
 }
 
 const Like: FC<Props> = ({ publication }) => {
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [liked, setLiked] = useState<boolean>(false)
   const [count, setCount] = useState<number>(0)
 
   useEffect(() => {
     if (publication?.mirrorOf?.stats?.totalUpvotes || publication?.stats?.totalUpvotes) {
       const reactionCount =
-      publication.__typename === 'Mirror'
+        publication.__typename === 'Mirror'
           ? publication?.mirrorOf?.stats?.totalUpvotes
           : publication?.stats?.totalUpvotes
       const reaction =
-      publication.__typename === 'Mirror' ? publication?.mirrorOf?.reaction : publication?.reaction
+        publication.__typename === 'Mirror' ? publication?.mirrorOf?.reaction : publication?.reaction
 
       setCount(reactionCount)
       setLiked(reaction === 'UPVOTE')
     }
-  }, [publication])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [addReaction] = useMutation(ADD_REACTION_MUTATION, {
     onCompleted() {
@@ -72,7 +74,7 @@ const Like: FC<Props> = ({ publication }) => {
   })
 
   const createLike = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) return toast.error(SIGN_WALLET)
 
     const variable = {
       variables: {
@@ -80,7 +82,7 @@ const Like: FC<Props> = ({ publication }) => {
           profileId: currentUser?.id,
           reaction: 'UPVOTE',
           publicationId:
-          publication.__typename === 'Mirror'
+            publication.__typename === 'Mirror'
               ? publication?.mirrorOf?.id
               : publication?.pubId ?? publication?.id
         }
@@ -99,26 +101,18 @@ const Like: FC<Props> = ({ publication }) => {
   }
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      onClick={createLike}
-      aria-label="Like"
-    >
+    <motion.button whileTap={{ scale: 0.9 }} onClick={createLike} aria-label="Like">
       <div className="flex items-center space-x-1 text-pink-500">
         <div className="p-1.5 rounded-full hover:bg-pink-300 hover:bg-opacity-20">
-          <Tooltip
-            placement="top"
-            content={liked ? 'Unlike' : 'Like'}
-            withDelay
-          >
+          <Tooltip placement="top" content={liked ? 'Unlike' : 'Like'} withDelay>
             {liked ? (
-              <HeartIconSolid className="w-[18px]" />
+              <HeartIconSolid className="w-[15px] sm:w-[18px]" />
             ) : (
-              <HeartIcon className="w-[18px]" />
+              <HeartIcon className="w-[15px] sm:w-[18px]" />
             )}
           </Tooltip>
         </div>
-        {count > 0 && <div className="text-xs">{humanize(count)}</div>}
+        {count > 0 && <div className="text-[11px] sm:text-xs">{humanize(count)}</div>}
       </div>
     </motion.button>
   )

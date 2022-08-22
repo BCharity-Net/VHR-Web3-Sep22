@@ -1,10 +1,7 @@
 import { NextLink } from '@components/Shared/Navbar/MenuItems'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { Menu, Transition } from '@headlessui/react'
-import {
-  DotsHorizontalIcon,
-  ShieldExclamationIcon
-} from '@heroicons/react/outline'
+import { DotsHorizontalIcon, ShieldExclamationIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import { FC, Fragment } from 'react'
@@ -22,7 +19,7 @@ interface Props {
 
 const PublicationMenu: FC<Props> = ({ publication }) => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   return (
     <Menu as="div">
@@ -35,7 +32,7 @@ const PublicationMenu: FC<Props> = ({ publication }) => {
             }}
             aria-label="More"
           >
-            <DotsHorizontalIcon className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+            <DotsHorizontalIcon className="w-[15px] sm:w-[18px] text-gray-500 dark:text-gray-300" />
           </Menu.Button>
           <Transition
             show={open}

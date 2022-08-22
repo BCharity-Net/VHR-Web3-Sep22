@@ -6,28 +6,18 @@ import { Group } from '@generated/bcharitytypes'
 import { CreateCollectBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC } from 'react'
 import toast from 'react-hot-toast'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { GROUP } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
 const CREATE_COLLECT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCollectTypedData(
-    $options: TypedDataOptions
-    $request: CreateCollectRequest!
-  ) {
+  mutation CreateCollectTypedData($options: TypedDataOptions, $request: CreateCollectRequest!) {
     createCollectTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -63,8 +53,9 @@ interface Props {
 }
 
 const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
@@ -91,19 +82,15 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
     }
   })
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(
-    BROADCAST_MUTATION,
-    {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(GROUP.JOIN, { result: 'broadcast_error' })
+  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
+      Mixpanel.track(GROUP.JOIN, { result: 'broadcast_error' })
     }
-  )
+  })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -112,7 +99,6 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createCollectTypedData')
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
 
@@ -138,8 +124,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -165,9 +150,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   return (
     <Button
       onClick={createCollect}
-      disabled={
-        typedDataLoading || signLoading || writeLoading || broadcastLoading
-      }
+      disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
       icon={
         typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
           <Spinner variant="success" size="xs" />

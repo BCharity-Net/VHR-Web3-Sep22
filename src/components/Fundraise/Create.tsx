@@ -13,18 +13,17 @@ import { Input } from '@components/UI/Input'
 import { PageLoading } from '@components/UI/PageLoading'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Erc20 } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
 import isVerified from '@lib/isVerified'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import { NextPage } from 'next'
 import React, { ChangeEvent, useState } from 'react'
@@ -65,23 +64,18 @@ const Create: NextPage = () => {
   const [coverType, setCoverType] = useState<string>()
   const [isUploading, setIsUploading] = useState<boolean>(false)
   const [uploading, setUploading] = useState<boolean>(false)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(
-    DEFAULT_COLLECT_TOKEN
-  )
-  const [selectedCurrencySymobol, setSelectedCurrencySymobol] =
-    useState<string>('WMATIC')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
+  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState<string>('WMATIC')
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
     }
   })
-  const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY, {
-    onCompleted() {
-      Logger.log('[Query]', `Fetched enabled module currencies`)
-    }
-  })
+  const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY)
 
   const newFundraiseSchema = object({
     title: string()
@@ -95,9 +89,7 @@ const Create: NextPage = () => {
     recipient: string()
       .max(42, { message: 'Ethereum address should be within 42 characters' })
       .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
-    description: string()
-      .max(1000, { message: 'Description should not exceed 1000 characters' })
-      .nullable()
+    description: string().max(1000, { message: 'Description should not exceed 1000 characters' }).nullable()
   })
 
   const onCompleted = () => {
@@ -132,7 +124,7 @@ const Create: NextPage = () => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         setCover(attachment[0].item)
         setCoverType(attachment[0].type)
@@ -142,72 +134,61 @@ const Create: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(FUNDRAISE.NEW, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(
-    CREATE_POST_TYPED_DATA_MUTATION,
-    {
-      async onCompleted({
-        createPostTypedData
-      }: {
-        createPostTypedData: CreatePostBroadcastItemResult
-      }) {
-        Logger.log('[Mutation]', 'Generated createPostTypedData')
-        const { id, typedData } = createPostTypedData
-        const {
+      Mixpanel.track(FUNDRAISE.NEW, { result: 'broadcast_error' })
+    }
+  })
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
+    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+      const { id, typedData } = createPostTypedData
+      const {
+        profileId,
+        contentURI,
+        collectModule,
+        collectModuleInitData,
+        referenceModule,
+        referenceModuleInitData,
+        deadline
+      } = typedData?.value
+
+      try {
+        const signature = await signTypedDataAsync({
+          domain: omit(typedData?.domain, '__typename'),
+          types: omit(typedData?.types, '__typename'),
+          value: omit(typedData?.value, '__typename')
+        })
+        setUserSigNonce(userSigNonce + 1)
+        const { v, r, s } = splitSignature(signature)
+        const sig = { v, r, s, deadline }
+        const inputStruct = {
           profileId,
           contentURI,
           collectModule,
           collectModuleInitData,
           referenceModule,
           referenceModuleInitData,
-          deadline
-        } = typedData?.value
+          sig
+        }
+        if (RELAY_ON) {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ variables: { request: { id, signature } } })
 
-        try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { v, r, s } = splitSignature(signature)
-          const sig = { v, r, s, deadline }
-          const inputStruct = {
-            profileId,
-            contentURI,
-            collectModule,
-            collectModuleInitData,
-            referenceModule,
-            referenceModuleInitData,
-            sig
-          }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
-
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          } else {
-            write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } catch (error) {}
-      },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        } else {
+          write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
+      } catch (error) {}
+    },
+    onError(error) {
+      toast.error(error.message ?? ERROR_MESSAGE)
     }
-  )
+  })
 
   const createFundraise = async (
     title: string,
@@ -221,7 +202,7 @@ const Create: NextPage = () => {
 
     setIsUploading(true)
     const id = await uploadToArweave({
-      version: '1.0.0',
+      version: '2.0.0',
       metadata_id: uuid(),
       description: description,
       content: description,
@@ -258,6 +239,7 @@ const Create: NextPage = () => {
         }
       ],
       media: [],
+      locale: 'en',
       createdOn: new Date(),
       appId: `${APP_NAME} Fundraise`
     }).finally(() => setIsUploading(false))
@@ -292,20 +274,15 @@ const Create: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Create Fundraise • ${APP_NAME}`} />
+      <Seo title={`Create Fundraise • ${APP_NAME}`} />
       <GridItemFour>
-        <SettingsHelper
-          heading={t('Create fundraise')}
-          description={t('Create fundraise description')}
-        />
+        <SettingsHelper heading={t('Create fundraise')} description={t('Create fundraise description')} />
       </GridItemFour>
       <GridItemEight>
         <Card>
           {data?.hash ?? broadcastData?.broadcast?.txHash ? (
             <Pending
-              txHash={
-                data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-              }
+              txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
               indexing={t('Fundraise creation')}
               indexed={t('Fundraise created successfully')}
               type="fundraise"
@@ -315,22 +292,8 @@ const Create: NextPage = () => {
             <Form
               form={form}
               className="p-5 space-y-4"
-              onSubmit={({
-                title,
-                category,
-                amount,
-                goal,
-                recipient,
-                description
-              }) => {
-                createFundraise(
-                  title,
-                  category,
-                  amount,
-                  goal,
-                  recipient,
-                  description
-                )
+              onSubmit={({ title, category, amount, goal, recipient, description }) => {
+                createFundraise(title, category, amount, goal, recipient, description)
               }}
             >
               <Input
@@ -366,16 +329,11 @@ const Create: NextPage = () => {
                     setSelectedCurrencySymobol(currency[1])
                   }}
                 >
-                  {currencyData?.enabledModuleCurrencies?.map(
-                    (currency: Erc20) => (
-                      <option
-                        key={currency.address}
-                        value={`${currency.address}-${currency.symbol}`}
-                      >
-                        {currency.name}
-                      </option>
-                    )
-                  )}
+                  {currencyData?.enabledModuleCurrencies?.map((currency: Erc20) => (
+                    <option key={currency.address} value={`${currency.address}-${currency.symbol}`}>
+                      {currency.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <Input
@@ -439,18 +397,14 @@ const Create: NextPage = () => {
                   <div className="flex items-center space-x-3">
                     <ChooseFile
                       id="cover"
-                      onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                        handleUpload(evt)
-                      }
+                      onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)}
                     />
                     {uploading && <Spinner size="sm" />}
                   </div>
                 </div>
               </div>
               {!isVerified(currentUser?.id) && (
-                <a className="ml-auto text-red-500">
-                  You need to be verified to create a fundraiser
-                </a>
+                <a className="ml-auto text-red-500">You need to be verified to create a fundraiser</a>
               )}
               <Button
                 className="ml-auto"
@@ -464,11 +418,7 @@ const Create: NextPage = () => {
                   broadcastLoading
                 }
                 icon={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <PlusIcon className="w-4 h-4" />

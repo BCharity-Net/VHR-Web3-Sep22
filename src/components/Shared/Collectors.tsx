@@ -7,10 +7,11 @@ import { Spinner } from '@components/UI/Spinner'
 import { PaginatedResultInfo, Wallet } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION } from 'src/tracking'
 
 import Loader from './Loader'
 
@@ -47,7 +48,6 @@ const Collectors: FC<Props> = ({ pubId }) => {
     onCompleted(data) {
       setPageInfo(data?.whoCollectedPublication?.pageInfo)
       setCollectors(data?.whoCollectedPublication?.items)
-      Logger.log('[Query]', `Fetched first 10 collectors Publication:${pubId}`)
     }
   })
 
@@ -64,10 +64,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
       })
       setPageInfo(data?.whoCollectedPublication?.pageInfo)
       setCollectors([...collectors, ...data?.whoCollectedPublication?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 collectors Publication:${pubId} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.COLLECTORS, { pageInfo })
     }
   })
 
@@ -86,11 +83,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
 
   return (
     <div className="overflow-y-auto max-h-[80vh]">
-      <ErrorMessage
-        className="m-5"
-        title="Failed to load collectors"
-        error={error}
-      />
+      <ErrorMessage className="m-5" title="Failed to load collectors" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
           {collectors?.map((wallet: Wallet) => (

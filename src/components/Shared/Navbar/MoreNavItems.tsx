@@ -1,11 +1,5 @@
 import { Menu, Transition } from '@headlessui/react'
-import {
-  CashIcon,
-  ClockIcon,
-  SupportIcon,
-  UserIcon,
-  UsersIcon
-} from '@heroicons/react/outline'
+import { CashIcon, ClockIcon, SupportIcon, UserIcon, UsersIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { FC, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,7 +9,7 @@ import { useAppPersistStore } from 'src/store/app'
 import { NextLink } from './MenuItems'
 
 const MoreNavItems: FC = () => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { t } = useTranslation('common')
 
   return (

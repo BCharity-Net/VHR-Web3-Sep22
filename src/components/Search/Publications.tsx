@@ -10,11 +10,12 @@ import { PaginatedResultInfo } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGINATION } from 'src/tracking'
 
 const SEARCH_PUBLICATIONS_QUERY = gql`
   query SearchPublications(
@@ -49,27 +50,20 @@ interface Props {
 
 const Publications: FC<Props> = ({ query }) => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
-  const { data, loading, error, fetchMore } = useQuery(
-    SEARCH_PUBLICATIONS_QUERY,
-    {
-      variables: {
-        request: { query, type: 'PUBLICATION', limit: 10 },
-        reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-        profileId: currentUser?.id ?? null
-      },
-      onCompleted(data) {
-        setPageInfo(data?.search?.pageInfo)
-        setPublications(data?.search?.items)
-        Logger.log(
-          '[Query]',
-          `Fetched first 10 publication for search Keyword:${query}`
-        )
-      }
+  const { data, loading, error, fetchMore } = useQuery(SEARCH_PUBLICATIONS_QUERY, {
+    variables: {
+      request: { query, type: 'PUBLICATION', limit: 10 },
+      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
+      profileId: currentUser?.id ?? null
+    },
+    onCompleted(data) {
+      setPageInfo(data?.search?.pageInfo)
+      setPublications(data?.search?.items)
     }
-  )
+  })
 
   const { observe } = useInView({
     onEnter: async () => {
@@ -87,10 +81,7 @@ const Publications: FC<Props> = ({ query }) => {
       })
       setPageInfo(data?.search?.pageInfo)
       setPublications([...publications, ...data?.search?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 publications for search Keyword:${query} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.PUBLICATION_SEARCH, { pageInfo })
     }
   })
 

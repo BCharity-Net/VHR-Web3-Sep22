@@ -11,11 +11,12 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGINATION } from 'src/tracking'
 
 const EXPLORE_FEED_QUERY = gql`
   query ExploreFeed(
@@ -52,7 +53,7 @@ interface Props {
 
 const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
@@ -68,10 +69,6 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
     onCompleted(data) {
       setPageInfo(data?.explorePublications?.pageInfo)
       setPublications(data?.explorePublications?.items)
-      Logger.log(
-        '[Query]',
-        `Fetched first 10 explore publications FeedType:${feedType}`
-      )
     }
   })
 
@@ -91,10 +88,7 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
       })
       setPageInfo(data?.explorePublications?.pageInfo)
       setPublications([...publications, ...data?.explorePublications?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 explore publications FeedType:${feedType} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.EXPLORE_FEED, { feedType, pageInfo })
     }
   })
 

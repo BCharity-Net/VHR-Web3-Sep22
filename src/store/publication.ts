@@ -9,6 +9,10 @@ interface PublicationState {
   setShowShareModal: (showShareModal: boolean) => void
   parentPub: BCharityPublication | null
   setParentPub: (parentPub: BCharityPublication | null) => void
+  publicationContent: string
+  setPublicationContent: (publicationContent: string) => void
+  previewPublication: boolean
+  setPreviewPublication: (previewPublication: boolean) => void
 }
 
 export const usePublicationStore = create<PublicationState>((set) => ({
@@ -17,5 +21,9 @@ export const usePublicationStore = create<PublicationState>((set) => ({
   showShareModal: false,
   setShowShareModal: (showShareModal) => set(() => ({ showShareModal })),
   parentPub: null,
-  setParentPub: (parentPub) => set(() => ({ parentPub }))
+  setParentPub: (parentPub) => set(() => ({ parentPub })),
+  publicationContent: '',
+  setPublicationContent: (publicationContent) => set(() => ({ publicationContent })),
+  previewPublication: false,
+  setPreviewPublication: (previewPublication) => set(() => ({ previewPublication }))
 }))

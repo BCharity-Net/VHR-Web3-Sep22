@@ -5,12 +5,12 @@ import { Spinner } from '@components/UI/Spinner'
 import GetModuleIcon from '@components/utils/GetModuleIcon'
 import { EnabledModule } from '@generated/types'
 import { CheckCircleIcon } from '@heroicons/react/solid'
-import { FEE_DATA_TYPE, getModule } from '@lib/getModule'
-import Logger from '@lib/logger'
+import { getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import { Dispatch, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useCollectModuleStore } from 'src/store/collectmodule'
 
 import FeeEntry from './FeeEntry'
 
@@ -32,26 +32,14 @@ export const MODULES_QUERY = gql`
 `
 
 interface Props {
-  feeData: FEE_DATA_TYPE
-  setSelectedModule: Dispatch<EnabledModule>
-  selectedModule: EnabledModule
   setShowModal: Dispatch<boolean>
-  setFeeData: Dispatch<FEE_DATA_TYPE>
 }
 
-const Modules: FC<Props> = ({
-  feeData,
-  setSelectedModule,
-  selectedModule,
-  setShowModal,
-  setFeeData
-}) => {
+const Modules: FC<Props> = ({ setShowModal }) => {
   const { t } = useTranslation('common')
-  const { error, data, loading } = useQuery(MODULES_QUERY, {
-    onCompleted() {
-      Logger.log('[Query]', `Fetched enabled modules`)
-    }
-  })
+  const { error, data, loading } = useQuery(MODULES_QUERY)
+  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
+  const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
   const [showFeeEntry, setShowFeeEntry] = useState<boolean>(false)
 
   const handleSelectModule = (module: EnabledModule) => {
@@ -62,9 +50,7 @@ const Modules: FC<Props> = ({
     } else {
       setShowModal(false)
     }
-    Mixpanel.track(
-      `Select ${module?.moduleName.toLowerCase()} for new publication`
-    )
+    Mixpanel.track(`Select ${module?.moduleName.toLowerCase()} for new publication`)
   }
 
   if (loading)
@@ -80,13 +66,9 @@ const Modules: FC<Props> = ({
       <ErrorMessage title={t('Failed to load modules')} error={error} />
       {showFeeEntry ? (
         <FeeEntry
-          selectedModule={selectedModule}
-          setSelectedModule={setSelectedModule}
           enabledModuleCurrencies={data?.enabledModuleCurrencies}
           setShowFeeEntry={setShowFeeEntry}
           setShowModal={setShowModal}
-          feeData={feeData}
-          setFeeData={setFeeData}
         />
       ) : (
         data?.enabledModules?.collectModules?.map(
@@ -97,8 +79,7 @@ const Modules: FC<Props> = ({
                   type="button"
                   className={clsx(
                     {
-                      'border-green-500':
-                        module?.moduleName === selectedModule.moduleName
+                      'border-green-500': module?.moduleName === selectedModule.moduleName
                     },
                     'w-full p-3 text-left border dark:border-gray-700/80 rounded-xl flex items-center justify-between'
                   )}
@@ -109,16 +90,10 @@ const Modules: FC<Props> = ({
                       <div className="text-brand">
                         <GetModuleIcon module={module.moduleName} size={4} />
                       </div>
-                      <div className="space-x-1.5 font-bold">
-                        {getModule(module?.moduleName).name}
-                      </div>
-                      <HelpTooltip
-                        content={getModule(module.moduleName).helper}
-                      />
+                      <div className="space-x-1.5 font-bold">{getModule(module?.moduleName).name}</div>
+                      <HelpTooltip content={getModule(module.moduleName).helper} />
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {module?.contractAddress}
-                    </div>
+                    <div className="text-xs text-gray-500">{module?.contractAddress}</div>
                   </div>
                   {module?.moduleName === selectedModule.moduleName && (
                     <CheckCircleIcon className="w-7 h-7 text-green-500" />

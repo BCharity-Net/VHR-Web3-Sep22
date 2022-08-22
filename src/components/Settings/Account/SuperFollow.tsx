@@ -6,14 +6,10 @@ import { Card } from '@components/UI/Card'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
-import {
-  CreateSetFollowModuleBroadcastItemResult,
-  Erc20
-} from '@generated/types'
+import { CreateSetFollowModuleBroadcastItemResult, Erc20 } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { StarIcon, XIcon } from '@heroicons/react/outline'
 import getTokenImage from '@lib/getTokenImage'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -83,14 +79,13 @@ export const CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION = gql`
 `
 
 const SuperFollow: FC = () => {
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { t } = useTranslation('common')
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(
-    DEFAULT_COLLECT_TOKEN
-  )
-  const [selectedCurrencySymobol, setSelectedCurrencySymobol] =
-    useState<string>('WMATIC')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
+  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState<string>('WMATIC')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
@@ -98,10 +93,7 @@ const SuperFollow: FC = () => {
   })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY, {
     variables: { request: { profileId: currentUser?.id } },
-    skip: !currentUser?.id,
-    onCompleted() {
-      Logger.log('[Query]', `Fetched enabled module currencies`)
-    }
+    skip: !currentUser?.id
   })
 
   const onCompleted = () => {
@@ -141,30 +133,27 @@ const SuperFollow: FC = () => {
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, {
-          result: 'broadcast_error'
-        })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createSetFollowModuleTypedData, { loading: typedDataLoading }] =
-    useMutation(CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION, {
+      Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, {
+        result: 'broadcast_error'
+      })
+    }
+  })
+  const [createSetFollowModuleTypedData, { loading: typedDataLoading }] = useMutation(
+    CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION,
+    {
       async onCompleted({
         createSetFollowModuleTypedData
       }: {
         createSetFollowModuleTypedData: CreateSetFollowModuleBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createSetFollowModuleTypedData')
         const { id, typedData } = createSetFollowModuleTypedData
-        const { profileId, followModule, followModuleInitData, deadline } =
-          typedData?.value
+        const { profileId, followModule, followModuleInitData, deadline } = typedData?.value
 
         try {
           const signature = await signTypedDataAsync({
@@ -186,8 +175,7 @@ const SuperFollow: FC = () => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -196,7 +184,8 @@ const SuperFollow: FC = () => {
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
-    })
+    }
+  )
 
   const setSuperFollow = (amount: string | null, recipient: string | null) => {
     if (!isAuthenticated) return toast.error(CONNECT_WALLET)
@@ -258,10 +247,7 @@ const SuperFollow: FC = () => {
             }}
           >
             {currencyData?.enabledModuleCurrencies?.map((currency: Erc20) => (
-              <option
-                key={currency.address}
-                value={`${currency.address}-${currency.symbol}`}
-              >
+              <option key={currency.address} value={`${currency.address}-${currency.symbol}`}>
                 {currency.name}
               </option>
             ))}
@@ -301,12 +287,7 @@ const SuperFollow: FC = () => {
                 onClick={() => {
                   setSuperFollow(null, null)
                 }}
-                disabled={
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
                 icon={<XIcon className="w-4 h-4" />}
               >
                 {t('Disable super follow')}
@@ -314,27 +295,14 @@ const SuperFollow: FC = () => {
             )}
             <Button
               type={t('Submit')}
-              disabled={
-                typedDataLoading ||
-                signLoading ||
-                writeLoading ||
-                broadcastLoading
-              }
+              disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
               icon={<StarIcon className="w-4 h-4" />}
             >
-              {followType === 'FeeFollowModuleSettings'
-                ? t('Update super follow')
-                : t('Set super follow')}
+              {followType === 'FeeFollowModuleSettings' ? t('Update super follow') : t('Set super follow')}
             </Button>
           </div>
           {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-            <IndexStatus
-              txHash={
-                writeData?.hash
-                  ? writeData?.hash
-                  : broadcastData?.broadcast?.txHash
-              }
-            />
+            <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
           ) : null}
         </div>
       </Form>

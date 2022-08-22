@@ -56,13 +56,9 @@ const GifSelector: FC<Props> = ({ setShowModal, setGifAttachment }) => {
 
   return (
     <div>
-      <Input
-        className="m-3"
-        type="text"
-        placeholder={t('Search for gifs')}
-        value={debouncedGifInput}
-        onChange={handleSearch}
-      />
+      <div className="m-3">
+        <Input type="text" placeholder="Search for GIFs" value={debouncedGifInput} onChange={handleSearch} />
+      </div>
       <div className="flex overflow-y-auto overflow-x-hidden h-[45vh]">
         {debouncedGifInput ? (
           <Grid
@@ -71,11 +67,7 @@ const GifSelector: FC<Props> = ({ setShowModal, setGifAttachment }) => {
             width={498}
             hideAttribution
             columns={3}
-            noResultsMessage={
-              <div className="grid place-items-center h-full">
-                {t('No gifs found')}
-              </div>
-            }
+            noResultsMessage={<div className="grid place-items-center h-full">{t('No gifs found')}</div>}
             noLink
             key={searchText}
           />

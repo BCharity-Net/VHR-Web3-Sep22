@@ -77,7 +77,7 @@ export interface Data {
 }
 
 const OrgGOOD: FC<Props> = ({ profile, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -155,16 +155,13 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
               }
             }
           }).then((result: any) => {
-            const results = result?.data?.notifications?.items.filter(
-              (i: any) => {
-                return (
-                  i.__typename === 'NewMentionNotification' &&
-                  i.mentionPublication.metadata.attributes[0].value ===
-                    'hours' &&
-                  !i.mentionPublication.hidden
-                )
-              }
-            )
+            const results = result?.data?.notifications?.items.filter((i: any) => {
+              return (
+                i.__typename === 'NewMentionNotification' &&
+                i.mentionPublication.metadata.attributes[0].value === 'hours' &&
+                !i.mentionPublication.hidden
+              )
+            })
             const pubId: string[] = [],
               goodTxn: string[] = []
             results.map((i: any) => {
@@ -235,10 +232,7 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
     )
 
     return (
-      <table
-        className="w-full text-md text-center mb-2 mt-2"
-        {...getTableProps()}
-      >
+      <table className="w-full text-md text-center mb-2 mt-2" {...getTableProps()}>
         <tbody {...getTableBodyProps()}>
           {rows.map((row, index) => {
             prepareRow(row)
@@ -249,10 +243,7 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
                   const good: string[] = []
                   data.publications.items.forEach((i: any) => {
                     const res = i?.metadata?.content?.split(' ')
-                    if (
-                      ethers.utils.isHexString(res[0]) &&
-                      res[1] === '"good"'
-                    ) {
+                    if (ethers.utils.isHexString(res[0]) && res[1] === '"good"') {
                       good.push(res[0])
                     }
                   })

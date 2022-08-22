@@ -11,10 +11,9 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import { useRouter } from 'next/router'
 import React, { FC, useState } from 'react'
@@ -48,7 +47,7 @@ const Report: FC = () => {
   const { t } = useTranslation('common')
   const [type, setType] = useState<string>('')
   const [subReason, setSubReason] = useState<string>('')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { data, loading, error } = useQuery(PUBLICATION_QUERY, {
     variables: {
       request: { publicationId: id },
@@ -59,22 +58,16 @@ const Report: FC = () => {
         }
       }
     },
-    skip: !id,
-    onCompleted() {
-      Logger.log(
-        '[Query]',
-        `Fetched publication details to report Publication:${id}`
-      )
-    }
+    skip: !id
   })
-  const [
-    createReport,
-    { data: submitData, loading: submitLoading, error: submitError }
-  ] = useMutation(CREATE_REPORT_PUBLICATION_MUTATION, {
-    onCompleted() {
-      Mixpanel.track(PUBLICATION.REPORT, { result: 'success' })
+  const [createReport, { data: submitData, loading: submitLoading, error: submitError }] = useMutation(
+    CREATE_REPORT_PUBLICATION_MUTATION,
+    {
+      onCompleted() {
+        Mixpanel.track(PUBLICATION.REPORT, { result: 'success' })
+      }
     }
-  })
+  )
 
   const form = useZodForm({
     schema: newReportSchema
@@ -101,12 +94,9 @@ const Report: FC = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Report • ${APP_NAME}`} />
+      <Seo title={`Report • ${APP_NAME}`} />
       <GridItemFour>
-        <SettingsHelper
-          heading={t('Report header')}
-          description={t('Report description')}
-        />
+        <SettingsHelper heading={t('Report header')} description={t('Report description')} />
       </GridItemFour>
       <GridItemEight>
         <Card>
@@ -137,17 +127,8 @@ const Report: FC = () => {
                     reportPublication(additionalComments)
                   }}
                 >
-                  {submitError && (
-                    <ErrorMessage
-                      title="Failed to report"
-                      error={submitError}
-                    />
-                  )}
-                  <Reason
-                    setType={setType}
-                    setSubReason={setSubReason}
-                    type={type}
-                  />
+                  {submitError && <ErrorMessage title="Failed to report" error={submitError} />}
+                  <Reason setType={setType} setSubReason={setSubReason} type={type} />
                   {subReason && (
                     <>
                       <TextArea
@@ -159,13 +140,7 @@ const Report: FC = () => {
                         <Button
                           type="submit"
                           disabled={submitLoading}
-                          icon={
-                            submitLoading ? (
-                              <Spinner size="xs" />
-                            ) : (
-                              <PencilAltIcon className="w-4 h-4" />
-                            )
-                          }
+                          icon={submitLoading ? <Spinner size="xs" /> : <PencilAltIcon className="w-4 h-4" />}
                         >
                           {t('Report')}
                         </Button>

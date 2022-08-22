@@ -15,14 +15,9 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { CreateCommentBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CommentFields } from '@gql/CommentFields'
-import {
-  CashIcon,
-  CurrencyDollarIcon,
-  UsersIcon
-} from '@heroicons/react/outline'
+import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outline'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
-import Logger from '@lib/logger'
 import omit from '@lib/omit'
 import uploadToArweave from '@lib/uploadToArweave'
 import clsx from 'clsx'
@@ -89,9 +84,7 @@ const Badge: FC<BadgeProps> = ({ title, value, className }) => (
   <div
     className={`flex bg-gray-200 rounded-full border border-gray-300 dark:bg-gray-800 dark:border-gray-700 text-[12px] w-fit ${className}`}
   >
-    <div className="px-3 bg-gray-300 rounded-full dark:bg-gray-700 py-[0.3px]">
-      {title}
-    </div>
+    <div className="px-3 bg-gray-300 rounded-full dark:bg-gray-700 py-[0.3px]">{title}</div>
     <div className="pr-3 pl-2 font-bold py-[0.3px]">{value}</div>
   </div>
 )
@@ -114,7 +107,6 @@ export const CommentValue: FC<CommentProps> = ({ id, callback }) => {
     },
     onCompleted(data) {
       if (callback) callback(data)
-      Logger.log('[Query]', `Fetched fundraise revenue details Fundraise:${id}`)
     }
   })
   return <div />
@@ -129,57 +121,32 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const { isAuthenticated, currentUser } = useAppPersistStore()
   const [newAmount, setNewAmount] = useState<string>()
   const { data, loading } = useQuery(COLLECT_QUERY, {
-    variables: { request: { publicationId: fund?.pubId ?? fund?.id } },
-    onCompleted() {
-      Logger.log(
-        '[Query]',
-        `Fetched collect module details Fundraise:${fund?.pubId ?? fund?.id}`
-      )
-    }
+    variables: { request: { publicationId: fund?.pubId ?? fund?.id } }
   })
 
   const collectModule: any = data?.publication?.collectModule
 
   let commentValue = 0
 
-  const { data: commentFeed, loading: commentFeedLoading } = useQuery(
-    COMMENT_FEED_QUERY,
-    {
-      variables: {
-        request: { commentsOf: fund.id },
-        reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-        profileId: currentUser?.id ?? null
-      },
-      fetchPolicy: 'no-cache'
-    }
-  )
+  const { data: commentFeed, loading: commentFeedLoading } = useQuery(COMMENT_FEED_QUERY, {
+    variables: {
+      request: { commentsOf: fund.id },
+      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
+      profileId: currentUser?.id ?? null
+    },
+    fetchPolicy: 'no-cache'
+  })
 
-  const { data: revenueData, loading: revenueLoading } = useQuery(
-    PUBLICATION_REVENUE_QUERY,
-    {
-      variables: {
-        request: {
-          publicationId:
-            fund?.__typename === 'Mirror'
-              ? fund?.mirrorOf?.id
-              : fund?.pubId ?? fund?.id
-        }
-      },
-      onCompleted() {
-        Logger.log(
-          '[Query]',
-          `Fetched fundraise revenue details Fundraise:${
-            fund?.pubId ?? fund?.id
-          }`
-        )
+  const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
+    variables: {
+      request: {
+        publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.pubId ?? fund?.id
       }
     }
-  )
+  })
 
   useEffect(() => {
-    setRevenue(
-      parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0)
-    )
+    setRevenue(parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0))
   }, [revenueData])
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -187,17 +154,13 @@ const Fundraise: FC<Props> = ({ fund }) => {
       toast.error(error?.message)
     }
   })
-  const [broadcast, { loading: broadcastLoading }] = useMutation(
-    BROADCAST_MUTATION,
-    {
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
+  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
     }
-  )
+  })
 
   const { isLoading: writeLoading, write: commentWrite } = useContractWrite({
     addressOrName: LENSHUB_PROXY,
@@ -217,7 +180,6 @@ const Fundraise: FC<Props> = ({ fund }) => {
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createCommentTypedData')
         const { id, typedData } = createCommentTypedData
         const {
           profileId,
@@ -260,8 +222,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
               variables: { request: { id, signature } }
             })
 
-            if ('reason' in result)
-              commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -339,10 +300,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
         options: { overrideSigNonce: userSigNonce },
         request: {
           profileId: currentUser?.id,
-          publicationId:
-            fund?.__typename === 'Mirror'
-              ? fund?.mirrorOf?.id
-              : fund?.pubId ?? fund?.id,
+          publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.pubId ?? fund?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             feeCollectModule: {
@@ -364,9 +322,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   }
 
   const goalAmount = fund?.metadata?.attributes[1]?.value
-  const percentageReached = revenue
-    ? (revenue / Number(goalAmount as string)) * 100
-    : 0
+  const percentageReached = revenue ? (revenue / Number(goalAmount as string)) * 100 : 0
   const cover = fund?.metadata?.cover?.original?.url
   if (loading) return <FundraiseShimmer />
 
@@ -376,9 +332,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
         className="h-40 rounded-t-xl border-b sm:h-52 dark:border-b-gray-700/80"
         style={{
           backgroundImage: `url(${
-            cover
-              ? imagekitURL(cover, 'attachment')
-              : `${STATIC_ASSETS}/patterns/2.svg`
+            cover ? imagekitURL(cover, 'attachment') : `${STATIC_ASSETS}/patterns/2.svg`
           })`,
           backgroundColor: '#8b5cf6',
           backgroundSize: cover ? 'cover' : '30%',
@@ -391,11 +345,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
           <div className="mr-0 space-y-1 sm:mr-3">
             <div className="text-xl font-bold">{fund?.metadata?.name}</div>
             <div className="text-sm leading-7 whitespace-pre-wrap break-words">
-              <Markup>
-                {fund?.metadata?.description
-                  ?.replace(/\n\s*\n/g, '\n\n')
-                  .trim()}
-              </Markup>
+              <Markup>{fund?.metadata?.description?.replace(/\n\s*\n/g, '\n\n').trim()}</Markup>
             </div>
             <div className="block sm:flex items-center !my-3 space-y-2 sm:space-y-0 sm:space-x-3">
               {fund?.stats?.totalAmountOfCollects > 0 && (
@@ -449,19 +399,9 @@ const Fundraise: FC<Props> = ({ fund }) => {
               />
               <Button
                 className="pr-3 pl-2 font-bold py-[0.3px]"
-                disabled={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <div />
@@ -492,19 +432,11 @@ const Fundraise: FC<Props> = ({ fund }) => {
                 Confirm
               </Button>
             </div>
-            <ReferralAlert
-              mirror={fund}
-              referralFee={collectModule?.referralFee}
-            />
+            <ReferralAlert mirror={fund} referralFee={collectModule?.referralFee} />
           </div>
           {currentUser ? (
             <div className="pt-3 sm:pt-0">
-              <Fund
-                fund={fund}
-                collectModule={collectModule}
-                revenue={revenue}
-                setRevenue={setRevenue}
-              />
+              <Fund fund={fund} collectModule={collectModule} revenue={revenue} setRevenue={setRevenue} />
             </div>
           ) : null}
         </div>
@@ -515,9 +447,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
             <Tooltip
               placement="top"
               content={
-                percentageReached >= 100
-                  ? 'Goal reached 🎉'
-                  : `${percentageReached.toFixed(0)}% Goal reached`
+                percentageReached >= 100 ? 'Goal reached 🎉' : `${percentageReached.toFixed(0)}% Goal reached`
               }
             >
               <div className="mt-5 w-full bg-gray-200 rounded-full dark:bg-gray-700 h-[13px]">
@@ -528,11 +458,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                   )}
                   style={{
                     width: `${
-                      percentageReached >= 100
-                        ? 100
-                        : percentageReached <= 2
-                        ? 2
-                        : percentageReached
+                      percentageReached >= 100 ? 100 : percentageReached <= 2 ? 2 : percentageReached
                     }%`
                   }}
                 />
@@ -542,9 +468,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
         )}
         <GridLayout className="!p-0 mt-5">
           <GridItemSix className="!mb-4 space-y-1 sm:mb-0">
-            <div className="text-sm font-bold text-gray-500">
-              {t('Funds raised')}
-            </div>
+            <div className="text-sm font-bold text-gray-500">{t('Funds raised')}</div>
             {revenueLoading ? (
               <div className="w-16 h-5 !mt-2 rounded-md shimmer" />
             ) : (
@@ -554,20 +478,17 @@ const Fundraise: FC<Props> = ({ fund }) => {
                     <div />
                   ) : (
                     <div>
-                      {commentFeed?.publications.items.map(
-                        (i: any, index: number) => (
-                          <CommentValue
-                            key={index}
-                            id={i.id}
-                            callback={(data: any) => {
-                              const value =
-                                data?.publicationRevenue?.revenue.total.value
-                              if (value) commentValue += Number(value)
-                              setRevenue(revenue + commentValue)
-                            }}
-                          />
-                        )
-                      )}
+                      {commentFeed?.publications.items.map((i: any, index: number) => (
+                        <CommentValue
+                          key={index}
+                          id={i.id}
+                          callback={(data: any) => {
+                            const value = data?.publicationRevenue?.revenue.total.value
+                            if (value) commentValue += Number(value)
+                            setRevenue(revenue + commentValue)
+                          }}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -583,9 +504,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                   </Tooltip>
                   <span className="space-x-1">
                     <span className="text-2xl font-bold">{revenue}</span>
-                    <span className="text-xs">
-                      {collectModule?.amount?.asset?.symbol}
-                    </span>
+                    <span className="text-xs">{collectModule?.amount?.asset?.symbol}</span>
                   </span>
                 </span>
               </>
@@ -593,9 +512,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
           </GridItemSix>
           {goalAmount && (
             <GridItemSix className="space-y-1">
-              <div className="text-sm font-bold text-gray-500">
-                {t('Funds goal')}
-              </div>
+              <div className="text-sm font-bold text-gray-500">{t('Funds goal')}</div>
               <span className="flex items-center space-x-1.5">
                 <Tooltip content={collectModule?.amount?.asset?.symbol}>
                   <img
@@ -608,9 +525,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                 </Tooltip>
                 <span className="space-x-1">
                   <span className="text-2xl font-bold">{goalAmount}</span>
-                  <span className="text-xs">
-                    {collectModule?.amount?.asset?.symbol}
-                  </span>
+                  <span className="text-xs">{collectModule?.amount?.asset?.symbol}</span>
                 </span>
               </span>
             </GridItemSix>

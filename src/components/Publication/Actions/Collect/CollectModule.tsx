@@ -32,7 +32,6 @@ import {
 import formatAddress from '@lib/formatAddress'
 import getTokenImage from '@lib/getTokenImage'
 import humanize from '@lib/humanize'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -50,12 +49,7 @@ import {
 } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
-import {
-  useAccount,
-  useBalance,
-  useContractWrite,
-  useSignTypedData
-} from 'wagmi'
+import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
 export const COLLECT_QUERY = gql`
   query CollectModule($request: PublicationQueryRequest!) {
@@ -84,10 +78,7 @@ export const COLLECT_QUERY = gql`
 `
 
 const CREATE_COLLECT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCollectTypedData(
-    $options: TypedDataOptions
-    $request: CreateCollectRequest!
-  ) {
+  mutation CreateCollectTypedData($options: TypedDataOptions, $request: CreateCollectRequest!) {
     createCollectTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -124,8 +115,10 @@ interface Props {
 
 const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [revenue, setRevenue] = useState<number>(0)
   const [showCollectorsModal, setShowCollectorsModal] = useState<boolean>(false)
   const [allowed, setAllowed] = useState<boolean>(true)
@@ -173,63 +166,41 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
       ) {
         setHoursAddressDisable(true)
       }
-      Logger.log(
-        '[Query]',
-        `Fetched collect module details Publication:${publication?.pubId ?? publication?.id}`
-      )
     }
   })
 
   const collectModule: any = data?.publication?.collectModule
-  const percentageCollected =
-    (count / parseInt(collectModule?.collectLimit)) * 100
+  const percentageCollected = (count / parseInt(collectModule?.collectLimit)) * 100
 
-  const { data: allowanceData, loading: allowanceLoading } = useQuery(
-    ALLOWANCE_SETTINGS_QUERY,
-    {
-      variables: {
-        request: {
-          currencies: collectModule?.amount?.asset?.address,
-          followModules: [],
-          collectModules: collectModule?.type,
-          referenceModules: []
-        }
-      },
-      skip: !collectModule?.amount?.asset?.address || !currentUser,
-      onCompleted(data) {
-        setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
-        Logger.log('[Query]', `Fetched allowance data`)
+  const { data: allowanceData, loading: allowanceLoading } = useQuery(ALLOWANCE_SETTINGS_QUERY, {
+    variables: {
+      request: {
+        currencies: collectModule?.amount?.asset?.address,
+        followModules: [],
+        collectModules: collectModule?.type,
+        referenceModules: []
       }
+    },
+    skip: !collectModule?.amount?.asset?.address || !currentUser,
+    onCompleted(data) {
+      setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
-  )
+  })
 
-  const { data: revenueData, loading: revenueLoading } = useQuery(
-    PUBLICATION_REVENUE_QUERY,
-    {
-      variables: {
-        request: {
-          publicationId:
+  const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
+    variables: {
+      request: {
+        publicationId:
           publication?.__typename === 'Mirror'
-              ? publication?.mirrorOf?.id
-              : publication?.pubId ?? publication?.id
-        }
-      },
-      skip: !publication?.id,
-      onCompleted() {
-        Logger.log(
-          '[Query]',
-          `Fetched collect revenue details Publication:${
-            publication?.pubId ?? publication?.id
-          }`
-        )
+            ? publication?.mirrorOf?.id
+            : publication?.pubId ?? publication?.id
       }
-    }
-  )
+    },
+    skip: !publication?.id
+  })
 
   useEffect(() => {
-    setRevenue(
-      parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0)
-    )
+    setRevenue(parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0))
   }, [revenueData])
 
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
@@ -240,27 +211,21 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   })
   let hasAmount = false
 
-  if (
-    balanceData &&
-    parseFloat(balanceData?.formatted) <
-      parseFloat(collectModule?.amount?.value)
-  ) {
+  if (balanceData && parseFloat(balanceData?.formatted) < parseFloat(collectModule?.amount?.value)) {
     hasAmount = false
   } else {
     hasAmount = true
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
+      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, { result: 'broadcast_error' })
+    }
+  })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -269,7 +234,6 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createCollectTypedData')
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
 
@@ -295,8 +259,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -325,15 +288,9 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
     <>
       {(collectModule?.type === 'LimitedFeeCollectModule' ||
         collectModule?.type === 'LimitedTimedFeeCollectModule') && (
-        <Tooltip
-          placement="top"
-          content={`${percentageCollected.toFixed(0)}% Collected`}
-        >
+        <Tooltip placement="top" content={`${percentageCollected.toFixed(0)}% Collected`}>
           <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700">
-            <div
-              className="h-2.5 bg-brand-500"
-              style={{ width: `${percentageCollected}%` }}
-            />
+            <div className="h-2.5 bg-brand-500" style={{ width: `${percentageCollected}%` }} />
           </div>
         </Tooltip>
       )}
@@ -342,10 +299,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
           <div className="pb-5">
             <ReferenceAlert
               handle={publication?.profile?.handle}
-              isSuperFollow={
-                publication?.profile?.followModule?.__typename ===
-                'FeeFollowModuleSettings'
-              }
+              isSuperFollow={publication?.profile?.followModule?.__typename === 'FeeFollowModuleSettings'}
               action="collect"
             />
           </div>
@@ -370,10 +324,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
               <Markup>{publication?.metadata?.description}</Markup>
             </div>
           )}
-          <ReferralAlert
-            mirror={publication}
-            referralFee={collectModule?.referralFee}
-          />
+          <ReferralAlert mirror={publication} referralFee={collectModule?.referralFee} />
         </div>
         {collectModule?.amount && (
           <div className="flex items-center py-2 space-x-1.5">
@@ -386,12 +337,8 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
               title={collectModule?.amount?.asset?.symbol}
             />
             <span className="space-x-1">
-              <span className="text-2xl font-bold">
-                {collectModule.amount.value}
-              </span>
-              <span className="text-xs">
-                {collectModule?.amount?.asset?.symbol}
-              </span>
+              <span className="text-2xl font-bold">{collectModule.amount.value}</span>
+              <span className="text-xs">{collectModule?.amount?.asset?.symbol}</span>
             </span>
           </div>
         )}
@@ -427,9 +374,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
             {collectModule?.collectLimit && (
               <div className="flex items-center space-x-2">
                 <PhotographIcon className="w-4 h-4 text-gray-500" />
-                <div className="font-bold">
-                  {parseInt(collectModule?.collectLimit) - count} available
-                </div>
+                <div className="font-bold">{parseInt(collectModule?.collectLimit) - count} available</div>
               </div>
             )}
             {collectModule?.referralFee ? (
@@ -457,9 +402,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                   />
                   <div className="flex items-baseline space-x-1.5">
                     <div className="font-bold">{revenue}</div>
-                    <div className="text-[10px]">
-                      {collectModule?.amount?.asset?.symbol}
-                    </div>
+                    <div className="text-[10px]">{collectModule?.amount?.asset?.symbol}</div>
                   </div>
                 </span>
               </div>
@@ -512,13 +455,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
         </div>
         {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
           <div className="mt-5">
-            <IndexStatus
-              txHash={
-                writeData?.hash
-                  ? writeData?.hash
-                  : broadcastData?.broadcast?.txHash
-              }
-            />
+            <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
           </div>
         ) : null}
         {currentUser ? (
@@ -530,17 +467,10 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                 className="mt-5"
                 onClick={createCollect}
                 disabled={
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ||
-                  hoursAddressDisable
+                  typedDataLoading || signLoading || writeLoading || broadcastLoading || hoursAddressDisable
                 }
                 icon={
-                  typedDataLoading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <CollectionIcon className="w-4 h-4" />
@@ -550,10 +480,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                 {t('Collect now')}
               </Button>
             ) : (
-              <WarningMessage
-                className="mt-5"
-                message={<Uniswap module={collectModule} />}
-              />
+              <WarningMessage className="mt-5" message={<Uniswap module={collectModule} />} />
             )
           ) : (
             <div className="mt-5">

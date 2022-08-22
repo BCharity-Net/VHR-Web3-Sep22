@@ -2,9 +2,8 @@ import { gql, useQuery } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import { Card, CardBody } from '@components/UI/Card'
 import { PageLoading } from '@components/UI/PageLoading'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { PhotographIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import clsx from 'clsx'
 import { NextPage } from 'next'
 import React, { FC, ReactNode, useState } from 'react'
@@ -25,7 +24,6 @@ const PROFILE_SETTINGS_QUERY = gql`
       id
       name
       bio
-      metadata
       attributes {
         key
         value
@@ -55,13 +53,12 @@ const PROFILE_SETTINGS_QUERY = gql`
 
 const ProfileSettings: NextPage = () => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [settingsType, setSettingsType] = useState<'NFT' | 'AVATAR'>('AVATAR')
   const { data, loading, error } = useQuery(PROFILE_SETTINGS_QUERY, {
     variables: { request: { profileId: currentUser?.id } },
     skip: !currentUser?.id,
     onCompleted(data) {
-      Logger.log('[Query]', `Fetched profile settings`)
       setSettingsType(data?.profile?.picture?.uri ? 'NFT' : 'AVATAR')
     }
   })
@@ -86,8 +83,7 @@ const ProfileSettings: NextPage = () => {
       }}
       className={clsx(
         {
-          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold':
-            settingsType === type
+          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold': settingsType === type
         },
         'flex items-center space-x-2 rounded-lg px-4 sm:px-3 py-2 sm:py-1 text-brand hover:bg-brand-100 dark:hover:bg-opacity-20 hover:bg-opacity-100'
       )}
@@ -99,7 +95,7 @@ const ProfileSettings: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Profile settings • ${APP_NAME}`} />
+      <Seo title={`Profile settings • ${APP_NAME}`} />
       <GridItemFour>
         <Sidebar />
       </GridItemFour>
@@ -113,17 +109,9 @@ const ProfileSettings: NextPage = () => {
                 type="AVATAR"
                 name={t('Upload avatar')}
               />
-              <TypeButton
-                icon={<PhotographIcon className="w-5 h-5" />}
-                type="NFT"
-                name={t('NFT Avatar')}
-              />
+              <TypeButton icon={<PhotographIcon className="w-5 h-5" />} type="NFT" name={t('NFT Avatar')} />
             </div>
-            {settingsType === 'NFT' ? (
-              <NFTPicture profile={profile} />
-            ) : (
-              <Picture profile={profile} />
-            )}
+            {settingsType === 'NFT' ? <NFTPicture profile={profile} /> : <Picture profile={profile} />}
           </CardBody>
         </Card>
       </GridItemEight>

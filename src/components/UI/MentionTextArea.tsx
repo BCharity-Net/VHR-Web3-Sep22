@@ -6,10 +6,10 @@ import { MediaSet, NftImage, Profile } from '@generated/types'
 import { BadgeCheckIcon } from '@heroicons/react/solid'
 import imagekitURL from '@lib/imagekitURL'
 import isVerified from '@lib/isVerified'
-import Logger from '@lib/logger'
 import clsx from 'clsx'
-import { Dispatch, FC, SetStateAction } from 'react'
+import { Dispatch, FC } from 'react'
 import { Mention, MentionsInput } from 'react-mentions'
+import { usePublicationStore } from 'src/store/publication'
 
 interface UserProps {
   suggestion: UserSuggestion
@@ -18,10 +18,7 @@ interface UserProps {
 
 const User: FC<UserProps> = ({ suggestion, focused }) => (
   <div
-    className={clsx(
-      { 'dropdown-active': focused },
-      'flex items-center space-x-2 m-1.5 px-3 py-1 rounded-xl'
-    )}
+    className={clsx({ 'dropdown-active': focused }, 'flex items-center space-x-2 m-1.5 px-3 py-1 rounded-xl')}
   >
     <img
       className="w-7 h-7 rounded-full"
@@ -33,9 +30,7 @@ const User: FC<UserProps> = ({ suggestion, focused }) => (
     <div className="flex flex-col truncate">
       <div className="flex gap-1 items-center">
         <div className="text-sm truncate">{suggestion.name}</div>
-        {isVerified(suggestion.uid) && (
-          <BadgeCheckIcon className="w-3 h-3 text-brand" />
-        )}
+        {isVerified(suggestion.uid) && <BadgeCheckIcon className="w-3 h-3 text-brand" />}
       </div>
       <Slug className="text-xs" slug={suggestion.id} prefix="@" />
     </div>
@@ -43,28 +38,15 @@ const User: FC<UserProps> = ({ suggestion, focused }) => (
 )
 
 interface Props {
-  publication: string
-  setPublication: Dispatch<SetStateAction<string>>
   error: string
   setError: Dispatch<string>
   placeholder?: string
 }
 
-export const MentionTextArea: FC<Props> = ({
-  publication,
-  setPublication,
-  error,
-  setError,
-  placeholder = ''
-}) => {
-  const [searchUsers] = useLazyQuery(SEARCH_USERS_QUERY, {
-    onCompleted(data) {
-      Logger.log(
-        '[Lazy Query]',
-        `Fetched ${data?.search?.items?.length} user mention result`
-      )
-    }
-  })
+export const MentionTextArea: FC<Props> = ({ error, setError, placeholder = '' }) => {
+  const publicationContent = usePublicationStore((state) => state.publicationContent)
+  const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
+  const [searchUsers] = useLazyQuery(SEARCH_USERS_QUERY)
 
   const fetchUsers = (query: string, callback: any) => {
     if (!query) return
@@ -73,18 +55,16 @@ export const MentionTextArea: FC<Props> = ({
       variables: { request: { type: 'PROFILE', query, limit: 5 } }
     })
       .then(({ data }) =>
-        data?.search?.items?.map(
-          (user: Profile & { picture: MediaSet & NftImage }) => ({
-            uid: user.id,
-            id: user.handle,
-            display: user.handle,
-            name: user?.name ?? user?.handle,
-            picture:
-              user?.picture?.original?.url ??
-              user?.picture?.uri ??
-              `https://avatar.tobi.sh/${user?.id}_${user?.handle}.png`
-          })
-        )
+        data?.search?.items?.map((user: Profile & { picture: MediaSet & NftImage }) => ({
+          uid: user.id,
+          id: user.handle,
+          display: user.handle,
+          name: user?.name ?? user?.handle,
+          picture:
+            user?.picture?.original?.url ??
+            user?.picture?.uri ??
+            `https://avatar.tobi.sh/${user?.id}_${user?.handle}.png`
+        }))
       )
       .then(callback)
   }
@@ -93,10 +73,10 @@ export const MentionTextArea: FC<Props> = ({
     <div className="mb-2">
       <MentionsInput
         className="mention-input"
-        value={publication}
+        value={publicationContent}
         placeholder={placeholder}
         onChange={(e) => {
-          setPublication(e.target.value)
+          setPublicationContent(e.target.value)
           setError('')
         }}
       >
@@ -105,19 +85,13 @@ export const MentionTextArea: FC<Props> = ({
           displayTransform={(login) => `@${login} `}
           markup="@__id__ "
           // @ts-ignore
-          renderSuggestion={(
-            suggestion: UserSuggestion,
-            search,
-            highlightedDisplay,
-            index,
-            focused
-          ) => <User suggestion={suggestion} focused={focused} />}
+          renderSuggestion={(suggestion: UserSuggestion, search, highlightedDisplay, index, focused) => (
+            <User suggestion={suggestion} focused={focused} />
+          )}
           data={fetchUsers}
         />
       </MentionsInput>
-      {error && (
-        <div className="mt-1 text-sm font-bold text-red-500">{error}</div>
-      )}
+      {error && <div className="mt-1 text-sm font-bold text-red-500">{error}</div>}
     </div>
   )
 }

@@ -35,6 +35,9 @@ tsconfig.tsbuildinfo
 # Sentry
 .sentryclirc
 
+# IDE settings
+.idea/
+
 # PWA
 public/sw.js
 public/sw.js.map

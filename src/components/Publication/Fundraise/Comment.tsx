@@ -4,11 +4,7 @@ import ReferralAlert from '@components/Shared/ReferralAlert'
 import { Card } from '@components/UI/Card'
 import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import {
-  CashIcon,
-  CurrencyDollarIcon,
-  UsersIcon
-} from '@heroicons/react/outline'
+import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outline'
 import Logger from '@lib/logger'
 import React, { FC, ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,9 +20,7 @@ interface BadgeProps {
 
 const Badge: FC<BadgeProps> = ({ title, value }) => (
   <div className="flex bg-gray-200 rounded-full border border-gray-300 dark:bg-gray-800 dark:border-gray-700 text-[12px] w-fit">
-    <div className="px-3 bg-gray-300 rounded-full dark:bg-gray-700 py-[0.3px]">
-      {title}
-    </div>
+    <div className="px-3 bg-gray-300 rounded-full dark:bg-gray-700 py-[0.3px]">{title}</div>
     <div className="pr-3 pl-2 font-bold py-[0.3px]">{value}</div>
   </div>
 )
@@ -39,14 +33,11 @@ const FundraiseComment: FC<Props> = ({ fund }) => {
   const { t } = useTranslation('common')
   const [showFundersModal, setShowFundersModal] = useState<boolean>(false)
   const [revenue, setRevenue] = useState<number>(0)
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { data } = useQuery(COLLECT_QUERY, {
     variables: { request: { publicationId: fund?.pubId ?? fund?.id } },
     onCompleted() {
-      Logger.log(
-        '[Query]',
-        `Fetched collect module details Fundraise:${fund?.pubId ?? fund?.id}`
-      )
+      Logger.log('[Query]', `Fetched collect module details Fundraise:${fund?.pubId ?? fund?.id}`)
     }
   })
 
@@ -99,19 +90,11 @@ const FundraiseComment: FC<Props> = ({ fund }) => {
                 value={`${collectModule?.amount?.value} ${collectModule?.amount?.asset?.symbol}`}
               />
             </div>
-            <ReferralAlert
-              mirror={fund}
-              referralFee={collectModule?.referralFee}
-            />
+            <ReferralAlert mirror={fund} referralFee={collectModule?.referralFee} />
           </div>
           {currentUser ? (
             <div className="pt-3 sm:pt-0">
-              <Fund
-                fund={fund}
-                collectModule={collectModule}
-                revenue={revenue}
-                setRevenue={setRevenue}
-              />
+              <Fund fund={fund} collectModule={collectModule} revenue={revenue} setRevenue={setRevenue} />
             </div>
           ) : null}
         </div>

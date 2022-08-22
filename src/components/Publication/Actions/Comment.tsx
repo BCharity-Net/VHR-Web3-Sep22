@@ -14,7 +14,9 @@ interface Props {
 }
 
 const Comment: FC<Props> = ({ publication }) => {
-  const { setParentPub, setShowNewPostModal } = usePublicationStore()
+  const setParentPub = usePublicationStore((state) => state.setParentPub)
+  const setShowNewPostModal = usePublicationStore((state) => state.setShowNewPostModal)
+
   const count =
     publication?.__typename === 'Mirror'
       ? publication?.mirrorOf?.stats?.totalAmountOfComments
@@ -31,15 +33,11 @@ const Comment: FC<Props> = ({ publication }) => {
     >
       <div className="flex items-center space-x-1 text-blue-500 hover:text-blue-400">
         <div className="p-1.5 rounded-full hover:bg-blue-300 hover:bg-opacity-20">
-          <Tooltip
-            placement="top"
-            content={count > 0 ? `${humanize(count)} Comments` : 'Comment'}
-            withDelay
-          >
-            <ChatAlt2Icon className="w-[18px]" />
+          <Tooltip placement="top" content={count > 0 ? `${humanize(count)} Comments` : 'Comment'} withDelay>
+            <ChatAlt2Icon className="w-[15px] sm:w-[18px]" />
           </Tooltip>
         </div>
-        {count > 0 && <div className="text-xs">{nFormatter(count)}</div>}
+        {count > 0 && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
       </div>
     </motion.button>
   )

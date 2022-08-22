@@ -6,7 +6,7 @@ import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { PlusIcon } from '@heroicons/react/outline'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import React, { ChangeEvent, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAccount } from 'wagmi'
@@ -36,9 +36,7 @@ const Create: FC<Props> = ({ isModal = false }) => {
   const [avatar, setAvatar] = useState<string>()
   const [uploading, setUploading] = useState<boolean>(false)
   const { address } = useAccount()
-  const [createProfile, { data, loading }] = useMutation(
-    CREATE_PROFILE_MUTATION
-  )
+  const [createProfile, { data, loading }] = useMutation(CREATE_PROFILE_MUTATION)
 
   const newUserSchema = object({
     handle: string()
@@ -57,7 +55,7 @@ const Create: FC<Props> = ({ isModal = false }) => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         setAvatar(attachment[0].item)
       }
@@ -67,10 +65,7 @@ const Create: FC<Props> = ({ isModal = false }) => {
   }
 
   return data?.createProfile?.txHash ? (
-    <Pending
-      handle={form.getValues('handle')}
-      txHash={data?.createProfile?.txHash}
-    />
+    <Pending handle={form.getValues('handle')} txHash={data?.createProfile?.txHash} />
   ) : (
     <Form
       form={form}
@@ -81,9 +76,7 @@ const Create: FC<Props> = ({ isModal = false }) => {
           variables: {
             request: {
               handle: username,
-              profilePictureUri: avatar
-                ? avatar
-                : `https://avatar.tobi.sh/${address}_${username}.png`
+              profilePictureUri: avatar ? avatar : `https://avatar.tobi.sh/${address}_${username}.png`
             }
           }
         })
@@ -101,44 +94,22 @@ const Create: FC<Props> = ({ isModal = false }) => {
       )}
       {isModal && (
         <div className="mb-2 space-y-4">
-          <img
-            className="w-10 h-10"
-            height={40}
-            width={40}
-            src="/logo.svg"
-            alt="Logo"
-          />
+          <img className="w-10 h-10" height={40} width={40} src="/logo.svg" alt="Logo" />
           <div className="text-xl font-bold">{t('Signup Bcharity')}</div>
         </div>
       )}
-      <Input
-        label={t('Handle')}
-        type="text"
-        placeholder="gavin"
-        {...form.register('handle')}
-      />
+      <Input label={t('Handle')} type="text" placeholder="gavin" {...form.register('handle')} />
       <div className="space-y-1.5">
         <div className="label">{t('Avatar')}</div>
         <div className="space-y-3">
           {avatar && (
             <div>
-              <img
-                className="w-60 h-60 rounded-lg"
-                height={240}
-                width={240}
-                src={avatar}
-                alt={avatar}
-              />
+              <img className="w-60 h-60 rounded-lg" height={240} width={240} src={avatar} alt={avatar} />
             </div>
           )}
           <div>
             <div className="flex items-center space-x-3">
-              <ChooseFile
-                id="file"
-                onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                  handleUpload(evt)
-                }
-              />
+              <ChooseFile id="file" onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)} />
               {uploading && <Spinner size="sm" />}
             </div>
           </div>
@@ -148,9 +119,7 @@ const Create: FC<Props> = ({ isModal = false }) => {
         className="ml-auto"
         type="submit"
         disabled={loading}
-        icon={
-          loading ? <Spinner size="xs" /> : <PlusIcon className="w-4 h-4" />
-        }
+        icon={loading ? <Spinner size="xs" /> : <PlusIcon className="w-4 h-4" />}
       >
         {t('Signup')}
       </Button>

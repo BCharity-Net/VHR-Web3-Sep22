@@ -6,7 +6,6 @@ import useOnClickOutside from '@components/utils/hooks/useOnClickOutside'
 import { Profile } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
 import { SearchIcon, XIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -43,14 +42,7 @@ const Search: FC<Props> = ({ hideDrodown = false }) => {
   useOnClickOutside(dropdownRef, () => setSearchText(''))
 
   const [searchUsers, { data: searchUsersData, loading: searchUsersLoading }] =
-    useLazyQuery(SEARCH_USERS_QUERY, {
-      onCompleted(data) {
-        Logger.log(
-          '[Lazy Query]',
-          `Fetched ${data?.search?.items?.length} search result for ${searchText}`
-        )
-      }
-    })
+    useLazyQuery(SEARCH_USERS_QUERY)
 
   const handleSearch = (evt: ChangeEvent<HTMLInputElement>) => {
     const keyword = evt.target.value
@@ -84,10 +76,7 @@ const Search: FC<Props> = ({ hideDrodown = false }) => {
             iconLeft={<SearchIcon />}
             iconRight={
               <XIcon
-                className={clsx(
-                  'cursor-pointer',
-                  searchText ? 'visible' : 'invisible'
-                )}
+                className={clsx('cursor-pointer', searchText ? 'visible' : 'invisible')}
                 onClick={() => {
                   setSearchText('')
                   Mixpanel.track(SEARCH.CLEAR)
@@ -99,10 +88,7 @@ const Search: FC<Props> = ({ hideDrodown = false }) => {
         </form>
       </div>
       {pathname !== '/search' && !hideDrodown && searchText.length > 0 && (
-        <div
-          className="flex absolute flex-col mt-2 w-full sm:max-w-md"
-          ref={dropdownRef}
-        >
+        <div className="flex absolute flex-col mt-2 w-full sm:max-w-md" ref={dropdownRef}>
           <Card className="overflow-y-auto py-2 max-h-[80vh]">
             {searchUsersLoading ? (
               <div className="py-2 px-4 space-y-2 text-sm font-bold text-center">
@@ -112,15 +98,9 @@ const Search: FC<Props> = ({ hideDrodown = false }) => {
             ) : (
               <>
                 {searchUsersData?.search?.items?.map((profile: Profile) => (
-                  <div
-                    key={profile?.handle}
-                    className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
+                  <div key={profile?.handle} className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-800">
                     <Link href={`/u/${profile?.handle}`}>
-                      <a
-                        href={`/u/${profile?.handle}`}
-                        onClick={() => setSearchText('')}
-                      >
+                      <a href={`/u/${profile?.handle}`} onClick={() => setSearchText('')}>
                         <UserProfile profile={profile} />
                       </a>
                     </Link>

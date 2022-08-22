@@ -17,7 +17,7 @@ const NOTIFICATION_COUNT_QUERY = gql`
 `
 
 const NotificationIcon: FC = () => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [showBadge, setShowBadge] = useState<boolean>(false)
   const { data } = useQuery(NOTIFICATION_COUNT_QUERY, {
     variables: { request: { profileId: currentUser?.id } },
@@ -38,10 +38,7 @@ const NotificationIcon: FC = () => {
         className="flex items-start"
         href="/notifications"
         onClick={() => {
-          localStorage.setItem(
-            'notificationCount',
-            data?.notifications?.pageInfo?.totalCount.toString()
-          )
+          localStorage.setItem('notificationCount', data?.notifications?.pageInfo?.totalCount.toString())
           setShowBadge(false)
           Mixpanel.track(NOTIFICATION.OPEN)
         }}

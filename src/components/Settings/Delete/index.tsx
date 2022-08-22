@@ -4,24 +4,21 @@ import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import UserProfile from '@components/Shared/UserProfile'
 import { Button } from '@components/UI/Button'
 import { Card, CardBody } from '@components/UI/Card'
+import { Modal } from '@components/UI/Modal'
 import { Spinner } from '@components/UI/Spinner'
-import SEO from '@components/utils/SEO'
+import { WarningMessage } from '@components/UI/WarningMessage'
+import Seo from '@components/utils/Seo'
 import { CreateBurnProfileBroadcastItemResult } from '@generated/types'
 import { TrashIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { ExclamationIcon } from '@heroicons/react/solid'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import Cookies from 'js-cookie'
-import React, { FC } from 'react'
+import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  LENSHUB_PROXY
-} from 'src/constants'
+import { APP_NAME, ERROR_MESSAGE, LENSHUB_PROXY, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
@@ -30,10 +27,7 @@ import { useContractWrite, useDisconnect, useSignTypedData } from 'wagmi'
 import Sidebar from '../Sidebar'
 
 const CREATE_BURN_PROFILE_TYPED_DATA_MUTATION = gql`
-  mutation CreateBurnProfileTypedData(
-    $options: TypedDataOptions
-    $request: BurnProfileRequest!
-  ) {
+  mutation CreateBurnProfileTypedData($options: TypedDataOptions, $request: BurnProfileRequest!) {
     createBurnProfileTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -61,9 +55,15 @@ const CREATE_BURN_PROFILE_TYPED_DATA_MUTATION = gql`
 `
 
 const DeleteSettings: FC = () => {
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, setIsAuthenticated, currentUser, setCurrentUser } =
-    useAppPersistStore()
+  const { t } = useTranslation('common')
+  const [showWarningModal, setShowWarningModal] = useState<boolean>(false)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const setCurrentUser = useAppPersistStore((state) => state.setCurrentUser)
   const { disconnect } = useDisconnect()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
@@ -95,14 +95,14 @@ const DeleteSettings: FC = () => {
     }
   })
 
-  const [createBurnProfileTypedData, { loading: typedDataLoading }] =
-    useMutation(CREATE_BURN_PROFILE_TYPED_DATA_MUTATION, {
+  const [createBurnProfileTypedData, { loading: typedDataLoading }] = useMutation(
+    CREATE_BURN_PROFILE_TYPED_DATA_MUTATION,
+    {
       async onCompleted({
         createBurnProfileTypedData
       }: {
         createBurnProfileTypedData: CreateBurnProfileBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createBurnProfileTypedData')
         const { typedData } = createBurnProfileTypedData
         const { deadline } = typedData?.value
 
@@ -118,17 +118,16 @@ const DeleteSettings: FC = () => {
           const sig = { v, r, s, deadline }
 
           write?.({ recklesslySetUnpreparedArgs: [tokenId, sig] })
-        } catch (error) {
-          Logger.warn('[Sign Error]', error)
-        }
+        } catch (error) {}
       },
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
-    })
+    }
+  )
 
   const handleDelete = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) return toast.error(SIGN_WALLET)
 
     createBurnProfileTypedData({
       variables: {
@@ -137,13 +136,14 @@ const DeleteSettings: FC = () => {
       }
     })
   }
-  const { t } = useTranslation('common')
+
+  const isDeleting = typedDataLoading || signLoading || writeLoading
 
   if (!currentUser) return <Custom404 />
 
   return (
     <GridLayout>
-      <SEO title={`Delete Profile • ${APP_NAME}`} />
+      <Seo title={`Delete Profile • ${APP_NAME}`} />
       <GridItemFour>
         <Sidebar />
       </GridItemFour>
@@ -151,9 +151,7 @@ const DeleteSettings: FC = () => {
         <Card>
           <CardBody className="space-y-5">
             <UserProfile profile={currentUser} />
-            <div className="text-lg font-bold text-red-500">
-              {t('Deactivate account')}
-            </div>
+            <div className="text-lg font-bold text-red-500">{t('Deactivate account')}</div>
             <p>{t('Delete info')}</p>
             <div className="text-lg font-bold">{t('What else')}</div>
             <div className="text-sm text-gray-500 divide-y dark:divide-gray-700">
@@ -163,19 +161,39 @@ const DeleteSettings: FC = () => {
             </div>
             <Button
               variant="danger"
-              icon={
-                typedDataLoading || signLoading || writeLoading ? (
-                  <Spinner variant="danger" size="xs" />
-                ) : (
-                  <TrashIcon className="w-5 h-5" />
-                )
-              }
-              onClick={handleDelete}
+              icon={isDeleting ? <Spinner variant="danger" size="xs" /> : <TrashIcon className="w-5 h-5" />}
+              disabled={isDeleting}
+              onClick={() => setShowWarningModal(true)}
             >
-              {typedDataLoading || signLoading || writeLoading
-                ? t('Delete load')
-                : t('Delete your account')}
+              {isDeleting ? t('Delete load') : t('Delete your account')}
             </Button>
+            <Modal
+              title="Danger Zone"
+              icon={<ExclamationIcon className="w-5 h-5 text-red-500" />}
+              show={showWarningModal}
+              onClose={() => setShowWarningModal(false)}
+            >
+              <div className="p-5 space-y-3">
+                <WarningMessage
+                  title="Are you sure?"
+                  message={
+                    <div className="leading-6">
+                      Confirm that you have read all consequences and want to delete your account anyway
+                    </div>
+                  }
+                />
+                <Button
+                  variant="danger"
+                  icon={<TrashIcon className="w-5 h-5" />}
+                  onClick={() => {
+                    setShowWarningModal(false)
+                    handleDelete()
+                  }}
+                >
+                  Yes, delete my account
+                </Button>
+              </div>
+            </Modal>
           </CardBody>
         </Card>
       </GridItemEight>

@@ -6,11 +6,12 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { Nft, PaginatedResultInfo, Profile } from '@generated/types'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { CHAIN_ID, IS_MAINNET } from 'src/constants'
+import { PAGINATION } from 'src/tracking'
 import { chain } from 'wagmi'
 
 const PROFILE_NFT_FEED_QUERY = gql`
@@ -55,7 +56,6 @@ const NFTFeed: FC<Props> = ({ profile }) => {
     onCompleted(data) {
       setPageInfo(data?.nfts?.pageInfo)
       setNfts(data?.nfts?.items)
-      Logger.log('[Query]', `Fetched first 10 nfts Profile:${profile?.id}`)
     }
   })
 
@@ -64,10 +64,7 @@ const NFTFeed: FC<Props> = ({ profile }) => {
       const { data } = await fetchMore({
         variables: {
           request: {
-            chainIds: [
-              CHAIN_ID,
-              IS_MAINNET ? chain.mainnet.id : chain.kovan.id
-            ],
+            chainIds: [CHAIN_ID, IS_MAINNET ? chain.mainnet.id : chain.kovan.id],
             ownerAddress: profile?.ownedBy,
             cursor: pageInfo?.next,
             limit: 10
@@ -76,10 +73,7 @@ const NFTFeed: FC<Props> = ({ profile }) => {
       })
       setPageInfo(data?.nfts?.pageInfo)
       setNfts([...nfts, ...data?.nfts?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 nfts Profile:${profile?.id} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.NFT_FEED, { pageInfo })
     }
   })
 
@@ -102,10 +96,7 @@ const NFTFeed: FC<Props> = ({ profile }) => {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {nfts?.map((nft: Nft) => (
-              <SingleNFT
-                key={`${nft?.chainId}_${nft?.contractAddress}_${nft?.tokenId}`}
-                nft={nft}
-              />
+              <SingleNFT key={`${nft?.chainId}_${nft?.contractAddress}_${nft?.tokenId}`} nft={nft} />
             ))}
           </div>
           {pageInfo?.next && nfts.length !== pageInfo?.totalCount && (

@@ -4,7 +4,6 @@ import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { CreateUnfollowBroadcastItemResult, Profile } from '@generated/types'
 import { UserRemoveIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -48,19 +47,11 @@ const CREATE_UNFOLLOW_TYPED_DATA_MUTATION = gql`
 interface Props {
   profile: Profile
   setFollowing: Dispatch<boolean>
-  followersCount?: number
-  setFollowersCount?: Dispatch<number>
   showText?: boolean
 }
 
-const Unfollow: FC<Props> = ({
-  profile,
-  showText = false,
-  setFollowing,
-  followersCount,
-  setFollowersCount
-}) => {
-  const { isAuthenticated } = useAppPersistStore()
+const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [writeLoading, setWriteLoading] = useState<boolean>(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
@@ -78,7 +69,6 @@ const Unfollow: FC<Props> = ({
       }: {
         createUnfollowTypedData: CreateUnfollowBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createUnfollowTypedData')
         const { typedData } = createUnfollowTypedData
         const { deadline } = typedData?.value
 
@@ -101,9 +91,6 @@ const Unfollow: FC<Props> = ({
 
             const tx = await followNftContract.burnWithSig(tokenId, sig)
             if (tx) {
-              if (followersCount && setFollowersCount) {
-                setFollowersCount(followersCount - 1)
-              }
               setFollowing(false)
             }
             toast.success('Unfollowed successfully!')
@@ -113,9 +100,7 @@ const Unfollow: FC<Props> = ({
           } finally {
             setWriteLoading(false)
           }
-        } catch (error) {
-          Logger.warn('[Sign Error]', error)
-        }
+        } catch (error) {}
       },
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)

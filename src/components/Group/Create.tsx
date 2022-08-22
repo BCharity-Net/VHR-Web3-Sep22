@@ -11,28 +11,20 @@ import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import { NextPage } from 'next'
 import React, { ChangeEvent, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { APP_NAME, CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { GROUP } from 'src/tracking'
@@ -42,8 +34,10 @@ import { object, string } from 'zod'
 
 const Create: NextPage = () => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [avatar, setAvatar] = useState<string>()
   const [avatarType, setAvatarType] = useState<string>()
   const [isUploading, setIsUploading] = useState<boolean>(false)
@@ -58,9 +52,7 @@ const Create: NextPage = () => {
     name: string()
       .min(2, { message: 'Name should be atleast 2 characters' })
       .max(31, { message: 'Name should be less than 32 characters' }),
-    description: string()
-      .max(260, { message: 'Description should not exceed 260 characters' })
-      .nullable()
+    description: string().max(260, { message: 'Description should not exceed 260 characters' }).nullable()
   })
 
   const onCompleted = () => {
@@ -92,7 +84,7 @@ const Create: NextPage = () => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         setAvatar(attachment[0].item)
         setAvatarType(attachment[0].type)
@@ -102,79 +94,68 @@ const Create: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(GROUP.NEW, { result: 'broadcast_error' })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(
-    CREATE_POST_TYPED_DATA_MUTATION,
-    {
-      async onCompleted({
-        createPostTypedData
-      }: {
-        createPostTypedData: CreatePostBroadcastItemResult
-      }) {
-        Logger.log('[Mutation]', 'Generated createPostTypedData')
-        const { id, typedData } = createPostTypedData
-        const {
+      Mixpanel.track(GROUP.NEW, { result: 'broadcast_error' })
+    }
+  })
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
+    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+      const { id, typedData } = createPostTypedData
+      const {
+        profileId,
+        contentURI,
+        collectModule,
+        collectModuleInitData,
+        referenceModule,
+        referenceModuleInitData,
+        deadline
+      } = typedData?.value
+
+      try {
+        const signature = await signTypedDataAsync({
+          domain: omit(typedData?.domain, '__typename'),
+          types: omit(typedData?.types, '__typename'),
+          value: omit(typedData?.value, '__typename')
+        })
+        setUserSigNonce(userSigNonce + 1)
+        const { v, r, s } = splitSignature(signature)
+        const sig = { v, r, s, deadline }
+        const inputStruct = {
           profileId,
           contentURI,
           collectModule,
           collectModuleInitData,
           referenceModule,
           referenceModuleInitData,
-          deadline
-        } = typedData?.value
+          sig
+        }
+        if (RELAY_ON) {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ variables: { request: { id, signature } } })
 
-        try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { v, r, s } = splitSignature(signature)
-          const sig = { v, r, s, deadline }
-          const inputStruct = {
-            profileId,
-            contentURI,
-            collectModule,
-            collectModuleInitData,
-            referenceModule,
-            referenceModuleInitData,
-            sig
-          }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
-
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          } else {
-            write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } catch (error) {}
-      },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        } else {
+          write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
+      } catch (error) {}
+    },
+    onError(error) {
+      toast.error(error.message ?? ERROR_MESSAGE)
     }
-  )
+  })
 
   const createGroup = async (name: string, description: string | null) => {
     if (!isAuthenticated) return toast.error(CONNECT_WALLET)
 
     setIsUploading(true)
     const id = await uploadToArweave({
-      version: '1.0.0',
+      version: '2.0.0',
       metadata_id: uuid(),
       description: description,
       content: description,
@@ -191,6 +172,7 @@ const Create: NextPage = () => {
         }
       ],
       media: [],
+      locale: 'en',
       createdOn: new Date(),
       appId: `${APP_NAME} Group`
     }).finally(() => setIsUploading(false))
@@ -218,20 +200,15 @@ const Create: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Create Group • ${APP_NAME}`} />
+      <Seo title={`Create Group • ${APP_NAME}`} />
       <GridItemFour>
-        <SettingsHelper
-          heading={t('Create group')}
-          description={t('Create group description')}
-        />
+        <SettingsHelper heading={t('Create group')} description={t('Create group description')} />
       </GridItemFour>
       <GridItemEight>
         <Card>
           {data?.hash ?? broadcastData?.broadcast?.txHash ? (
             <Pending
-              txHash={
-                data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-              }
+              txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
               indexing={t('Group creation load')}
               indexed={t('Group created successfully')}
               type="group"
@@ -245,12 +222,7 @@ const Create: NextPage = () => {
                 createGroup(name, description)
               }}
             >
-              <Input
-                label={t('Group name')}
-                type="text"
-                placeholder="minecraft"
-                {...form.register('name')}
-              />
+              <Input label={t('Group name')} type="text" placeholder="minecraft" {...form.register('name')} />
               <TextArea
                 label={t('Group description')}
                 placeholder={t('Group description placeholder')}
@@ -271,9 +243,7 @@ const Create: NextPage = () => {
                   <div className="flex items-center space-x-3">
                     <ChooseFile
                       id="avatar"
-                      onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                        handleUpload(evt)
-                      }
+                      onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)}
                     />
                     {uploading && <Spinner size="sm" />}
                   </div>
@@ -282,19 +252,9 @@ const Create: NextPage = () => {
               <Button
                 className="ml-auto"
                 type="submit"
-                disabled={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <PlusIcon className="w-4 h-4" />

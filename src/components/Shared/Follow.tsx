@@ -5,29 +5,19 @@ import { Spinner } from '@components/UI/Spinner'
 import { CreateFollowBroadcastItemResult, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { UserAddIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import { Dispatch, FC } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
 const CREATE_FOLLOW_TYPED_DATA_MUTATION = gql`
-  mutation CreateFollowTypedData(
-    $options: TypedDataOptions
-    $request: FollowRequest!
-  ) {
+  mutation CreateFollowTypedData($options: TypedDataOptions, $request: FollowRequest!) {
     createFollowTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -58,21 +48,15 @@ const CREATE_FOLLOW_TYPED_DATA_MUTATION = gql`
 interface Props {
   profile: Profile
   setFollowing: Dispatch<boolean>
-  followersCount?: number
-  setFollowersCount?: Dispatch<number>
   showText?: boolean
 }
 
-const Follow: FC<Props> = ({
-  profile,
-  showText = false,
-  setFollowing,
-  followersCount,
-  setFollowersCount
-}) => {
+const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
@@ -81,9 +65,6 @@ const Follow: FC<Props> = ({
   })
 
   const onCompleted = () => {
-    if (followersCount && setFollowersCount) {
-      setFollowersCount(followersCount + 1)
-    }
     setFollowing(true)
     toast.success('Followed successfully!')
     Mixpanel.track(PROFILE.FOLLOW, { result: 'success' })
@@ -102,19 +83,15 @@ const Follow: FC<Props> = ({
     }
   })
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(
-    BROADCAST_MUTATION,
-    {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(PROFILE.FOLLOW, { result: 'broadcast_error' })
+  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
+      Mixpanel.track(PROFILE.FOLLOW, { result: 'broadcast_error' })
     }
-  )
+  })
   const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
@@ -123,7 +100,6 @@ const Follow: FC<Props> = ({
       }: {
         createFollowTypedData: CreateFollowBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createFollowTypedData')
         const { id, typedData } = createFollowTypedData
         const { deadline } = typedData?.value
 
@@ -148,8 +124,7 @@ const Follow: FC<Props> = ({
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -171,8 +146,7 @@ const Follow: FC<Props> = ({
           follow: {
             profile: profile?.id,
             followModule:
-              profile?.followModule?.__typename ===
-              'ProfileFollowModuleSettings'
+              profile?.followModule?.__typename === 'ProfileFollowModuleSettings'
                 ? { profileFollowModule: { profileId: currentUser?.id } }
                 : null
           }
@@ -186,9 +160,7 @@ const Follow: FC<Props> = ({
       className="text-sm !px-3 !py-1.5"
       outline
       onClick={createFollow}
-      disabled={
-        typedDataLoading || signLoading || writeLoading || broadcastLoading
-      }
+      disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
       variant="success"
       aria-label={t('Follow')}
       icon={

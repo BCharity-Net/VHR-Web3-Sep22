@@ -1,5 +1,5 @@
 import Footer from '@components/Shared/Footer'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { HeartIcon } from '@heroicons/react/outline'
 import { useTheme } from 'next-themes'
 import React, { FC, Fragment, ReactNode } from 'react'
@@ -21,19 +21,12 @@ const Brand: FC<Props> = ({ name, logo, url, size, children }) => {
       <img
         className="mx-auto"
         style={{ height: size }}
-        src={`${STATIC_ASSETS}/thanks/${logo}-${
-          resolvedTheme === 'dark' ? 'dark' : 'light'
-        }.svg`}
+        src={`${STATIC_ASSETS}/thanks/${logo}-${resolvedTheme === 'dark' ? 'dark' : 'light'}.svg`}
         alt={`${name}'s Logo`}
       />
       <div className="pt-2 mx-auto sm:w-2/3">{children}</div>
       <div>
-        <a
-          className="font-bold"
-          href={url}
-          target="_blank"
-          rel="noreferrer noopener"
-        >
+        <a className="font-bold" href={url} target="_blank" rel="noreferrer noopener">
           ➜ Go to {name}
         </a>
       </div>
@@ -44,7 +37,7 @@ const Brand: FC<Props> = ({ name, logo, url, size, children }) => {
 const Thanks: FC = () => {
   return (
     <>
-      <SEO title={`Thanks • ${APP_NAME}`} />
+      <Seo title={`Thanks • ${APP_NAME}`} />
       <div className="flex justify-center items-center w-full h-48 bg-brand-400">
         <div className="relative text-center">
           <div className="flex items-center space-x-2 text-3xl font-semibold text-white md:text-4xl">
@@ -64,29 +57,16 @@ const Thanks: FC = () => {
                 url={`https://vercel.com/?utm_source=${APP_NAME}&utm_campaign=oss`}
                 size={40}
               >
-                Vercel combines the best developer experience with an obsessive
-                focus on end-user performance. Vercel platform enables frontend
-                teams to do their best work.
+                Vercel combines the best developer experience with an obsessive focus on end-user performance.
+                Vercel platform enables frontend teams to do their best work.
               </Brand>
-              <Brand
-                name="Gitpod"
-                logo="gitpod"
-                url="https://gitpod.io"
-                size={50}
-              >
-                Gitpod streamlines developer workflows by providing prebuilt,
-                collaborative developer environments in your browser - powered
-                by VS Code.
+              <Brand name="Gitpod" logo="gitpod" url="https://gitpod.io" size={50}>
+                Gitpod streamlines developer workflows by providing prebuilt, collaborative developer
+                environments in your browser - powered by VS Code.
               </Brand>
-              <Brand
-                name="Imagekit"
-                logo="imagekit"
-                url="https://imagekit.io"
-                size={50}
-              >
-                Image CDN with automatic optimization, real-time transformation,
-                and storage that you can integrate with existing setup in
-                minutes.
+              <Brand name="Imagekit" logo="imagekit" url="https://imagekit.io" size={50}>
+                Image CDN with automatic optimization, real-time transformation, and storage that you can
+                integrate with existing setup in minutes.
               </Brand>
             </div>
           </div>

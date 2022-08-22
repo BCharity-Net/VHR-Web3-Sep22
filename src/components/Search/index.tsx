@@ -1,5 +1,5 @@
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -12,12 +12,11 @@ import Sidebar from './Sidebar'
 const Search: NextPage = () => {
   const { query } = useRouter()
 
-  if (!query.q || !['pubs', 'profiles'].includes(query.type as any))
-    return <Custom404 />
+  if (!query.q || !['pubs', 'profiles'].includes(query.type as any)) return <Custom404 />
 
   return (
     <>
-      <SEO />
+      <Seo />
       <GridLayout>
         <GridItemFour>
           <Sidebar />

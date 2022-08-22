@@ -15,12 +15,7 @@ import { ethers } from 'ethers'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { Row, useFilters, useTable } from 'react-table'
-import {
-  DAI_TOKEN,
-  GIVE_DAI_LP,
-  GOOD_TOKEN,
-  VHR_TO_DAI_PRICE
-} from 'src/constants'
+import { DAI_TOKEN, GIVE_DAI_LP, GOOD_TOKEN, VHR_TO_DAI_PRICE } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
 import { useContractRead } from 'wagmi'
 
@@ -58,15 +53,8 @@ export interface Data {
   }
 }
 
-const VHRTable: FC<Props> = ({
-  profile,
-  handleQueryComplete,
-  getColumns,
-  query,
-  request,
-  from
-}) => {
-  const { currentUser } = useAppPersistStore()
+const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request, from }) => {
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -266,10 +254,7 @@ const VHRTable: FC<Props> = ({
         setPageInfo(data?.publications?.pageInfo)
         setPublications([...publications, ...data?.publications?.items])
       }
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 hours publications Next:${pageInfo?.next}`
-      )
+      Logger.log('[Query]', `Fetched next 10 hours publications Next:${pageInfo?.next}`)
     }
   })
 
@@ -292,30 +277,22 @@ const VHRTable: FC<Props> = ({
   }
 
   const Table = () => {
-    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-      useTable(
-        {
-          columns,
-          data: tableData
-        },
-        useFilters
-      )
+    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
+      {
+        columns,
+        data: tableData
+      },
+      useFilters
+    )
 
     return (
-      <table
-        className="w-full text-md text-center mb-2 mt-2"
-        {...getTableProps()}
-      >
+      <table className="w-full text-md text-center mb-2 mt-2" {...getTableProps()}>
         <thead>
           {headerGroups.map((headerGroup, index) => {
             return index === 0 ? (
               <tr>
-                <th
-                  className="p-4"
-                  {...headerGroup.headers[0].getHeaderProps()}
-                >
-                  {headerGroup.headers[0] &&
-                    headerGroup.headers[0].render('Header')}
+                <th className="p-4" {...headerGroup.headers[0].getHeaderProps()}>
+                  {headerGroup.headers[0] && headerGroup.headers[0].render('Header')}
                   <div className="flex items-stretch justify-center space-x-4">
                     <p>Total Hours: {computeHours(rows)}</p>
                     {from && <p>Total Volunteers: {computeVolunteers(rows)}</p>}
@@ -327,9 +304,7 @@ const VHRTable: FC<Props> = ({
                 {headerGroup.headers.map((column) => (
                   <th className="p-4" {...column.getHeaderProps()}>
                     {column.render('Header')}
-                    <div>
-                      {column.canFilter ? column.render('Filter') : null}
-                    </div>
+                    <div>{column.canFilter ? column.render('Filter') : null}</div>
                   </th>
                 ))}
               </tr>
@@ -356,15 +331,11 @@ const VHRTable: FC<Props> = ({
                 <VHRToken
                   pubId={pubIdData[index]}
                   callback={(data: any) => {
-                    const publications = data.publications.items.filter(
-                      (i: any) => {
-                        return ethers.utils.isHexString(i.metadata.content)
-                      }
-                    )
+                    const publications = data.publications.items.filter((i: any) => {
+                      return ethers.utils.isHexString(i.metadata.content)
+                    })
                     if (publications.length !== 0) {
-                      if (
-                        vhrTxnData[index] != publications[0].metadata.content
-                      ) {
+                      if (vhrTxnData[index] != publications[0].metadata.content) {
                         vhrTxnData[index] = publications[0].metadata.content
                         setVhrTxnData(vhrTxnData)
                         setTableData([...tableData])
@@ -374,10 +345,7 @@ const VHRTable: FC<Props> = ({
                     const good: string[] = []
                     data.publications.items.forEach((i: any) => {
                       const res = i?.metadata?.content?.split(' ')
-                      if (
-                        ethers.utils.isHexString(res[0]) &&
-                        res[1] === '"good"'
-                      ) {
+                      if (ethers.utils.isHexString(res[0]) && res[1] === '"good"') {
                         good.push(res[0])
                       }
                     })
@@ -393,12 +361,7 @@ const VHRTable: FC<Props> = ({
                 <NFTDetails
                   address={addressData[index]}
                   callback={(data: any) => {
-                    handleNFTData(
-                      data,
-                      index,
-                      tableData[index].verified.postID,
-                      tableData[index].orgName
-                    )
+                    handleNFTData(data, index, tableData[index].verified.postID, tableData[index].orgName)
                   }}
                 />
               </>

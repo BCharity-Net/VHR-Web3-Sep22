@@ -9,20 +9,13 @@ import { Spinner } from '@components/UI/Spinner'
 import { Profile, SetDefaultProfileBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { ExclamationIcon, PencilIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
@@ -62,8 +55,10 @@ const CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION = gql`
 
 const SetProfile: FC = () => {
   const { t } = useTranslation('common')
-  const { profiles, userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated } = useAppPersistStore()
+  const profiles = useAppStore((state) => state.profiles)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [selectedUser, setSelectedUser] = useState<string>()
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
@@ -104,29 +99,28 @@ const SetProfile: FC = () => {
 
   useEffect(() => {
     setSelectedUser(sortedProfiles[0]?.id)
-  }, [sortedProfiles])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(SETTINGS.ACCOUNT.SET_DEFAULT_PROFILE, {
-          result: 'broadcast_error'
-        })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createSetDefaultProfileTypedData, { loading: typedDataLoading }] =
-    useMutation(CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION, {
+      Mixpanel.track(SETTINGS.ACCOUNT.SET_DEFAULT_PROFILE, {
+        result: 'broadcast_error'
+      })
+    }
+  })
+  const [createSetDefaultProfileTypedData, { loading: typedDataLoading }] = useMutation(
+    CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION,
+    {
       async onCompleted({
         createSetDefaultProfileTypedData
       }: {
         createSetDefaultProfileTypedData: SetDefaultProfileBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createSetDefaultProfileTypedData')
         const { id, typedData } = createSetDefaultProfileTypedData
         const { deadline } = typedData?.value
 
@@ -151,8 +145,7 @@ const SetProfile: FC = () => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -161,7 +154,8 @@ const SetProfile: FC = () => {
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
-    })
+    }
+  )
 
   const setDefaultProfile = () => {
     if (!isAuthenticated) return toast.error(CONNECT_WALLET)
@@ -215,18 +209,10 @@ const SetProfile: FC = () => {
           <Button
             className="ml-auto"
             type={t('Submit')}
-            disabled={
-              typedDataLoading ||
-              signLoading ||
-              writeLoading ||
-              broadcastLoading
-            }
+            disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
             onClick={setDefaultProfile}
             icon={
-              typedDataLoading ||
-              signLoading ||
-              writeLoading ||
-              broadcastLoading ? (
+              typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                 <Spinner size="xs" />
               ) : (
                 <PencilIcon className="w-4 h-4" />
@@ -237,11 +223,7 @@ const SetProfile: FC = () => {
           </Button>
           {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
             <IndexStatus
-              txHash={
-                writeData?.hash
-                  ? writeData?.hash
-                  : broadcastData?.broadcast?.txHash
-              }
+              txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash}
               reload
             />
           ) : null}

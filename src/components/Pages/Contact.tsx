@@ -6,7 +6,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
 import { useRouter } from 'next/router'
@@ -37,12 +37,9 @@ const Contact: FC = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Contact • ${APP_NAME}`} />
+      <Seo title={`Contact • ${APP_NAME}`} />
       <GridItemFour>
-        <SettingsHelper
-          heading={t('Contact Title')}
-          description={t('Contact Description')}
-        />
+        <SettingsHelper heading={t('Contact Title')} description={t('Contact Description')} />
       </GridItemFour>
       <GridItemEight>
         <Card>
@@ -63,21 +60,14 @@ const Contact: FC = () => {
                 push('/')
               }}
             >
-              <Input
-                label={t('Subject')}
-                placeholder={t('What happened')}
-                {...form.register('subject')}
-              />
+              <Input label={t('Subject')} placeholder={t('What happened')} {...form.register('subject')} />
               <TextArea
                 label={t('Contact message')}
                 placeholder={t('Message')}
                 {...form.register('message')}
               />
               <div className="ml-auto">
-                <Button
-                  type="submit"
-                  icon={<PencilAltIcon className="w-4 h-4" />}
-                >
+                <Button type="submit" icon={<PencilAltIcon className="w-4 h-4" />}>
                   {t('Submit')}
                 </Button>
               </div>

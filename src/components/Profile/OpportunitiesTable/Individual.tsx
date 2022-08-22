@@ -37,14 +37,8 @@ export interface Data {
   }
 }
 
-const OpportunitiesTable: FC<Props> = ({
-  profile,
-  handleQueryComplete,
-  getColumns,
-  query,
-  request
-}) => {
-  const { currentUser } = useAppPersistStore()
+const OpportunitiesTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request }) => {
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [onEnter, setOnEnter] = useState<boolean>(false)
@@ -134,40 +128,29 @@ const OpportunitiesTable: FC<Props> = ({
       handleTableData(opportunities).then((result: Data[]) => {
         setTableData([...tableData, ...result])
       })
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 opportunities publications Next:${pageInfo?.next}`
-      )
+      Logger.log('[Query]', `Fetched next 10 opportunities publications Next:${pageInfo?.next}`)
     }
   })
 
   const columns = getColumns(addressData)
 
   const Table = () => {
-    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-      useTable(
-        {
-          columns,
-          data: tableData
-        },
-        useFilters
-      )
+    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
+      {
+        columns,
+        data: tableData
+      },
+      useFilters
+    )
 
     return (
-      <table
-        className="w-full text-md text-center mb-2 mt-2"
-        {...getTableProps()}
-      >
+      <table className="w-full text-md text-center mb-2 mt-2" {...getTableProps()}>
         <thead>
           {headerGroups.map((headerGroup, index) => {
             return index === 0 ? (
               <tr>
-                <th
-                  className="p-4"
-                  {...headerGroup.headers[0].getHeaderProps()}
-                >
-                  {headerGroup.headers[0] &&
-                    headerGroup.headers[0].render('Header')}
+                <th className="p-4" {...headerGroup.headers[0].getHeaderProps()}>
+                  {headerGroup.headers[0] && headerGroup.headers[0].render('Header')}
                 </th>
               </tr>
             ) : (
@@ -175,9 +158,7 @@ const OpportunitiesTable: FC<Props> = ({
                 {headerGroup.headers.map((column) => (
                   <th className="p-4" {...column.getHeaderProps()}>
                     {column.render('Header')}
-                    <div>
-                      {column.canFilter ? column.render('Filter') : null}
-                    </div>
+                    <div>{column.canFilter ? column.render('Filter') : null}</div>
                   </th>
                 ))}
               </tr>

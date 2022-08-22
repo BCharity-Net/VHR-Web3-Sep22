@@ -69,7 +69,7 @@ export const CollectDonors: FC<CollectProps> = ({ id, callback }) => {
 }
 
 const PublicationDonors: FC<Props> = ({ pubId, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   const { data, loading } = useQuery(COMMENT_FEED_QUERY, {
     variables: {

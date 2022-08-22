@@ -4,12 +4,11 @@ import Footer from '@components/Shared/Footer'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import UserProfile from '@components/Shared/UserProfile'
 import { Card, CardBody } from '@components/UI/Card'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
-import Logger from '@lib/logger'
 import { apps } from 'data/apps'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
@@ -79,20 +78,14 @@ const ViewPublication: NextPage = () => {
     query: { id }
   } = useRouter()
 
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { data, loading, error } = useQuery(PUBLICATION_QUERY, {
     variables: {
       request: { publicationId: id },
       reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
       profileId: currentUser?.id ?? null
     },
-    skip: !id,
-    onCompleted() {
-      Logger.log('[Query]', `Fetched publication details Publication:${id}`)
-    },
-    onError(error) {
-      Logger.error('[Query Error]', error)
-    }
+    skip: !id
   })
 
   if (error) return <Custom500 />
@@ -104,7 +97,7 @@ const ViewPublication: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO
+      <Seo
         title={
           publication?.__typename && publication?.profile?.handle
             ? `${publication.__typename} by @${publication.profile.handle} • ${APP_NAME}`
@@ -117,10 +110,7 @@ const ViewPublication: NextPage = () => {
         </Card>
         <Feed
           publication={publication}
-          onlyFollowers={
-            publication?.referenceModule?.__typename ===
-            'FollowOnlyReferenceModuleSettings'
-          }
+          onlyFollowers={publication?.referenceModule?.__typename === 'FollowOnlyReferenceModuleSettings'}
           isFollowing={publication?.profile?.isFollowedByMe}
         />
       </GridItemEight>
@@ -129,9 +119,7 @@ const ViewPublication: NextPage = () => {
           <CardBody>
             <UserProfile
               profile={
-                publication?.__typename === 'Mirror'
-                  ? publication?.mirrorOf?.profile
-                  : publication?.profile
+                publication?.__typename === 'Mirror' ? publication?.mirrorOf?.profile : publication?.profile
               }
               showBio
             />

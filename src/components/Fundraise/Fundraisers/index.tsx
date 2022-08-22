@@ -7,7 +7,7 @@ import { Button } from '@components/UI/Button'
 import { Card } from '@components/UI/Card'
 import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { PaginatedResultInfo } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
@@ -63,7 +63,7 @@ const Fundraisers: FC<Props> = ({}) => {
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [revenueData, setRevenueData] = useState<number[]>([])
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
     variables: {
@@ -89,10 +89,7 @@ const Fundraisers: FC<Props> = ({}) => {
       setPublications(fundraise)
 
       setRevenueData([...revenueData])
-      Logger.log(
-        '[Query]',
-        `Fetched first 50 explore publications FeedType:${feedType}`
-      )
+      Logger.log('[Query]', `Fetched first 50 explore publications FeedType:${feedType}`)
     }
   })
   console.log(revenueData)
@@ -125,10 +122,7 @@ const Fundraisers: FC<Props> = ({}) => {
       })
 
       console.log('page info', pageInfo?.next)
-      console.log(
-        'explore publications',
-        data?.explorePublications?.pageInfo?.next
-      )
+      console.log('explore publications', data?.explorePublications?.pageInfo?.next)
       setPageInfo(data?.explorePublications?.pageInfo)
       setPublications([...publications, ...fundraise])
       console.log('count', count)
@@ -143,7 +137,7 @@ const Fundraisers: FC<Props> = ({}) => {
 
   return (
     <GridLayout>
-      <SEO title={`Fundraisers • ${APP_NAME}`} />
+      <Seo title={`Fundraisers • ${APP_NAME}`} />
       {publications?.map(
         (publication: BCharityPublication, index: number) => (
           (cover = publication?.metadata?.cover?.original?.url),
@@ -156,9 +150,7 @@ const Fundraisers: FC<Props> = ({}) => {
                   className="h-40 rounded-t-xl border-b sm:h-52 dark:border-b-gray-700/80"
                   style={{
                     backgroundImage: `url(${
-                      cover
-                        ? imagekitURL(cover, 'attachment')
-                        : `${STATIC_ASSETS}/patterns/2.svg`
+                      cover ? imagekitURL(cover, 'attachment') : `${STATIC_ASSETS}/patterns/2.svg`
                     })`,
                     backgroundColor: '#8b5cf6',
                     backgroundSize: cover ? 'cover' : '30%',
@@ -170,20 +162,16 @@ const Fundraisers: FC<Props> = ({}) => {
                 <div className="p-5">
                   <div className="block justify-between items-center sm:flex">
                     <div className="mr-0 space-y-1 sm:mr-16">
-                      <div className="text-xl font-bold">
-                        {publication?.metadata?.name}
-                      </div>
+                      <div className="text-xl font-bold">{publication?.metadata?.name}</div>
                       <div className="text-sm leading-7 whitespace-pre-wrap break-words">
                         <Markup>
-                          {publication?.metadata?.description
-                            ?.replace(/\n\s*\n/g, '\n\n')
-                            .trim()}
+                          {publication?.metadata?.description?.replace(/\n\s*\n/g, '\n\n').trim()}
                         </Markup>
                       </div>
                       <div
                         className="block sm:flex items-center !my-3 space-y-2 sm:space-y-0 sm:space-x-3"
                         data-test="fundraise-meta"
-                      ></div>
+                      />
                     </div>
                   </div>
                   <GridLayout className="!p-0 mt-5">
@@ -212,9 +200,7 @@ const Fundraisers: FC<Props> = ({}) => {
                                 setRevenueData([...revenueData])
                               }}
                             />
-                            <span className="text-2xl font-bold">
-                              {revenueData[index]}
-                            </span>
+                            <span className="text-2xl font-bold">{revenueData[index]}</span>
                             <span className="text-xs">{'Raised'}</span>
                           </span>
                         </span>

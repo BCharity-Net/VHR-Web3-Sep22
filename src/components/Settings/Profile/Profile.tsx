@@ -10,34 +10,22 @@ import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
 import { Toggle } from '@components/UI/Toggle'
-import {
-  CreateSetProfileMetadataUriBroadcastItemResult,
-  MediaSet,
-  Profile
-} from '@generated/types'
+import { CreateSetProfileMetadataUriBroadcastItemResult, MediaSet, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PencilIcon } from '@heroicons/react/outline'
 import getAttribute from '@lib/getAttribute'
 import hasPrideLogo from '@lib/hasPrideLogo'
 import imagekitURL from '@lib/imagekitURL'
 import isBeta from '@lib/isBeta'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import React, { ChangeEvent, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENS_PERIPHERY,
-  RELAY_ON
-} from 'src/constants'
+import { APP_NAME, CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENS_PERIPHERY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
@@ -45,9 +33,7 @@ import { useContractWrite, useSignTypedData } from 'wagmi'
 import { object, optional, string } from 'zod'
 
 const CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION = gql`
-  mutation CreateSetProfileMetadataTypedData(
-    $request: CreatePublicSetProfileMetadataURIRequest!
-  ) {
+  mutation CreateSetProfileMetadataTypedData($request: CreatePublicSetProfileMetadataURIRequest!) {
     createSetProfileMetadataTypedData(request: $request) {
       id
       expiresAt
@@ -81,8 +67,10 @@ interface Props {
 
 const Profile: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [beta, setBeta] = useState<boolean>(isBeta(profile))
   const [pride, setPride] = useState<boolean>(hasPrideLogo(profile))
   const [cover, setCover] = useState<string>()
@@ -119,27 +107,25 @@ const Profile: FC<Props> = ({ profile }) => {
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(SETTINGS.PROFILE.UPDATE, {
-          result: 'broadcast_error'
-        })
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createSetProfileMetadataTypedData, { loading: typedDataLoading }] =
-    useMutation(CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION, {
+      Mixpanel.track(SETTINGS.PROFILE.UPDATE, {
+        result: 'broadcast_error'
+      })
+    }
+  })
+  const [createSetProfileMetadataTypedData, { loading: typedDataLoading }] = useMutation(
+    CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION,
+    {
       async onCompleted({
         createSetProfileMetadataTypedData
       }: {
         createSetProfileMetadataTypedData: CreateSetProfileMetadataUriBroadcastItemResult
       }) {
-        Logger.log('[Mutation]', 'Generated createSetProfileImageURITypedData')
         const { id, typedData } = createSetProfileMetadataTypedData
         const { deadline } = typedData?.value
 
@@ -164,8 +150,7 @@ const Profile: FC<Props> = ({ profile }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -174,18 +159,21 @@ const Profile: FC<Props> = ({ profile }) => {
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
-    })
+    }
+  )
 
   useEffect(() => {
-    if (profile?.coverPicture?.original?.url)
+    if (profile?.coverPicture?.original?.url) {
       setCover(profile?.coverPicture?.original?.url)
-  }, [profile])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleUpload = async (evt: ChangeEvent<HTMLInputElement>) => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         setCover(attachment[0].item)
       }
@@ -217,10 +205,7 @@ const Profile: FC<Props> = ({ profile }) => {
       name: profile?.name as string,
       location: getAttribute(profile?.attributes, 'location') as string,
       website: getAttribute(profile?.attributes, 'website') as string,
-      twitter: getAttribute(profile?.attributes, 'twitter')?.replace(
-        'https://twitter.com/',
-        ''
-      ) as string,
+      twitter: getAttribute(profile?.attributes, 'twitter')?.replace('https://twitter.com/', '') as string,
       bio: profile?.bio as string
     }
   })
@@ -273,7 +258,6 @@ const Profile: FC<Props> = ({ profile }) => {
       ],
       version: '1.0.0',
       metadata_id: uuid(),
-      previousMetadata: profile?.metadata,
       createdOn: new Date(),
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
@@ -299,31 +283,10 @@ const Profile: FC<Props> = ({ profile }) => {
             editProfile(name, location, website, twitter, bio)
           }}
         >
-          {error && (
-            <ErrorMessage
-              className="mb-3"
-              title={t('Transaction Failed!')}
-              error={error}
-            />
-          )}
-          <Input
-            label={t('Profile Id')}
-            type="text"
-            value={currentUser?.id}
-            disabled
-          />
-          <Input
-            label={t('Name')}
-            type="text"
-            placeholder="Gavin"
-            {...form.register('name')}
-          />
-          <Input
-            label={t('Location')}
-            type="text"
-            placeholder="Miami"
-            {...form.register('location')}
-          />
+          {error && <ErrorMessage className="mb-3" title={t('Transaction Failed!')} error={error} />}
+          <Input label={t('Profile Id')} type="text" value={currentUser?.id} disabled />
+          <Input label={t('Name')} type="text" placeholder="Gavin" {...form.register('name')} />
+          <Input label={t('Location')} type="text" placeholder="Miami" {...form.register('location')} />
           <Input
             label={t('Website')}
             type="text"
@@ -337,11 +300,7 @@ const Profile: FC<Props> = ({ profile }) => {
             placeholder="gavin"
             {...form.register('twitter')}
           />
-          <TextArea
-            label={t('Bio')}
-            placeholder={t('Bio placeholder')}
-            {...form.register('bio')}
-          />
+          <TextArea label={t('Bio')} placeholder={t('Bio placeholder')} {...form.register('bio')} />
           <div className="space-y-1.5">
             <div className="label">{t('Cover')}</div>
             <div className="space-y-3">
@@ -355,12 +314,7 @@ const Profile: FC<Props> = ({ profile }) => {
                 </div>
               )}
               <div className="flex items-center space-x-3">
-                <ChooseFile
-                  id="cover"
-                  onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                    handleUpload(evt)
-                  }
-                />
+                <ChooseFile id="cover" onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)} />
                 {uploading && <Spinner size="sm" />}
               </div>
             </div>
@@ -389,19 +343,9 @@ const Profile: FC<Props> = ({ profile }) => {
             <Button
               className="ml-auto"
               type="submit"
-              disabled={
-                isUploading ||
-                typedDataLoading ||
-                signLoading ||
-                writeLoading ||
-                broadcastLoading
-              }
+              disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
               icon={
-                isUploading ||
-                typedDataLoading ||
-                signLoading ||
-                writeLoading ||
-                broadcastLoading ? (
+                isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
                   <Spinner size="xs" />
                 ) : (
                   <PencilIcon className="w-4 h-4" />
@@ -412,13 +356,7 @@ const Profile: FC<Props> = ({ profile }) => {
               {t('Save')}
             </Button>
             {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-              <IndexStatus
-                txHash={
-                  writeData?.hash
-                    ? writeData?.hash
-                    : broadcastData?.broadcast?.txHash
-                }
-              />
+              <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
             ) : null}
           </div>
         </Form>

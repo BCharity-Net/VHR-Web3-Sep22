@@ -6,14 +6,9 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
-import {
-  CreateSetProfileImageUriBroadcastItemResult,
-  NftImage,
-  Profile
-} from '@generated/types'
+import { CreateSetProfileImageUriBroadcastItemResult, NftImage, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PencilIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -21,22 +16,10 @@ import gql from 'graphql-tag'
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  IS_MAINNET,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, IS_MAINNET, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
-import {
-  chain,
-  useContractWrite,
-  useSignMessage,
-  useSignTypedData
-} from 'wagmi'
+import { chain, useContractWrite, useSignMessage, useSignTypedData } from 'wagmi'
 import { object, string } from 'zod'
 
 const editNftPictureSchema = object({
@@ -92,20 +75,13 @@ interface Props {
 }
 
 const NFTPicture: FC<Props> = ({ profile }) => {
-  const form = useZodForm({
-    schema: editNftPictureSchema,
-    defaultValues: {
-      contractAddress: profile?.picture?.contractAddress,
-      tokenId: profile?.picture?.tokenId
-    }
-  })
-
   const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [chainId, setChainId] = useState<number>(
-    IS_MAINNET ? chain.mainnet.id : chain.kovan.id
-  )
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const [chainId, setChainId] = useState<number>(IS_MAINNET ? chain.mainnet.id : chain.kovan.id)
+
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
@@ -119,6 +95,14 @@ const NFTPicture: FC<Props> = ({ profile }) => {
       result: 'success'
     })
   }
+
+  const form = useZodForm({
+    schema: editNftPictureSchema,
+    defaultValues: {
+      contractAddress: profile?.picture?.contractAddress,
+      tokenId: profile?.picture?.tokenId
+    }
+  })
 
   const {
     data: writeData,
@@ -138,23 +122,21 @@ const NFTPicture: FC<Props> = ({ profile }) => {
     }
   })
 
-  const [loadChallenge, { loading: challengeLoading }] =
-    useLazyQuery(CHALLENGE_QUERY)
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onCompleted,
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('[Relay Error]', error.message)
-        Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
-          result: 'broadcast_error'
-        })
+  const [loadChallenge, { loading: challengeLoading }] = useLazyQuery(CHALLENGE_QUERY)
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onCompleted,
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] =
-    useMutation(CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION, {
+      Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
+        result: 'broadcast_error'
+      })
+    }
+  })
+  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation(
+    CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
+    {
       async onCompleted({
         createSetProfileImageURITypedData
       }: {
@@ -183,8 +165,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
@@ -193,7 +174,8 @@ const NFTPicture: FC<Props> = ({ profile }) => {
       onError(error) {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
-    })
+    }
+  )
 
   const setAvatar = async (contractAddress: string, tokenId: string) => {
     if (!isAuthenticated) return toast.error(CONNECT_WALLET)
@@ -236,13 +218,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
         setAvatar(contractAddress, tokenId)
       }}
     >
-      {error && (
-        <ErrorMessage
-          className="mb-3"
-          title="Transaction failed!"
-          error={error}
-        />
-      )}
+      {error && <ErrorMessage className="mb-3" title="Transaction failed!" error={error} />}
       <div>
         <div className="label">{t('Chain')}</div>
         <div>
@@ -254,9 +230,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
             <option value={IS_MAINNET ? chain.mainnet.id : chain.kovan.id}>
               {IS_MAINNET ? 'Ethereum' : 'Kovan'}
             </option>
-            <option
-              value={IS_MAINNET ? chain.polygon.id : chain.polygonMumbai.id}
-            >
+            <option value={IS_MAINNET ? chain.polygon.id : chain.polygonMumbai.id}>
               {IS_MAINNET ? 'Polygon' : 'Mumbai'}
             </option>
           </select>
@@ -268,30 +242,15 @@ const NFTPicture: FC<Props> = ({ profile }) => {
         placeholder="0x277f5959e22f94d5bd4c2cc0a77c4c71f31da3ac"
         {...form.register('contractAddress')}
       />
-      <Input
-        label={t('Token Id')}
-        type="text"
-        placeholder="1"
-        {...form.register('tokenId')}
-      />
+      <Input label={t('Token Id')} type="text" placeholder="1" {...form.register('tokenId')} />
 
       <div className="flex flex-col space-y-2">
         <Button
           className="ml-auto"
           type="submit"
-          disabled={
-            challengeLoading ||
-            typedDataLoading ||
-            signLoading ||
-            writeLoading ||
-            broadcastLoading
-          }
+          disabled={challengeLoading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
           icon={
-            challengeLoading ||
-            typedDataLoading ||
-            signLoading ||
-            writeLoading ||
-            broadcastLoading ? (
+            challengeLoading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
               <Spinner size="xs" />
             ) : (
               <PencilIcon className="w-4 h-4" />
@@ -301,13 +260,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
           {t('Save')}
         </Button>
         {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-          <IndexStatus
-            txHash={
-              writeData?.hash
-                ? writeData?.hash
-                : broadcastData?.broadcast?.txHash
-            }
-          />
+          <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
         ) : null}
       </div>
     </Form>

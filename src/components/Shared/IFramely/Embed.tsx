@@ -12,7 +12,8 @@ const Embed: FC<Props> = ({ og }) => {
     <div className="mt-4 text-sm sm:w-4/6">
       <a
         href={og.url}
-        onClick={() => {
+        onClick={(event) => {
+          event.stopPropagation()
           Mixpanel.track(PUBLICATION.OEMBED_CLICK)
         }}
         target="_blank"
@@ -20,11 +21,7 @@ const Embed: FC<Props> = ({ og }) => {
       >
         <Card forceRounded>
           {!og.isSquare && og.thumbnail && (
-            <img
-              className="w-full rounded-t-xl"
-              src={og.thumbnail}
-              alt="Thumbnail"
-            />
+            <img className="w-full rounded-t-xl" src={og.thumbnail} alt="Thumbnail" />
           )}
           <div className="flex items-center">
             {og.isSquare && og.thumbnail && (
@@ -38,14 +35,8 @@ const Embed: FC<Props> = ({ og }) => {
             )}
             <div className="p-5 truncate">
               <div className="space-y-1.5">
-                {og.title && (
-                  <div className="font-bold line-clamp-1">{og.title}</div>
-                )}
-                {og.description && (
-                  <div className="text-gray-500 line-clamp-2">
-                    {og.description}
-                  </div>
-                )}
+                {og.title && <div className="font-bold line-clamp-1">{og.title}</div>}
+                {og.description && <div className="text-gray-500 line-clamp-2">{og.description}</div>}
                 {og.site && (
                   <div className="flex items-center pt-1.5 space-x-1">
                     {og.favicon && (

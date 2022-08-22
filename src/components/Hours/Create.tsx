@@ -13,7 +13,7 @@ import { Input } from '@components/UI/Input'
 import { OrganizationNameInput } from '@components/UI/OrganizationNameInput'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
@@ -21,7 +21,7 @@ import imagekitURL from '@lib/imagekitURL'
 import Logger from '@lib/logger'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
-import uploadAssetsToIPFS from '@lib/uploadAssetsToIPFS'
+import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import { NextPage } from 'next'
 import React, { ChangeEvent, FC, useState } from 'react'
@@ -60,9 +60,7 @@ const newHourSchema = object({
     .max(42, { message: 'Ethereum address should be within 42 characters' })
     .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
 
-  startDate: string()
-    .max(10, { message: 'Invalid date' })
-    .min(10, { message: 'Invalid date' }),
+  startDate: string().max(10, { message: 'Invalid date' }).min(10, { message: 'Invalid date' }),
 
   endDate: string()
     .max(10, { message: 'Invalid date' })
@@ -176,7 +174,7 @@ const Hours: NextPage = () => {
     evt.preventDefault()
     setUploading(true)
     try {
-      const attachment = await uploadAssetsToIPFS(evt.target.files)
+      const attachment = await uploadMediaToIPFS(evt.target.files)
       if (attachment[0]?.item) {
         const result = JSON.stringify(attachment)
         setMedia(result)
@@ -188,70 +186,61 @@ const Hours: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] =
-    useMutation(BROADCAST_MUTATION, {
-      onError(error) {
-        if (error.message === ERRORS.notMined) {
-          toast.error(error.message)
-        }
-        Logger.error('Relay Error =>', error.message)
+  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
+    onError(error) {
+      if (error.message === ERRORS.notMined) {
+        toast.error(error.message)
       }
-    })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(
-    CREATE_POST_TYPED_DATA_MUTATION,
-    {
-      async onCompleted({
-        createPostTypedData
-      }: {
-        createPostTypedData: CreatePostBroadcastItemResult
-      }) {
-        Logger.log('Mutation =>', 'Generated createPostTypedData')
-        const { id, typedData } = createPostTypedData
-        const {
+      Logger.error('Relay Error =>', error.message)
+    }
+  })
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
+    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+      Logger.log('Mutation =>', 'Generated createPostTypedData')
+      const { id, typedData } = createPostTypedData
+      const {
+        profileId,
+        contentURI,
+        collectModule,
+        collectModuleInitData,
+        referenceModule,
+        referenceModuleInitData,
+        deadline
+      } = typedData?.value
+
+      try {
+        const signature = await signTypedDataAsync({
+          domain: omit(typedData?.domain, '__typename'),
+          types: omit(typedData?.types, '__typename'),
+          value: omit(typedData?.value, '__typename')
+        })
+        setUserSigNonce(userSigNonce + 1)
+        const { v, r, s } = splitSignature(signature)
+        const sig = { v, r, s, deadline }
+        const inputStruct = {
           profileId,
           contentURI,
           collectModule,
           collectModuleInitData,
           referenceModule,
           referenceModuleInitData,
-          deadline
-        } = typedData?.value
+          sig
+        }
+        if (RELAY_ON) {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ variables: { request: { id, signature } } })
 
-        try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { v, r, s } = splitSignature(signature)
-          const sig = { v, r, s, deadline }
-          const inputStruct = {
-            profileId,
-            contentURI,
-            collectModule,
-            collectModuleInitData,
-            referenceModule,
-            referenceModuleInitData,
-            sig
-          }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
-
-            if ('reason' in result)
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          } else {
-            write?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } catch (error) {}
-      },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        } else {
+          write?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
+      } catch (error) {}
+    },
+    onError(error) {
+      toast.error(error.message ?? ERROR_MESSAGE)
     }
-  )
+  })
 
   const createHours = async (
     orgName: string,
@@ -351,20 +340,15 @@ const Hours: NextPage = () => {
 
   return (
     <GridLayout>
-      <SEO title={`Verify Hours • ${APP_NAME}`} />
+      <Seo title={`Verify Hours • ${APP_NAME}`} />
       <GridItemFour>
-        <SettingsHelper
-          heading={t('Verify Hours')}
-          description={t('Hours Description')}
-        />
+        <SettingsHelper heading={t('Verify Hours')} description={t('Hours Description')} />
       </GridItemFour>
       <GridItemEight>
         <Card>
           {data?.hash ?? broadcastData?.broadcast?.txHash ? (
             <Pending
-              txHash={
-                data?.hash ? data?.hash : broadcastData?.broadcast?.txHash
-              }
+              txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
               indexing="Hour Submission creation in progress, please wait!"
               indexed="Hour Submission created successfully"
               type="hours"
@@ -401,10 +385,7 @@ const Hours: NextPage = () => {
               <Controller
                 control={form.control}
                 name="orgName"
-                render={({
-                  field: { value, onChange },
-                  fieldState: { error }
-                }) => (
+                render={({ field: { value, onChange }, fieldState: { error } }) => (
                   <OrganizationNameInput
                     label={t('Organization Name')}
                     error={error?.message}
@@ -412,10 +393,7 @@ const Hours: NextPage = () => {
                     value={value}
                     onChange={onChange}
                     onAdd={async (e: string) => {
-                      form.setValue(
-                        'orgWalletAddress',
-                        await fetchWalletAddress(e)
-                      )
+                      form.setValue('orgWalletAddress', await fetchWalletAddress(e))
                     }}
                   />
                 )}
@@ -506,11 +484,7 @@ const Hours: NextPage = () => {
                 <div className="space-y-3">
                   <Media media={media} />
                   <div className="flex items-center space-x-3">
-                    <ChooseFiles
-                      onChange={(evt: ChangeEvent<HTMLInputElement>) =>
-                        handleUpload(evt)
-                      }
-                    />
+                    <ChooseFiles onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)} />
                     {uploading && <Spinner size="sm" />}
                   </div>
                 </div>
@@ -518,19 +492,9 @@ const Hours: NextPage = () => {
               <Button
                 className="ml-auto"
                 type="submit"
-                disabled={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
+                disabled={typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading}
                 icon={
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading ? (
+                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
                     <Spinner size="xs" />
                   ) : (
                     <PlusIcon className="w-4 h-4" />

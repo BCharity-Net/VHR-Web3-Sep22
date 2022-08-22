@@ -15,9 +15,7 @@ const IFramely: FC<Props> = ({ url }) => {
 
   useEffect(() => {
     if (url) {
-      fetch(
-        `https://iframe.ly/api/iframely?api_key=258c8580bd477c9b886b49&url=${url}`
-      )
+      fetch(`https://iframe.ly/api/iframely?api_key=258c8580bd477c9b886b49&url=${url}`)
         .then((res) => res.json())
         .then((res) => {
           setIsLoaded(true)
@@ -38,7 +36,7 @@ const IFramely: FC<Props> = ({ url }) => {
 
   useEffect(() => {
     ;(window as any).iframely && (window as any).iframely.load()
-  })
+  }, [])
 
   if (error || !isLoaded) {
     return null
@@ -49,13 +47,10 @@ const IFramely: FC<Props> = ({ url }) => {
       site: data?.meta?.site,
       url: data?.url,
       favicon: `https://www.google.com/s2/favicons?domain=${url}`,
-      thumbnail:
-        data?.links?.thumbnail &&
-        imagekitURL(data?.links?.thumbnail[0]?.href, 'attachment'),
+      thumbnail: data?.links?.thumbnail && imagekitURL(data?.links?.thumbnail[0]?.href, 'attachment'),
       isSquare:
         data?.links?.thumbnail &&
-        data?.links?.thumbnail[0]?.media?.width ===
-          data?.links?.thumbnail[0]?.media?.height,
+        data?.links?.thumbnail[0]?.media?.width === data?.links?.thumbnail[0]?.media?.height,
       html: data?.links?.player ? data?.links?.player[0]?.html : null
     }
 

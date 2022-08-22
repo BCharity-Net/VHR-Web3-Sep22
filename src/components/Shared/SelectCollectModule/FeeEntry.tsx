@@ -1,14 +1,15 @@
 import { Button } from '@components/UI/Button'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
-import { EnabledModule, Erc20 } from '@generated/types'
+import { Erc20 } from '@generated/types'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
-import { defaultModuleData, FEE_DATA_TYPE } from '@lib/getModule'
+import { defaultModuleData } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
 import { Dispatch, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DEFAULT_COLLECT_TOKEN } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
+import { useCollectModuleStore } from 'src/store/collectmodule'
 import { PUBLICATION } from 'src/tracking'
 import { object, string } from 'zod'
 
@@ -17,9 +18,7 @@ const feeDataSchema = object({
     .min(1, { message: 'Invalid value' })
     .max(20, { message: 'Invalid value' })
     .nullable(),
-  value: string()
-    .min(1, { message: 'Invalid value' })
-    .max(20, { message: 'Invalid value' }),
+  value: string().min(1, { message: 'Invalid value' }).max(20, { message: 'Invalid value' }),
   referralFee: string()
     .min(1, { message: 'Invalid Referral fee' })
     .max(20, { message: 'Invalid Referral fee' })
@@ -27,29 +26,19 @@ const feeDataSchema = object({
 
 interface Props {
   enabledModuleCurrencies: Erc20[]
-  selectedModule: EnabledModule
-  setSelectedModule: Dispatch<EnabledModule>
   setShowFeeEntry: Dispatch<boolean>
   setShowModal: Dispatch<boolean>
-  feeData: FEE_DATA_TYPE
-  setFeeData: Dispatch<FEE_DATA_TYPE>
 }
 
-const FeeEntry: FC<Props> = ({
-  enabledModuleCurrencies,
-  selectedModule,
-  setSelectedModule,
-  setShowFeeEntry,
-  setShowModal,
-  feeData,
-  setFeeData
-}) => {
+const FeeEntry: FC<Props> = ({ enabledModuleCurrencies, setShowFeeEntry, setShowModal }) => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
+  const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
+  const feeData = useCollectModuleStore((state) => state.feeData)
+  const setFeeData = useCollectModuleStore((state) => state.setFeeData)
   const [followerOnly, setFollowerOnly] = useState<boolean>(false)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(
-    DEFAULT_COLLECT_TOKEN
-  )
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
   const form = useZodForm({
     schema: feeDataSchema,
     defaultValues: {
@@ -112,9 +101,10 @@ const FeeEntry: FC<Props> = ({
           label="Referral Fee"
           helper={<span>{t('Mirror description')}</span>}
           type="number"
-          placeholder="5%"
+          placeholder="5"
           min="0"
           max="100"
+          iconRight={<span>%</span>}
           {...form.register('referralFee')}
         />
         <div>
@@ -132,9 +122,7 @@ const FeeEntry: FC<Props> = ({
           disabled={
             !form.watch('value') ||
             parseFloat(form.watch('value')) <= 0 ||
-            (showCollect
-              ? !form.watch('collectLimit') || form.watch('collectLimit') == '0'
-              : false)
+            (showCollect ? !form.watch('collectLimit') || form.watch('collectLimit') == '0' : false)
           }
           onClick={() => {
             setFeeData({

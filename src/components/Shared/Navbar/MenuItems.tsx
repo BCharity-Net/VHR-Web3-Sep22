@@ -31,6 +31,7 @@ import { PROFILE, STAFF, SYSTEM, USER } from 'src/tracking'
 import { useDisconnect } from 'wagmi'
 
 import Slug from '../Slug'
+import CreateProfile from './CreateProfile'
 import Login from './Login'
 
 export const NextLink = ({ href, children, ...rest }: Record<string, any>) => (
@@ -50,14 +51,13 @@ const MenuItems: FC<Props> = ({ pingData }) => {
   const { theme, setTheme } = useTheme()
   const { disconnect } = useDisconnect()
 
-  const { profiles } = useAppStore()
-  const {
-    isAuthenticated,
-    currentUser,
-    setCurrentUser,
-    staffMode,
-    setStaffMode
-  } = useAppPersistStore()
+  const profiles = useAppStore((state) => state.profiles)
+  const isConnected = useAppPersistStore((state) => state.isConnected)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const setCurrentUser = useAppPersistStore((state) => state.setCurrentUser)
+  const staffMode = useAppPersistStore((state) => state.staffMode)
+  const setStaffMode = useAppPersistStore((state) => state.setStaffMode)
 
   const toggleStaffMode = () => {
     setStaffMode(!staffMode)
@@ -98,11 +98,7 @@ const MenuItems: FC<Props> = ({ pingData }) => {
               >
                 <div>{t('Logged in as')}</div>
                 <div className="truncate">
-                  <Slug
-                    className="font-bold"
-                    slug={currentUser?.handle}
-                    prefix="@"
-                  />
+                  <Slug className="font-bold" slug={currentUser?.handle} prefix="@" />
                 </div>
               </Menu.Item>
               <div className="divider" />
@@ -193,11 +189,7 @@ const MenuItems: FC<Props> = ({ pingData }) => {
                 as="a"
                 onClick={() => {
                   setTheme(theme === 'light' ? 'dark' : 'light')
-                  Mixpanel.track(
-                    theme === 'light'
-                      ? SYSTEM.SWITCH_DARK_THEME
-                      : SYSTEM.SWITCH_LIGHT_THEME
-                  )
+                  Mixpanel.track(theme === 'light' ? SYSTEM.SWITCH_DARK_THEME : SYSTEM.SWITCH_LIGHT_THEME)
                 }}
                 className={({ active }: { active: boolean }) =>
                   clsx({ 'dropdown-active': active }, 'menu-item')
@@ -251,10 +243,7 @@ const MenuItems: FC<Props> = ({ pingData }) => {
                     as="div"
                     onClick={toggleStaffMode}
                     className={({ active }: { active: boolean }) =>
-                      clsx(
-                        { 'bg-yellow-100 dark:bg-yellow-800': active },
-                        'menu-item'
-                      )
+                      clsx({ 'bg-yellow-100 dark:bg-yellow-800': active }, 'menu-item')
                     }
                   >
                     {staffMode ? (
@@ -276,6 +265,8 @@ const MenuItems: FC<Props> = ({ pingData }) => {
         </>
       )}
     </Menu>
+  ) : isConnected ? (
+    <CreateProfile />
   ) : (
     <>
       <Modal
@@ -287,15 +278,7 @@ const MenuItems: FC<Props> = ({ pingData }) => {
         <Login />
       </Modal>
       <Button
-        icon={
-          <img
-            className="mr-0.5 w-4 h-4"
-            height={16}
-            width={16}
-            src="/lens.png"
-            alt="Lens Logo"
-          />
-        }
+        icon={<img className="mr-0.5 w-4 h-4" height={16} width={16} src="/lens.png" alt="Lens Logo" />}
         onClick={() => {
           setShowLoginModal(!showLoginModal)
           Mixpanel.track(USER.LOGIN)

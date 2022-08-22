@@ -1,16 +1,10 @@
 // import { Profile } from '@generated/types'
 import { gql, useQuery } from '@apollo/client'
-import {
-  GridItemEight,
-  GridItemFour,
-  GridItemTwelve,
-  GridLayout
-} from '@components/GridLayout'
+import { GridItemEight, GridItemFour, GridItemTwelve, GridLayout } from '@components/GridLayout'
 import NFTShimmer from '@components/Shared/Shimmer/NFTShimmer'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
-import SEO from '@components/utils/SEO'
+import Seo from '@components/utils/Seo'
 import isVerified from '@lib/isVerified'
-import Logger from '@lib/logger'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -94,33 +88,18 @@ const ViewProfile: NextPage = () => {
   const {
     query: { username, type }
   } = useRouter()
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [feedType, setFeedType] = useState<string>(
     type &&
-      [
-        'post',
-        'comment',
-        'mirror',
-        'nft',
-        'vhr',
-        'org',
-        'opp',
-        'org-opp',
-        'funds',
-        'funds-org'
-      ].includes(type as string)
+      ['post', 'comment', 'mirror', 'nft', 'vhr', 'org', 'opp', 'org-opp', 'funds', 'funds-org'].includes(
+        type as string
+      )
       ? type?.toString().toUpperCase()
       : 'POST'
   )
   const { data, loading, error } = useQuery(PROFILE_QUERY, {
     variables: { request: { handle: username }, who: currentUser?.id ?? null },
-    skip: !username,
-    onCompleted(data) {
-      Logger.log(
-        '[Query]',
-        `Fetched profile details Profile:${data?.profile?.id}`
-      )
-    }
+    skip: !username
   })
 
   if (error) return <Custom500 />
@@ -132,16 +111,13 @@ const ViewProfile: NextPage = () => {
   return (
     <>
       {profile?.name ? (
-        <SEO title={`${profile?.name} (@${profile?.handle}) • ${APP_NAME}`} />
+        <Seo title={`${profile?.name} (@${profile?.handle}) • ${APP_NAME}`} />
       ) : (
-        <SEO title={`@${profile?.handle} • ${APP_NAME}`} />
+        <Seo title={`@${profile?.handle} • ${APP_NAME}`} />
       )}
       <Cover cover={profile?.coverPicture?.original?.url} />
       <GridLayout className="pt-6">
-        {feedType === 'org' ||
-        feedType === 'vhr' ||
-        feedType === 'opp' ||
-        feedType === 'org-opp' ? (
+        {feedType === 'org' || feedType === 'vhr' || feedType === 'opp' || feedType === 'org-opp' ? (
           <GridItemTwelve className="space-y-5">
             <FeedType
               stats={profile?.stats}
@@ -155,9 +131,7 @@ const ViewProfile: NextPage = () => {
               feedType === 'org' ? (
                 <OrganizationFeed profile={profile} />
               ) : (
-                feedType === 'org-opp' && (
-                  <OpportunitiesOrgFeed profile={profile} />
-                )
+                feedType === 'org-opp' && <OpportunitiesOrgFeed profile={profile} />
               )
             ) : feedType === 'vhr' ? (
               <HourFeed profile={profile} />
@@ -179,16 +153,12 @@ const ViewProfile: NextPage = () => {
                 feedType={feedType}
                 profile={profile}
               />
-              {(feedType === 'POST' ||
-                feedType === 'COMMENT' ||
-                feedType === 'MIRROR') && (
+              {(feedType === 'POST' || feedType === 'COMMENT' || feedType === 'MIRROR') && (
                 <Feed profile={profile} type={feedType} />
               )}
               {feedType === 'NFT' && <NFTFeed profile={profile} />}
               {feedType === 'funds' && <FundraiseFeed profile={profile} />}
-              {feedType === 'funds-org' && (
-                <FundraiseOrgFeed profile={profile} />
-              )}
+              {feedType === 'funds-org' && <FundraiseOrgFeed profile={profile} />}
             </GridItemEight>
           </>
         )}

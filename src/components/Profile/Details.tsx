@@ -6,11 +6,7 @@ import Unfollow from '@components/Shared/Unfollow'
 import { Button } from '@components/UI/Button'
 import { Tooltip } from '@components/UI/Tooltip'
 import { Profile } from '@generated/types'
-import {
-  CogIcon,
-  HashtagIcon,
-  LocationMarkerIcon
-} from '@heroicons/react/outline'
+import { CogIcon, HashtagIcon, LocationMarkerIcon } from '@heroicons/react/outline'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/solid'
 import formatAddress from '@lib/formatAddress'
 import getAttribute from '@lib/getAttribute'
@@ -19,7 +15,7 @@ import isStaff from '@lib/isStaff'
 import isVerified from '@lib/isVerified'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
-import React, { FC, ReactElement, useEffect, useState } from 'react'
+import React, { FC, ReactElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { STATIC_ASSETS } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
@@ -33,28 +29,14 @@ interface Props {
 
 const Details: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
-  const [followersCount, setFollowersCount] = useState<number>(0)
   const [following, setFollowing] = useState<boolean>(profile?.isFollowedByMe)
-  const { currentUser, staffMode } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const staffMode = useAppPersistStore((state) => state.staffMode)
   const { resolvedTheme } = useTheme()
 
-  const hasOnChainIdentity =
-    profile?.onChainIdentity?.proofOfHumanity ||
-    profile?.onChainIdentity?.ens?.name
+  const hasOnChainIdentity = profile?.onChainIdentity?.proofOfHumanity || profile?.onChainIdentity?.ens?.name
 
-  useEffect(() => {
-    if (profile?.stats?.totalFollowers) {
-      setFollowersCount(profile?.stats?.totalFollowers)
-    }
-  }, [profile?.stats?.totalFollowers])
-
-  const MetaDetails = ({
-    children,
-    icon
-  }: {
-    children: ReactElement
-    icon: ReactElement
-  }) => (
+  const MetaDetails = ({ children, icon }: { children: ReactElement; icon: ReactElement }) => (
     <div className="flex gap-2 items-center">
       {icon}
       <div className="truncate text-md">{children}</div>
@@ -90,75 +72,38 @@ const Details: FC<Props> = ({ profile }) => {
         </div>
         <div className="flex items-center space-x-3">
           {profile?.name ? (
-            <Slug
-              className="!text-sm sm:!text-base"
-              slug={profile?.handle}
-              prefix="@"
-            />
+            <Slug className="!text-sm sm:!text-base" slug={profile?.handle} prefix="@" />
           ) : (
-            <Slug
-              className="!text-sm sm:!text-base"
-              slug={formatAddress(profile?.ownedBy)}
-            />
+            <Slug className="!text-sm sm:!text-base" slug={formatAddress(profile?.ownedBy)} />
           )}
-          {currentUser &&
-            currentUser?.id !== profile?.id &&
-            profile?.isFollowing && (
-              <div className="py-0.5 px-2 text-xs bg-gray-200 rounded-full dark:bg-gray-700">
-                {t('Follows you')}
-              </div>
-            )}
+          {currentUser && currentUser?.id !== profile?.id && profile?.isFollowing && (
+            <div className="py-0.5 px-2 text-xs bg-gray-200 rounded-full dark:bg-gray-700">
+              {t('Follows you')}
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-5">
-        <Followerings followersCount={followersCount} profile={profile} />
+        <Followerings profile={profile} />
         <div className="flex items-center space-x-2">
           {followType !== 'RevertFollowModuleSettings' ? (
             following ? (
               <div className="flex space-x-2">
-                <Unfollow
-                  profile={profile}
-                  setFollowing={setFollowing}
-                  followersCount={followersCount}
-                  setFollowersCount={setFollowersCount}
-                  showText
-                />
+                <Unfollow profile={profile} setFollowing={setFollowing} showText />
                 {followType === 'FeeFollowModuleSettings' && (
-                  <SuperFollow
-                    profile={profile}
-                    setFollowing={setFollowing}
-                    followersCount={followersCount}
-                    setFollowersCount={setFollowersCount}
-                    again
-                  />
+                  <SuperFollow profile={profile} setFollowing={setFollowing} again />
                 )}
               </div>
             ) : followType === 'FeeFollowModuleSettings' ? (
-              <SuperFollow
-                profile={profile}
-                setFollowing={setFollowing}
-                followersCount={followersCount}
-                setFollowersCount={setFollowersCount}
-                showText
-              />
+              <SuperFollow profile={profile} setFollowing={setFollowing} showText />
             ) : (
-              <Follow
-                profile={profile}
-                setFollowing={setFollowing}
-                followersCount={followersCount}
-                setFollowersCount={setFollowersCount}
-                showText
-              />
+              <Follow profile={profile} setFollowing={setFollowing} showText />
             )
           ) : null}
           {currentUser?.id === profile?.id && (
             <Link href="/settings">
               <a href="/settings">
-                <Button
-                  variant="secondary"
-                  className="!py-1.5"
-                  icon={<CogIcon className="w-5 h-5" />}
-                />
+                <Button variant="secondary" className="!py-1.5" icon={<CogIcon className="w-5 h-5" />} />
               </a>
             </Link>
           )}
@@ -171,9 +116,7 @@ const Details: FC<Props> = ({ profile }) => {
         <div className="w-full divider" />
         <div className="space-y-2">
           <MetaDetails icon={<HashtagIcon className="w-4 h-4" />}>
-            <Tooltip content={`#${parseInt(profile?.id)}`}>
-              {profile?.id}
-            </Tooltip>
+            <Tooltip content={`#${parseInt(profile?.id)}`}>{profile?.id}</Tooltip>
           </MetaDetails>
           {getAttribute(profile?.attributes, 'location') && (
             <MetaDetails icon={<LocationMarkerIcon className="w-4 h-4" />}>
@@ -219,9 +162,7 @@ const Details: FC<Props> = ({ profile }) => {
                 target="_blank"
                 rel="noreferrer noopener"
               >
-                {getAttribute(profile?.attributes, 'website')
-                  ?.replace('https://', '')
-                  .replace('http://', '')}
+                {getAttribute(profile?.attributes, 'website')?.replace('https://', '').replace('http://', '')}
               </a>
             </MetaDetails>
           )}
@@ -248,17 +189,11 @@ const Details: FC<Props> = ({ profile }) => {
               }
             >
               <a
-                href={`https://twitter.com/${getAttribute(
-                  profile?.attributes,
-                  'twitter'
-                )}`}
+                href={`https://twitter.com/${getAttribute(profile?.attributes, 'twitter')}`}
                 target="_blank"
                 rel="noreferrer noopener"
               >
-                {getAttribute(profile?.attributes, 'twitter')?.replace(
-                  'https://twitter.com/',
-                  ''
-                )}
+                {getAttribute(profile?.attributes, 'twitter')?.replace('https://twitter.com/', '')}
               </a>
             </MetaDetails>
           )}
@@ -289,9 +224,7 @@ const Details: FC<Props> = ({ profile }) => {
           </div>
         </>
       )}
-      {isStaff(currentUser?.id) && staffMode && (
-        <ProfileMod profile={profile} />
-      )}
+      {isStaff(currentUser?.id) && staffMode && <ProfileMod profile={profile} />}
     </div>
   )
 }

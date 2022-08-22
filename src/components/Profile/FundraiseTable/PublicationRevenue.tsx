@@ -1,9 +1,6 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { gql, useQuery } from '@apollo/client'
-import {
-  CommentValue,
-  PUBLICATION_REVENUE_QUERY
-} from '@components/Publication/Fundraise'
+import { CommentValue, PUBLICATION_REVENUE_QUERY } from '@components/Publication/Fundraise'
 import { CommentFields } from '@gql/CommentFields'
 import Logger from '@lib/logger'
 import { FC, useEffect, useState } from 'react'
@@ -36,27 +33,21 @@ interface Props {
 }
 
 const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [revenue, setRevenue] = useState<number>(0)
 
   let commentValue = 0
 
-  const { data: revenueData, loading: revenueLoading } = useQuery(
-    PUBLICATION_REVENUE_QUERY,
-    {
-      variables: {
-        request: {
-          publicationId: pubId
-        }
-      },
-      onCompleted() {
-        Logger.log(
-          '[Query]',
-          `Fetched fundraise revenue details Fundraise:${pubId}`
-        )
+  const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
+    variables: {
+      request: {
+        publicationId: pubId
       }
+    },
+    onCompleted() {
+      Logger.log('[Query]', `Fetched fundraise revenue details Fundraise:${pubId}`)
     }
-  )
+  })
 
   const { data, loading } = useQuery(COMMENT_FEED_QUERY, {
     variables: {
@@ -68,9 +59,7 @@ const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
   })
 
   useEffect(() => {
-    setRevenue(
-      parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0)
-    )
+    setRevenue(parseFloat(revenueData?.publicationRevenue?.revenue?.total?.value ?? 0))
   }, [revenueData])
 
   return (
@@ -89,8 +78,7 @@ const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
                     commentValue += Number(value)
                   }
                   setRevenue(revenue + commentValue)
-                  if (callback && index === length - 1)
-                    callback(revenue + commentValue)
+                  if (callback && index === length - 1) callback(revenue + commentValue)
                 }}
               />
             )

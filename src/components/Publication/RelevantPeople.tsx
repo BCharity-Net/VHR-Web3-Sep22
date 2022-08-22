@@ -6,7 +6,6 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { Profile } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
-import Logger from '@lib/logger'
 import React, { FC } from 'react'
 
 const RELEVANT_PEOPLE_QUERY = gql`
@@ -26,8 +25,7 @@ interface Props {
 }
 
 const RelevantPeople: FC<Props> = ({ publication }) => {
-  const mentions =
-    publication?.metadata?.content?.match(/([\s+])@([^\s]+)/g, '$1[~$2]') ?? []
+  const mentions = publication?.metadata?.content?.match(/([\s+])@([^\s]+)/g, '$1[~$2]') ?? []
 
   mentions.push(publication?.profile?.handle)
 
@@ -46,13 +44,7 @@ const RelevantPeople: FC<Props> = ({ publication }) => {
   const cleanedMentions = [...new Set(processedMentions)]
 
   const { data, loading, error } = useQuery(RELEVANT_PEOPLE_QUERY, {
-    variables: { request: { handles: cleanedMentions.slice(0, 5) } },
-    onCompleted(data) {
-      Logger.log(
-        '[Query]',
-        `Fetched ${data?.cleanedMentions?.length} relevant people`
-      )
-    }
+    variables: { request: { handles: cleanedMentions.slice(0, 5) } }
   })
 
   if (loading)
@@ -76,11 +68,7 @@ const RelevantPeople: FC<Props> = ({ publication }) => {
         <ErrorMessage title="Failed to load relevant people" error={error} />
         {data?.profiles?.items?.map((profile: Profile) => (
           <div key={profile?.id} className="truncate">
-            <UserProfile
-              profile={profile}
-              isFollowing={profile.isFollowedByMe}
-              showFollow
-            />
+            <UserProfile profile={profile} isFollowing={profile.isFollowedByMe} showFollow />
           </div>
         ))}
       </CardBody>

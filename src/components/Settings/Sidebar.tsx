@@ -1,11 +1,6 @@
 import UserProfile from '@components/Shared/UserProfile'
 import { Profile } from '@generated/types'
-import {
-  ChipIcon,
-  ExclamationIcon,
-  ShareIcon,
-  UserIcon
-} from '@heroicons/react/outline'
+import { ChipIcon, DatabaseIcon, ExclamationIcon, ShareIcon, UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -36,7 +31,7 @@ const Menu: FC<MenuProps> = ({ children, current, url }) => (
 const Sidebar: FC = () => {
   const { t } = useTranslation('common')
   const { pathname } = useRouter()
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   return (
     <div className="px-3 mb-4 space-y-1.5 sm:px-0">
@@ -51,12 +46,13 @@ const Sidebar: FC = () => {
         <ChipIcon className="w-4 h-4" />
         <div>{t('Account')}</div>
       </Menu>
-      <Menu
-        current={pathname == '/settings/allowance'}
-        url="/settings/allowance"
-      >
+      <Menu current={pathname == '/settings/allowance'} url="/settings/allowance">
         <ShareIcon className="w-4 h-4" />
         <div>{t('Allowance')}</div>
+      </Menu>
+      <Menu current={pathname == '/settings/data'} url="/settings/data">
+        <DatabaseIcon className="w-4 h-4" />
+        <div>Data</div>
       </Menu>
       <Menu current={pathname == '/settings/delete'} url="/settings/delete">
         <ExclamationIcon className="w-4 h-4 text-red-500" />

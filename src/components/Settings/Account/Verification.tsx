@@ -9,7 +9,7 @@ import { SETTINGS } from 'src/tracking'
 
 const Verification: FC = () => {
   const { t } = useTranslation('common')
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
 
   return (
     <Card>

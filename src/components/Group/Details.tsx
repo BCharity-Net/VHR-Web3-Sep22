@@ -3,13 +3,7 @@ import Markup from '@components/Shared/Markup'
 import { Button } from '@components/UI/Button'
 import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import {
-  ClockIcon,
-  CogIcon,
-  HashtagIcon,
-  PencilAltIcon,
-  UsersIcon
-} from '@heroicons/react/outline'
+import { ClockIcon, CogIcon, HashtagIcon, PencilAltIcon, UsersIcon } from '@heroicons/react/outline'
 import imagekitURL from '@lib/imagekitURL'
 import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
@@ -34,19 +28,13 @@ interface Props {
 }
 
 const Details: FC<Props> = ({ group }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [showMembersModal, setShowMembersModal] = useState<boolean>(false)
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false)
   const [joined, setJoined] = useState<boolean>(group?.hasCollectedByMe)
 
   const { t } = useTranslation('common')
-  const MetaDetails = ({
-    children,
-    icon
-  }: {
-    children: ReactNode
-    icon: ReactNode
-  }) => (
+  const MetaDetails = ({ children, icon }: { children: ReactNode; icon: ReactNode }) => (
     <div className="flex gap-2 items-center">
       {icon}
       {children}
@@ -109,12 +97,10 @@ const Details: FC<Props> = ({ group }) => {
           )}
         </div>
         <div className="space-y-2">
-          <MetaDetails icon={<HashtagIcon className="w-4 h-4" />}>
-            {group?.id}
-          </MetaDetails>
+          <MetaDetails icon={<HashtagIcon className="w-4 h-4" />}>{group?.id}</MetaDetails>
           <MetaDetails icon={<UsersIcon className="w-4 h-4" />}>
             <>
-            <button
+              <button
                 type="button"
                 onClick={() => {
                   Mixpanel.track(GROUP.OPEN_MEMBERS)
@@ -122,9 +108,7 @@ const Details: FC<Props> = ({ group }) => {
                 }}
               >
                 {nFormatter(group?.stats?.totalAmountOfCollects)}{' '}
-                {group?.stats?.totalAmountOfCollects === 1
-                  ? t('member')
-                  : t('member')}
+                {group?.stats?.totalAmountOfCollects === 1 ? t('member') : t('member')}
               </button>
               <Modal
                 title={t('Members')}

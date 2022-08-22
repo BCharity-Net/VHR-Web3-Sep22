@@ -11,10 +11,11 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGINATION } from 'src/tracking'
 
 const PROFILE_FEED_QUERY = gql`
   query ProfileFeed(
@@ -51,7 +52,7 @@ interface Props {
 }
 
 const Feed: FC<Props> = ({ profile, type }) => {
-  const { currentUser } = useAppPersistStore()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(PROFILE_FEED_QUERY, {
@@ -65,10 +66,6 @@ const Feed: FC<Props> = ({ profile, type }) => {
     onCompleted(data) {
       setPageInfo(data?.publications?.pageInfo)
       setPublications(data?.publications?.items)
-      Logger.log(
-        '[Query]',
-        `Fetched first 10 profile publications Profile:${profile?.id}`
-      )
     }
   })
 
@@ -88,10 +85,7 @@ const Feed: FC<Props> = ({ profile, type }) => {
       })
       setPageInfo(data?.publications?.pageInfo)
       setPublications([...publications, ...data?.publications?.items])
-      Logger.log(
-        '[Query]',
-        `Fetched next 10 profile publications Profile:${profile?.id} Next:${pageInfo?.next}`
-      )
+      Mixpanel.track(PAGINATION.PROFILE_FEED, { pageInfo })
     }
   })
 

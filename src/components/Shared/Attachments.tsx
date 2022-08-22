@@ -5,7 +5,7 @@ import getIPFSLink from '@lib/getIPFSLink'
 import imagekitURL from '@lib/imagekitURL'
 import clsx from 'clsx'
 import dynamic from 'next/dynamic'
-import React, { FC } from 'react'
+import React, { FC, MouseEvent } from 'react'
 
 const Video = dynamic(() => import('./Video'), {
   loading: () => <div className="rounded-lg aspect-w-16 aspect-h-12 shimmer" />
@@ -36,11 +36,7 @@ interface Props {
   isNew?: boolean
 }
 
-const Attachments: FC<Props> = ({
-  attachments,
-  setAttachments,
-  isNew = false
-}) => {
+const Attachments: FC<Props> = ({ attachments, setAttachments, isNew = false }) => {
   const removeAttachment = (attachment: any) => {
     const arr = attachments
     setAttachments(
@@ -58,56 +54,33 @@ const Attachments: FC<Props> = ({
 
   return slicedAttachments?.length !== 0 ? (
     <div
-      className={clsx(
-        getClass(slicedAttachments?.length)?.row,
-        'grid grid-flow-col gap-2 pt-3'
-      )}
+      className={clsx(getClass(slicedAttachments?.length)?.row, 'grid grid-flow-col gap-2 pt-3')}
+      onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
     >
       {slicedAttachments?.map((attachment: BCharityAttachment & MediaSet) => (
         <div
           className={clsx(
-            (isNew ? attachment.type : attachment.original.mimeType) ===
-              'video/mp4'
+            (isNew ? attachment.type : attachment.original.mimeType) === 'video/mp4'
               ? ''
               : getClass(slicedAttachments?.length)?.aspect
           )}
           key={isNew ? attachment.item : getIPFSLink(attachment.original.url)}
         >
-          {(isNew ? attachment.type : attachment.original.mimeType) ===
-          'video/mp4' ? (
-            <Video
-              src={
-                isNew ? attachment.item : getIPFSLink(attachment.original.url)
-              }
-            />
+          {(isNew ? attachment.type : attachment.original.mimeType) === 'video/mp4' ? (
+            <Video src={isNew ? attachment.item : getIPFSLink(attachment.original.url)} />
           ) : (
             <img
               className="object-cover bg-gray-100 rounded-lg border cursor-pointer dark:bg-gray-800 dark:border-gray-700/80"
               loading="lazy"
               onClick={() =>
-                window.open(
-                  isNew
-                    ? attachment.item
-                    : getIPFSLink(attachment.original.url),
-                  '_blank'
-                )
+                window.open(isNew ? attachment.item : getIPFSLink(attachment.original.url), '_blank')
               }
               src={
                 isNew
-                  ? attachment.item
-                  : imagekitURL(
-                      getIPFSLink(attachment.original.url),
-                      'attachment'
-                    )
+                  ? getIPFSLink(attachment.item)
+                  : imagekitURL(getIPFSLink(attachment.original.url), 'attachment')
               }
-              alt={
-                isNew
-                  ? attachment.item
-                  : imagekitURL(
-                      getIPFSLink(attachment.original.url),
-                      'attachment'
-                    )
-              }
+              alt={isNew ? attachment.item : imagekitURL(getIPFSLink(attachment.original.url), 'attachment')}
             />
           )}
           {isNew && (
