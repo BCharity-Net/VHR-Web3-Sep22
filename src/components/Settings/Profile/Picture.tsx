@@ -8,6 +8,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { CreateSetProfileImageUriBroadcastItemResult, MediaSet, NftImage, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PencilIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import imagekitURL from '@lib/imagekitURL'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
@@ -68,6 +69,7 @@ const Picture: FC<Props> = ({ profile }) => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(SETTINGS.PROFILE.SET_PICTURE, { result: 'typed_data_error', error: error?.message })
     }
   })
 
@@ -110,7 +112,8 @@ const Picture: FC<Props> = ({ profile }) => {
         toast.error(error.message)
       }
       Mixpanel.track(SETTINGS.PROFILE.SET_PICTURE, {
-        result: 'broadcast_error'
+        result: 'broadcast_error',
+        error: error?.message
       })
     }
   })
@@ -196,7 +199,7 @@ const Picture: FC<Props> = ({ profile }) => {
                 className="w-60 h-60 rounded-lg"
                 height={240}
                 width={240}
-                src={imagekitURL(avatar, 'avatar')}
+                src={imagekitURL(getIPFSLink(avatar), 'avatar')}
                 alt={avatar}
               />
             </div>

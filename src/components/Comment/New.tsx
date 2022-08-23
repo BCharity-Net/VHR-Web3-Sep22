@@ -32,16 +32,16 @@ import { COMMENT } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
-const Attachment = dynamic(() => import('../../Shared/Attachment'), {
+const Attachment = dynamic(() => import('../Shared/Attachment'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
-const Giphy = dynamic(() => import('../../Shared/Giphy'), {
+const Giphy = dynamic(() => import('../Shared/Giphy'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
-const SelectCollectModule = dynamic(() => import('../../Shared/SelectCollectModule'), {
+const SelectCollectModule = dynamic(() => import('../Shared/SelectCollectModule'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
-const SelectReferenceModule = dynamic(() => import('../../Shared/SelectReferenceModule'), {
+const SelectReferenceModule = dynamic(() => import('../Shared/SelectReferenceModule'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
 
@@ -109,6 +109,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(COMMENT.NEW, { result: 'typed_data_error', error: error?.message })
     }
   })
   const onCompleted = () => {
@@ -143,7 +144,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(COMMENT.NEW, { result: 'broadcast_error' })
+      Mixpanel.track(COMMENT.NEW, { result: 'broadcast_error', error: error?.message })
     }
   })
   const [createCommentTypedData, { loading: typedDataLoading }] = useMutation(

@@ -1,7 +1,7 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/NewPost'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFiles from '@components/Shared/ChooseFiles'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'

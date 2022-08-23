@@ -1,5 +1,8 @@
 import { BCharityAttachment } from '@generated/bcharitytypes'
 import axios from 'axios'
+import { v4 as uuid } from 'uuid'
+
+import shuffleArray from './shuffleArray'
 
 const uploadMediaToIPFS = async (data: any): Promise<BCharityAttachment[]> => {
   try {
@@ -7,13 +10,13 @@ const uploadMediaToIPFS = async (data: any): Promise<BCharityAttachment[]> => {
     for (let i = 0; i < data.length; i++) {
       let file = data.item(i)
       const formData = new FormData()
-      formData.append('file', file, 'img')
-      const upload = await axios('https://api.web3.storage/upload', {
+      formData.append('data', file, uuid())
+      const upload = await axios(`https://shuttle-${shuffleArray([4, 5, 6])}.estuary.tech/content/add`, {
         method: 'POST',
         data: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_WEB3_STORAGE_TOKEN}`
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_ESTUARY_KEY}`
         }
       })
       const { cid }: { cid: string } = await upload.data

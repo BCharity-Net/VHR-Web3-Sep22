@@ -7,6 +7,7 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { Profile } from '@generated/types'
 import { MinimalProfileFields } from '@gql/MinimalProfileFields'
 import React, { FC } from 'react'
+import { HANDLE_SANITIZE_REGEX } from 'src/constants'
 
 const RELEVANT_PEOPLE_QUERY = gql`
   query RelevantPeople($request: ProfileQueryRequest!) {
@@ -34,10 +35,9 @@ const RelevantPeople: FC<Props> = ({ publication }) => {
         const trimmedMention = mention.trim().replace('@', '').replace("'s", '')
 
         if (trimmedMention.length > 9) {
-          return mention.trim().replace('@', '').replace("'s", '')
-        } else {
-          return publication?.profile?.handle
+          return mention.trim().replace("'s", '').replace(HANDLE_SANITIZE_REGEX, '')
         }
+        return publication?.profile?.handle
       })
     : []
 

@@ -34,10 +34,7 @@ const Pending: FC<Props> = ({ handle, txHash }) => {
           <div>{t('Account created')}</div>
           <div className="pt-3">
             <a href={`/u/${handle}${IS_MAINNET ? '.lens' : '.test'}`}>
-              <Button
-                className="mx-auto"
-                icon={<ArrowRightIcon className="mr-1 w-4 h-4" />}
-              >
+              <Button className="mx-auto" icon={<ArrowRightIcon className="mr-1 w-4 h-4" />}>
                 {t('Go to profile')}
               </Button>
             </a>

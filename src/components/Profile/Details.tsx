@@ -3,6 +3,7 @@ import Markup from '@components/Shared/Markup'
 import Slug from '@components/Shared/Slug'
 import SuperFollow from '@components/Shared/SuperFollow'
 import Unfollow from '@components/Shared/Unfollow'
+import ProfileStaffTool from '@components/StaffTools/Profile'
 import { Button } from '@components/UI/Button'
 import { Tooltip } from '@components/UI/Tooltip'
 import { Profile } from '@generated/types'
@@ -20,8 +21,8 @@ import { useTranslation } from 'react-i18next'
 import { STATIC_ASSETS } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
 
+import Badges from './Badges'
 import Followerings from './Followerings'
-import ProfileMod from './Mod'
 
 interface Props {
   profile: Profile
@@ -224,7 +225,8 @@ const Details: FC<Props> = ({ profile }) => {
           </div>
         </>
       )}
-      {isStaff(currentUser?.id) && staffMode && <ProfileMod profile={profile} />}
+      <Badges profile={profile} />
+      {isStaff(currentUser?.id) && staffMode && <ProfileStaffTool profile={profile} />}
     </div>
   )
 }

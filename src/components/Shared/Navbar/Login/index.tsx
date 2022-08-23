@@ -3,7 +3,7 @@ import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IS_MAINNET, STATIC_ASSETS } from 'src/constants'
 
-import Create from './Create'
+import NewProfile from './New'
 
 const Login: FC = () => {
   const [hasConnected, setHasConnected] = useState<boolean>(false)
@@ -17,22 +17,15 @@ const Login: FC = () => {
           {hasConnected ? (
             <div className="space-y-1">
               <div className="text-xl font-bold">{t('Sign')}</div>
-              <div className="text-sm text-gray-500">
-                {t('Sign Description')}
-              </div>
+              <div className="text-sm text-gray-500">{t('Sign Description')}</div>
             </div>
           ) : (
             <div className="space-y-1">
               <div className="text-xl font-bold">{t('Connect Wallet')}</div>
-              <div className="text-sm text-gray-500">
-                {t('Connect Wallet Description')}
-              </div>
+              <div className="text-sm text-gray-500">{t('Connect Wallet Description')}</div>
             </div>
           )}
-          <WalletSelector
-            setHasConnected={setHasConnected}
-            setHasProfile={setHasProfile}
-          />
+          <WalletSelector setHasConnected={setHasConnected} setHasProfile={setHasProfile} />
         </div>
       ) : IS_MAINNET ? (
         <div>
@@ -58,14 +51,12 @@ const Login: FC = () => {
                 </a>{' '}
                 to claim your profile now 🏃‍♂️
               </div>
-              <div className="text-sm text-gray-500">
-                Make sure to check back here when done!
-              </div>
+              <div className="text-sm text-gray-500">Make sure to check back here when done!</div>
             </div>
           </div>
         </div>
       ) : (
-        <Create isModal />
+        <NewProfile isModal />
       )}
     </div>
   )

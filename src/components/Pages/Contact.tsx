@@ -9,26 +9,28 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
+import { Mixpanel } from '@lib/mixpanel'
 import { useRouter } from 'next/router'
-import React, { FC } from 'react'
+import React, { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, CONTACT_EMAIL } from 'src/constants'
+import { PAGEVIEW } from 'src/tracking'
 import { object, string } from 'zod'
 
 const newContactSchema = object({
-  subject: string()
-    .max(260, {
-      message: 'Subject should not exceed 260 characters'
-    })
-    .nonempty(),
-  message: string()
-    .max(1000, {
-      message: 'Message should not exceed 1000 characters'
-    })
-    .nonempty()
+  subject: string().min(1, { message: 'Subject  should not be empty' }).max(260, {
+    message: 'Subject should not exceed 260 characters'
+  }),
+  message: string().min(1, { message: 'Message should not be empty' }).max(1000, {
+    message: 'Message should not exceed 1000 characters'
+  })
 })
 
 const Contact: FC = () => {
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.CONTACT)
+  }, [])
+
   const { t } = useTranslation('common')
   const { push } = useRouter()
   const form = useZodForm({

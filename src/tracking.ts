@@ -18,7 +18,6 @@ export const PROFILE = {
 export const PUBLICATION = {
   OPEN: 'Open publication',
   OPEN_NEW: 'Open new Publication modal',
-  OPEN_CONTENT_URI: 'Open content URI',
   OPEN_COMMENT: 'Open comment modal',
   LIKE: 'Like publication',
   DISLIKE: 'Dislike publication',
@@ -120,4 +119,31 @@ export const SYSTEM = {
   SWITCH_LIGHT_THEME: 'Switch light theme',
   SWITCH_DARK_THEME: 'Switch dark theme',
   SWITCH_NETWORK: 'Switch network'
+}
+
+export const PAGEVIEW = {
+  HOME: 'Home page',
+  PROFILE: 'Profile page',
+  PUBLICATION: 'Publication page',
+  EXPLORE: 'Explore page',
+  NOTIFICATION: 'Notification page',
+  SEARCH: 'Search page',
+  REPORT: 'Report page',
+  THANKS: 'Thanks page',
+  PRIVACY: 'Privacy page',
+  CONTACT: 'Contact page',
+  CREATE_GROUP: 'Create group page',
+  CREATE_FUNDRAISE: 'Create fundraise page',
+  CREATE_PROFILE: 'Create profile page',
+  GROUPS: 'Groups page',
+  GROUP: 'Group page',
+  ERROR_500: 'Error 500 page',
+  ERROR_404: 'Error 404 page',
+  SETTINGS: {
+    ACCOUNT: 'Account settings page',
+    PROFILE: 'Profile settings page',
+    ALLOWANCE: 'Allowance settings page',
+    DATA: 'Data settings page',
+    DELETE: 'Delete settings page'
+  }
 }

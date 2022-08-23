@@ -12,7 +12,6 @@ export const DEFAULT_OG = 'https://github.com/bcharity/assets'
 
 // Git
 export const GIT_COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
-export const GIT_COMMIT_REF = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF
 
 // Misc
 export const CONTACT_EMAIL = 'admin@bcharity.net'
@@ -63,7 +62,7 @@ export const IMAGEKIT_URL_PROD = 'https://ik.imagekit.io/gznuz6k7b/'
 export const IMAGEKIT_URL_DEV = 'https://ik.imagekit.io/ivzeeb1pg/'
 export const ARWEAVE_GATEWAY = 'https://arweave.net'
 export const IMAGEKIT_URL = IS_PRODUCTION ? IMAGEKIT_URL_PROD : IMAGEKIT_URL_DEV
-export const IPFS_GATEWAY = 'https://cf-ipfs.com/ipfs/'
+export const IPFS_GATEWAY = 'https://lens.infura-ipfs.io/ipfs/'
 
 // Web3
 export const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY
@@ -119,6 +118,13 @@ export const GOOD_TO_DAI_DONATE_RATE = 0.003
 export const WMATIC_GOOD_LP = '0xbe796a61F8d6E4CA823485D9D47BDBBD5eCbf909'
 export const WMATIC_TOKEN = '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889'
 export const DAI_CHECK_FOR_CONVERSION = '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7b6F'
+
+// Regex
+export const URL_REGEX =
+  /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/
+export const ADDRESS_REGEX = /^(0x)?[0-9a-f]{40}$/i
+export const HANDLE_REGEX = /^[a-z0-9]+$/
+export const HANDLE_SANITIZE_REGEX = /[^a-zA-Z0-9. ]/g
 
 // Bundlr
 export const BUNDLR_CURRENCY = 'matic'

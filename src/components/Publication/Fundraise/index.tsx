@@ -1,6 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation, useQuery } from '@apollo/client'
-import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/NewComment'
+import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/New'
 import { GridItemSix, GridLayout } from '@components/GridLayout'
 import Collectors from '@components/Shared/Collectors'
 import Markup from '@components/Shared/Markup'

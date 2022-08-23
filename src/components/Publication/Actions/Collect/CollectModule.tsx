@@ -128,6 +128,10 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -223,7 +227,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, { result: 'broadcast_error' })
+      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, { result: 'broadcast_error', error: error?.message })
     }
   })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(

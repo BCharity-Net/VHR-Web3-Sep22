@@ -1,16 +1,22 @@
 import Seo from '@components/utils/Seo'
 import { LightningBoltIcon } from '@heroicons/react/outline'
-import { FC } from 'react'
+import { Mixpanel } from '@lib/mixpanel'
+import { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGEVIEW } from 'src/tracking'
 
 import List from './List'
 
 const Notification: FC = () => {
   const { t } = useTranslation('common')
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.NOTIFICATION)
+  }, [])
 
   if (!isAuthenticated) return <Custom404 />
 

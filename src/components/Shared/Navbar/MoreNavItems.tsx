@@ -46,7 +46,7 @@ const MoreNavItems: FC = () => {
                 <>
                   <Menu.Item
                     as={NextLink}
-                    href="/create/group"
+                    href="/new/group"
                     className={({ active }: { active: boolean }) =>
                       clsx({ 'dropdown-active': active }, 'menu-item')
                     }
@@ -58,7 +58,7 @@ const MoreNavItems: FC = () => {
                   </Menu.Item>
                   <Menu.Item
                     as={NextLink}
-                    href="/create/fundraise"
+                    href="/new/fundraise"
                     className={({ active }: { active: boolean }) =>
                       clsx({ 'dropdown-active': active }, 'menu-item')
                     }
@@ -70,7 +70,7 @@ const MoreNavItems: FC = () => {
                   </Menu.Item>
                   <Menu.Item
                     as={NextLink}
-                    href="/create/hours"
+                    href="/new/hours"
                     className={({ active }: { active: boolean }) =>
                       clsx({ 'dropdown-active': active }, 'menu-item')
                     }
@@ -83,7 +83,7 @@ const MoreNavItems: FC = () => {
 
                   <Menu.Item
                     as={NextLink}
-                    href="/create/opportunity"
+                    href="/new/opportunity"
                     className={({ active }: { active: boolean }) =>
                       clsx({ 'dropdown-active': active }, 'menu-item')
                     }
@@ -97,7 +97,7 @@ const MoreNavItems: FC = () => {
                   {!IS_MAINNET && (
                     <Menu.Item
                       as={NextLink}
-                      href="/create/profile"
+                      href="/new/profile"
                       className={({ active }: { active: boolean }) =>
                         clsx({ 'dropdown-active': active }, 'menu-item')
                       }

@@ -5,14 +5,16 @@ import NFTShimmer from '@components/Shared/Shimmer/NFTShimmer'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import Seo from '@components/utils/Seo'
 import isVerified from '@lib/isVerified'
+import { Mixpanel } from '@lib/mixpanel'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGEVIEW } from 'src/tracking'
 
 import Cover from './Cover'
 import Details from './Details'
@@ -97,6 +99,11 @@ const ViewProfile: NextPage = () => {
       ? type?.toString().toUpperCase()
       : 'POST'
   )
+
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.PROFILE)
+  }, [])
+
   const { data, loading, error } = useQuery(PROFILE_QUERY, {
     variables: { request: { handle: username }, who: currentUser?.id ?? null },
     skip: !username

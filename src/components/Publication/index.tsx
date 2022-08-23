@@ -3,24 +3,28 @@ import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import Footer from '@components/Shared/Footer'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import UserProfile from '@components/Shared/UserProfile'
+import PublicationStaffTool from '@components/StaffTools/Publication'
 import { Card, CardBody } from '@components/UI/Card'
 import Seo from '@components/utils/Seo'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
+import isStaff from '@lib/isStaff'
+import { Mixpanel } from '@lib/mixpanel'
 import { apps } from 'data/apps'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
 import { useAppPersistStore } from 'src/store/app'
+import { PAGEVIEW } from 'src/tracking'
 
 import FullPublication from './FullPublication'
-import IPFSHash from './IPFSHash'
+import OnchainMeta from './OnchainMeta'
 import RelevantPeople from './RelevantPeople'
 import PublicationPageShimmer from './Shimmer'
 import ViaApp from './ViaApp'
@@ -39,6 +43,7 @@ export const PUBLICATION_QUERY = gql`
       ... on Post {
         ...PostFields
         onChainContentURI
+        collectNftAddress
         profile {
           isFollowedByMe
         }
@@ -49,6 +54,7 @@ export const PUBLICATION_QUERY = gql`
       ... on Comment {
         ...CommentFields
         onChainContentURI
+        collectNftAddress
         profile {
           isFollowedByMe
         }
@@ -59,6 +65,7 @@ export const PUBLICATION_QUERY = gql`
       ... on Mirror {
         ...MirrorFields
         onChainContentURI
+        collectNftAddress
         profile {
           isFollowedByMe
         }
@@ -74,18 +81,31 @@ export const PUBLICATION_QUERY = gql`
 `
 
 const ViewPublication: NextPage = () => {
+  const { push } = useRouter()
+  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const staffMode = useAppPersistStore((state) => state.staffMode)
+
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.PUBLICATION)
+  }, [])
+
   const {
     query: { id }
   } = useRouter()
 
-  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { data, loading, error } = useQuery(PUBLICATION_QUERY, {
     variables: {
       request: { publicationId: id },
       reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
       profileId: currentUser?.id ?? null
     },
-    skip: !id
+    skip: !id,
+    onCompleted(data) {
+      const isGroup = data?.publication?.metadata?.attributes[0]?.value === 'group'
+      if (isGroup) {
+        push(`/groups/${data.publication?.id}`)
+      }
+    }
   })
 
   if (error) return <Custom500 />
@@ -127,7 +147,8 @@ const ViewPublication: NextPage = () => {
           <ViaApp appConfig={appConfig} />
         </Card>
         <RelevantPeople publication={publication} />
-        <IPFSHash ipfsHash={publication?.onChainContentURI} />
+        <OnchainMeta publication={publication} />
+        {isStaff(currentUser?.id) && staffMode && <PublicationStaffTool publication={publication} />}
         <Footer />
       </GridItemFour>
     </GridLayout>

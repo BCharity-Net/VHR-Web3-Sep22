@@ -1,13 +1,13 @@
-import { Card } from '@components/UI/Card';
-import { BCharityPublication } from '@generated/bcharitytypes';
-import { ExternalLinkIcon } from '@heroicons/react/outline';
-import React, { FC } from 'react';
-import { POLYGONSCAN_URL } from 'src/constants';
+import { Card } from '@components/UI/Card'
+import { BCharityPublication } from '@generated/bcharitytypes'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
+import React, { FC } from 'react'
+import { POLYGONSCAN_URL } from 'src/constants'
 
 interface MetaProps {
-  name: string;
-  uri: string;
-  hash: string;
+  name: string
+  uri: string
+  hash: string
 }
 
 const Meta: FC<MetaProps> = ({ name, uri, hash }) => (
@@ -20,19 +20,19 @@ const Meta: FC<MetaProps> = ({ name, uri, hash }) => (
       <div className="truncate text-xs">{hash}</div>
     </a>
   </div>
-);
+)
 
 interface Props {
-  publication: BCharityPublication;
+  publication: BCharityPublication
 }
 
 const OnchainMeta: FC<Props> = ({ publication }) => {
-  const hash = publication.onChainContentURI.split('/').pop();
-  const isArweaveHash = hash?.length === 43;
-  const isIPFSHash = hash?.length === 46;
+  const hash = publication.onChainContentURI.split('/').pop()
+  const isArweaveHash = hash?.length === 43
+  const isIPFSHash = hash?.length === 46
 
   if (!isArweaveHash && !isIPFSHash && !publication?.collectNftAddress) {
-    return null;
+    return null
   }
 
   return (
@@ -53,7 +53,7 @@ const OnchainMeta: FC<Props> = ({ publication }) => {
         ) : null}
       </div>
     </Card>
-  );
-};
+  )
+}
 
-export default OnchainMeta;
+export default OnchainMeta

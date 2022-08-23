@@ -1,7 +1,7 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { VHR_ABI } from '@abis/VHR_ABI'
 import { gql, useMutation, useQuery } from '@apollo/client'
-import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/NewComment'
+import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/New'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'

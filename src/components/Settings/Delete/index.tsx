@@ -15,13 +15,13 @@ import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import Cookies from 'js-cookie'
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, ERROR_MESSAGE, LENSHUB_PROXY, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
-import { SETTINGS } from 'src/tracking'
+import { PAGEVIEW, SETTINGS } from 'src/tracking'
 import { useContractWrite, useDisconnect, useSignTypedData } from 'wagmi'
 
 import Sidebar from '../Sidebar'
@@ -55,6 +55,10 @@ const CREATE_BURN_PROFILE_TYPED_DATA_MUTATION = gql`
 `
 
 const DeleteSettings: FC = () => {
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.SETTINGS.DELETE)
+  }, [])
+
   const { t } = useTranslation('common')
   const [showWarningModal, setShowWarningModal] = useState<boolean>(false)
   const userSigNonce = useAppStore((state) => state.userSigNonce)
@@ -68,6 +72,7 @@ const DeleteSettings: FC = () => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(SETTINGS.DELETE, { result: 'typed_data_error', error: error?.message })
     }
   })
 

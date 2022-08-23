@@ -79,6 +79,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
     },
     onError(error: any) {
       toast.error(error?.data?.message ?? error?.message)
+      Mixpanel.track(GROUP.JOIN, { result: 'typed_data_error', error: error?.message })
     }
   })
 
@@ -88,7 +89,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(GROUP.JOIN, { result: 'broadcast_error' })
+      Mixpanel.track(GROUP.JOIN, { result: 'broadcast_error', error: error?.message })
     }
   })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(

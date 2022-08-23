@@ -1,4 +1,4 @@
-import NewComment from '@components/Comment/NewComment'
+import NewComment from '@components/Comment/New'
 import SinglePublication from '@components/Publication/SinglePublication'
 import { Card } from '@components/UI/Card'
 import { Modal } from '@components/UI/Modal'
@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { usePublicationStore } from 'src/store/publication'
 import { PUBLICATION } from 'src/tracking'
 
-import NewPost from '..'
+import NewPost from '.'
 
 const NewPostModal: FC = () => {
   const { t } = useTranslation('common')

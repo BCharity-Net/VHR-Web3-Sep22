@@ -1,7 +1,7 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation, useQuery } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/NewPost'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFile from '@components/Shared/ChooseFile'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'
@@ -26,7 +26,7 @@ import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
 import { NextPage } from 'next'
-import React, { ChangeEvent, useState } from 'react'
+import React, { ChangeEvent, useEffect, useState } from 'react'
 import { Controller } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -42,7 +42,7 @@ import {
 } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
-import { FUNDRAISE } from 'src/tracking'
+import { FUNDRAISE, PAGEVIEW } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 import { object, string } from 'zod'
@@ -58,7 +58,7 @@ const MODULES_CURRENCY_QUERY = gql`
   }
 `
 
-const Create: NextPage = () => {
+const NewFundraise: NextPage = () => {
   const { t } = useTranslation('common')
   const [cover, setCover] = useState<string>()
   const [coverType, setCoverType] = useState<string>()
@@ -73,6 +73,7 @@ const Create: NextPage = () => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(FUNDRAISE.NEW, { result: 'typed_data_error', error: error?.message })
     }
   })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY)
@@ -89,8 +90,12 @@ const Create: NextPage = () => {
     recipient: string()
       .max(42, { message: 'Ethereum address should be within 42 characters' })
       .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
-    description: string().max(1000, { message: 'Description should not exceed 1000 characters' }).nullable()
+    description: string().max(1000, { message: 'Description should not exceed 1000 characters' })
   })
+
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.CREATE_FUNDRAISE)
+  }, [])
 
   const onCompleted = () => {
     Mixpanel.track(FUNDRAISE.NEW, { result: 'success' })
@@ -140,7 +145,7 @@ const Create: NextPage = () => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(FUNDRAISE.NEW, { result: 'broadcast_error' })
+      Mixpanel.track(FUNDRAISE.NEW, { result: 'broadcast_error', error: error?.message })
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
@@ -435,4 +440,4 @@ const Create: NextPage = () => {
   )
 }
 
-export default Create
+export default NewFundraise

@@ -4,6 +4,7 @@ import { Button } from '@components/UI/Button'
 import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { ClockIcon, CogIcon, HashtagIcon, PencilAltIcon, UsersIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import imagekitURL from '@lib/imagekitURL'
 import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
@@ -46,9 +47,11 @@ const Details: FC<Props> = ({ group }) => {
       <div className="relative w-32 h-32 sm:w-72 sm:h-72">
         <img
           src={imagekitURL(
-            group?.metadata?.cover?.original?.url
-              ? group?.metadata?.cover?.original?.url
-              : `https://avatar.tobi.sh/${group?.id}.png`,
+            getIPFSLink(
+              group?.metadata?.cover?.original?.url
+                ? group?.metadata?.cover?.original?.url
+                : `https://avatar.tobi.sh/${group?.id}.png`
+            ),
             'avatar'
           )}
           className="w-32 h-32 bg-gray-200 rounded-xl ring-2 ring-gray-200 sm:w-72 sm:h-72 dark:bg-gray-700 dark:ring-gray-700/80"

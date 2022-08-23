@@ -4,11 +4,13 @@ import { PageLoading } from '@components/UI/PageLoading'
 import Seo from '@components/utils/Seo'
 import { GroupFields } from '@gql/GroupFields'
 import { ChartBarIcon, FireIcon, SparklesIcon } from '@heroicons/react/outline'
+import { Mixpanel } from '@lib/mixpanel'
 import { NextPage } from 'next'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from 'src/constants'
 import Custom500 from 'src/pages/500'
+import { PAGEVIEW } from 'src/tracking'
 
 import List from './List'
 
@@ -44,6 +46,10 @@ const GROUP_QUERY = gql`
 `
 
 const Groups: NextPage = () => {
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.GROUPS)
+  }, [])
+
   const { t } = useTranslation('common')
   const { data, loading, error } = useQuery(GROUP_QUERY, {
     variables: {

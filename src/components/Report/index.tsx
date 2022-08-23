@@ -16,12 +16,12 @@ import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
 import { Mixpanel } from '@lib/mixpanel'
 import { useRouter } from 'next/router'
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, ZERO_ADDRESS } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore } from 'src/store/app'
-import { PUBLICATION } from 'src/tracking'
+import { PAGEVIEW, PUBLICATION } from 'src/tracking'
 import { object, string } from 'zod'
 
 import Reason from './Reason'
@@ -33,11 +33,9 @@ export const CREATE_REPORT_PUBLICATION_MUTATION = gql`
 `
 
 const newReportSchema = object({
-  additionalComments: string()
-    .max(260, {
-      message: 'Additional comments should not exceed 260 characters'
-    })
-    .nullable()
+  additionalComments: string().max(260, {
+    message: 'Additional comments should not exceed 260 characters'
+  })
 })
 
 const Report: FC = () => {
@@ -48,6 +46,11 @@ const Report: FC = () => {
   const [type, setType] = useState<string>('')
   const [subReason, setSubReason] = useState<string>('')
   const currentUser = useAppPersistStore((state) => state.currentUser)
+
+  useEffect(() => {
+    Mixpanel.track(PAGEVIEW.REPORT)
+  }, [])
+
   const { data, loading, error } = useQuery(PUBLICATION_QUERY, {
     variables: {
       request: { publicationId: id },

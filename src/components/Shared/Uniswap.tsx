@@ -1,10 +1,8 @@
-import {
-  BCharityCollectModule,
-  BCharityFollowModule
-} from '@generated/bcharitytypes'
+import { BCharityCollectModule, BCharityFollowModule } from '@generated/bcharitytypes'
 import getUniswapURL from '@lib/getUniswapURL'
 import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
+import { STATIC_ASSETS } from 'src/constants'
 import { PUBLICATION } from 'src/tracking'
 
 interface Props {
@@ -18,10 +16,7 @@ const Uniswap: FC<Props> = ({ module }) => {
         You don't have enough <b>{module?.amount?.asset?.symbol}</b>
       </div>
       <a
-        href={getUniswapURL(
-          parseFloat(module?.amount?.value),
-          module?.amount?.asset?.address
-        )}
+        href={getUniswapURL(parseFloat(module?.amount?.value), module?.amount?.asset?.address)}
         onClick={() => {
           Mixpanel.track(PUBLICATION.COLLECT_MODULE.OPEN_UNISWAP)
         }}
@@ -30,7 +25,7 @@ const Uniswap: FC<Props> = ({ module }) => {
         rel="noreferrer noopener"
       >
         <img
-          src="https://assets.bcharity.xyz/images/brands/uniswap.png"
+          src={`${STATIC_ASSETS}/brands/uniswap.png`}
           className="w-5 h-5"
           height={20}
           width={20}

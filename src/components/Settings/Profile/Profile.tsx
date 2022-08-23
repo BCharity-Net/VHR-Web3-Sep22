@@ -79,6 +79,7 @@ const Profile: FC<Props> = ({ profile }) => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(SETTINGS.PROFILE.UPDATE, { result: 'typed_data_error', error: error?.message })
     }
   })
 
@@ -114,7 +115,8 @@ const Profile: FC<Props> = ({ profile }) => {
         toast.error(error.message)
       }
       Mixpanel.track(SETTINGS.PROFILE.UPDATE, {
-        result: 'broadcast_error'
+        result: 'broadcast_error',
+        error: error?.message
       })
     }
   })
@@ -184,19 +186,11 @@ const Profile: FC<Props> = ({ profile }) => {
 
   const editProfileSchema = object({
     // translate
-    name: string()
-      .min(2, { message: t('At least 2 characters') })
-      .max(100, { message: t('Exceeds 100 characters') }),
-    location: string()
-      .max(100, { message: t('Location exceeds') })
-      .nullable(),
+    name: string().max(100, { message: 'Name should not exceed 100 characters' }),
+    location: string().max(100, { message: 'Location should not exceed 100 characters' }),
     website: optional(string().max(100, { message: t('Website exceeds') })),
-    twitter: string()
-      .max(100, { message: t('Twitter exceeds') })
-      .nullable(),
-    bio: string()
-      .max(260, { message: t('Bio exceeds') })
-      .nullable()
+    twitter: string().max(100, { message: 'Twitter should not exceed 100 characters' }),
+    bio: string().max(260, { message: 'Bio should not exceed 260 characters' })
   })
 
   const form = useZodForm({

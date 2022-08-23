@@ -69,6 +69,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError(error) {
       toast.error(error?.message)
+      Mixpanel.track(FUNDRAISE.FUND, { result: 'typed_data_error', error: error?.message })
     }
   })
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
@@ -129,7 +130,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(FUNDRAISE.FUND, { result: 'broadcast_error' })
+      Mixpanel.track(FUNDRAISE.FUND, { result: 'broadcast_error', error: error?.message })
     }
   })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
