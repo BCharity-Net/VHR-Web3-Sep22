@@ -22,18 +22,12 @@ const RevenueDetails: FC<Props> = ({ fund, callback }) => {
   useQuery(PUBLICATION_REVENUE_QUERY, {
     variables: {
       request: {
-        publicationId:
-          fund?.__typename === 'Mirror'
-            ? fund?.mirrorOf?.id
-            : fund?.pubId ?? fund?.id
+        publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.id
       }
     },
-    onCompleted(data) {
-      Logger.log(
-        '[Query]',
-        `Fetched fundraise revenue details Fundraise:${fund?.pubId ?? fund?.id}`
-      )
-      if (!callback) return
+    onCompleted: (data) => {
+      Logger.log('[Query]', `Fetched fundraise revenue details Fundraise:${fund?.id}`)
+      if (!callback) {return}
       callback(data?.publicationRevenue?.revenue?.total?.value)
     }
   })

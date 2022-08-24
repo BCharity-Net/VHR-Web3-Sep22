@@ -13,20 +13,16 @@ interface Props {
   reload?: boolean
 }
 
-const IndexStatus: FC<Props> = ({
-  type = 'Transaction',
-  txHash,
-  reload = false
-}) => {
+const IndexStatus: FC<Props> = ({ type = 'Transaction', txHash, reload = false }) => {
   const { t } = useTranslation('common')
-  const [hide, setHide] = useState<boolean>(false)
-  const [pollInterval, setPollInterval] = useState<number>(500)
+  const [hide, setHide] = useState(false)
+  const [pollInterval, setPollInterval] = useState(500)
   const { data, loading } = useQuery(TX_STATUS_QUERY, {
     variables: {
       request: { txHash }
     },
     pollInterval,
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (data?.hasTxHashBeenIndexed?.indexed) {
         setPollInterval(0)
         if (reload) {
@@ -56,9 +52,7 @@ const IndexStatus: FC<Props> = ({
       ) : (
         <div className="flex items-center space-x-1">
           <CheckCircleIcon className="w-5 h-5 text-green-500" />
-          <div className="text-black dark:text-white">
-            {t('Index successful')}
-          </div>
+          <div className="text-black dark:text-white">{t('Index successful')}</div>
         </div>
       )}
     </a>

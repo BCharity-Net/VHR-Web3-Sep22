@@ -3,16 +3,18 @@ import { CurrencyDollarIcon, UserCircleIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const SetDefaultProfile: FC = () => {
   const { t } = useTranslation('common')
   const profiles = useAppStore((state) => state.profiles)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const hasDefaultProfile = !!profiles.find((o) => o.isDefault)
   const count = profiles.length
 
-  if (currentUser || hasDefaultProfile) return null
+  if (currentProfile || hasDefaultProfile) {
+    return null
+  }
 
   return (
     <Card className="mb-4 bg-green-50 dark:bg-green-900 !border-green-600">

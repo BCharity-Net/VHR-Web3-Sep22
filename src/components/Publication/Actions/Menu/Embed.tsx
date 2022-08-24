@@ -15,15 +15,12 @@ const Embed: FC<Props> = ({ publication }) => {
     <Menu.Item
       as="a"
       className={({ active }: { active: boolean }) =>
-        clsx(
-          { 'dropdown-active': active },
-          'block px-4 py-1.5 text-sm m-2 rounded-lg cursor-pointer'
-        )
+        clsx({ 'dropdown-active': active }, 'block px-4 py-1.5 text-sm m-2 rounded-lg cursor-pointer')
       }
       onClick={() => {
         Mixpanel.track(PUBLICATION.EMBED)
       }}
-      href={`https://embed.withlens.app/?url=${publication?.id ?? publication?.pubId}`}
+      href={`https://embed.withlens.app/?url=${publication?.id}`}
       target="_blank"
     >
       <div className="flex items-center space-x-2">

@@ -1,5 +1,5 @@
 import { LensPeriphery } from '@abis/LensPeriphery'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import ChooseFile from '@components/Shared/ChooseFile'
 import IndexStatus from '@components/Shared/IndexStatus'
 import { Button } from '@components/UI/Button'
@@ -12,6 +12,10 @@ import { TextArea } from '@components/UI/TextArea'
 import { Toggle } from '@components/UI/Toggle'
 import { CreateSetProfileMetadataUriBroadcastItemResult, MediaSet, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import {
+  CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION,
+  CREATE_SET_PROFILE_METADATA_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateSetProfileMetadata'
 import { PencilIcon } from '@heroicons/react/outline'
 import getAttribute from '@lib/getAttribute'
 import hasPrideLogo from '@lib/hasPrideLogo'
@@ -25,41 +29,12 @@ import uploadToArweave from '@lib/uploadToArweave'
 import React, { ChangeEvent, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { APP_NAME, CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENS_PERIPHERY, RELAY_ON } from 'src/constants'
+import { APP_NAME, ERROR_MESSAGE, ERRORS, LENS_PERIPHERY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 import { object, optional, string } from 'zod'
-
-const CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION = gql`
-  mutation CreateSetProfileMetadataTypedData($request: CreatePublicSetProfileMetadataURIRequest!) {
-    createSetProfileMetadataTypedData(request: $request) {
-      id
-      expiresAt
-      typedData {
-        types {
-          SetProfileMetadataURIWithSig {
-            name
-            type
-          }
-        }
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        value {
-          nonce
-          deadline
-          profileId
-          metadata
-        }
-      }
-    }
-  }
-`
 
 interface Props {
   profile: Profile & { coverPicture: MediaSet }
@@ -69,15 +44,15 @@ const Profile: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [beta, setBeta] = useState<boolean>(isBeta(profile))
-  const [pride, setPride] = useState<boolean>(hasPrideLogo(profile))
-  const [cover, setCover] = useState<string>()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const [uploading, setUploading] = useState<boolean>(false)
+  const [beta, setBeta] = useState(isBeta(profile))
+  const [pride, setPride] = useState(hasPrideLogo(profile))
+  const [cover, setCover] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
       Mixpanel.track(SETTINGS.PROFILE.UPDATE, { result: 'typed_data_error', error: error?.message })
     }
@@ -100,17 +75,17 @@ const Profile: FC<Props> = ({ profile }) => {
     contractInterface: LensPeriphery,
     functionName: 'setProfileMetadataURIWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -123,11 +98,11 @@ const Profile: FC<Props> = ({ profile }) => {
   const [createSetProfileMetadataTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createSetProfileMetadataTypedData
       }: {
         createSetProfileMetadataTypedData: CreateSetProfileMetadataUriBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createSetProfileMetadataTypedData
         const { deadline } = typedData?.value
 
@@ -142,7 +117,7 @@ const Profile: FC<Props> = ({ profile }) => {
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
           const inputStruct = {
-            user: currentUser?.ownedBy,
+            user: currentProfile?.ownedBy,
             profileId,
             metadata,
             sig
@@ -152,17 +127,31 @@ const Profile: FC<Props> = ({ profile }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
+
+  const [createSetProfileMetadataViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] =
+    useMutation(CREATE_SET_PROFILE_METADATA_VIA_DISPATHCER_MUTATION, {
+      onCompleted,
+      onError: (error) => {
+        toast.error(error.message ?? ERROR_MESSAGE)
+        Mixpanel.track(SETTINGS.PROFILE.UPDATE, {
+          result: 'dispatcher_error',
+          error: error?.message
+        })
+      }
+    })
 
   useEffect(() => {
     if (profile?.coverPicture?.original?.url) {
@@ -187,9 +176,13 @@ const Profile: FC<Props> = ({ profile }) => {
   const editProfileSchema = object({
     // translate
     name: string().max(100, { message: 'Name should not exceed 100 characters' }),
-    location: string().max(100, { message: 'Location should not exceed 100 characters' }),
+    location: string().max(100, {
+      message: 'Location should not exceed 100 characters'
+    }),
     website: optional(string().max(100, { message: t('Website exceeds') })),
-    twitter: string().max(100, { message: 'Twitter should not exceed 100 characters' }),
+    twitter: string().max(100, {
+      message: 'Twitter should not exceed 100 characters'
+    }),
     bio: string().max(260, { message: 'Bio should not exceed 260 characters' })
   })
 
@@ -211,7 +204,9 @@ const Profile: FC<Props> = ({ profile }) => {
     twitter: string | null,
     bio: string | null
   ) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     setIsUploading(true)
     const id = await uploadToArweave({
@@ -256,16 +251,25 @@ const Profile: FC<Props> = ({ profile }) => {
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
 
-    createSetProfileMetadataTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: {
-          profileId: currentUser?.id,
-          metadata: `https://arweave.net/${id}`
+    const request = {
+      profileId: currentProfile?.id,
+      metadata: `https://arweave.net/${id}`
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createSetProfileMetadataViaDispatcher({ variables: { request } })
+    } else {
+      createSetProfileMetadataTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request
         }
-      }
-    })
+      })
+    }
   }
+
+  const isLoading =
+    isUploading || typedDataLoading || dispatcherLoading || signLoading || writeLoading || broadcastLoading
 
   return (
     <Card>
@@ -278,7 +282,7 @@ const Profile: FC<Props> = ({ profile }) => {
           }}
         >
           {error && <ErrorMessage className="mb-3" title={t('Transaction Failed!')} error={error} />}
-          <Input label={t('Profile Id')} type="text" value={currentUser?.id} disabled />
+          <Input label={t('Profile Id')} type="text" value={currentProfile?.id} disabled />
           <Input label={t('Name')} type="text" placeholder="Gavin" {...form.register('name')} />
           <Input label={t('Location')} type="text" placeholder="Miami" {...form.register('location')} />
           <Input
@@ -337,20 +341,22 @@ const Profile: FC<Props> = ({ profile }) => {
             <Button
               className="ml-auto"
               type="submit"
-              disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
-              icon={
-                isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
-                  <Spinner size="xs" />
-                ) : (
-                  <PencilIcon className="w-4 h-4" />
-                )
-              }
+              disabled={isLoading}
+              icon={isLoading ? <Spinner size="xs" /> : <PencilIcon className="w-4 h-4" />}
             >
               {' '}
               {t('Save')}
             </Button>
-            {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-              <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
+            {writeData?.hash ??
+            broadcastData?.broadcast?.txHash ??
+            dispatcherData?.createSetProfileMetadataViaDispatcher?.txHash ? (
+              <IndexStatus
+                txHash={
+                  writeData?.hash ??
+                  broadcastData?.broadcast?.txHash ??
+                  dispatcherData?.createSetProfileMetadataViaDispatcher?.txHash
+                }
+              />
             ) : null}
           </div>
         </Form>

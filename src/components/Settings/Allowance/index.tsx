@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { APP_NAME, DEFAULT_COLLECT_TOKEN } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import Sidebar from '../Sidebar'
@@ -57,18 +57,26 @@ const AllowanceSettings: NextPage = () => {
   }, [])
 
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [currencyLoading, setCurrencyLoading] = useState<boolean>(false)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [currencyLoading, setCurrencyLoading] = useState(false)
   const { data, loading, error, refetch } = useQuery(ALLOWANCE_SETTINGS_QUERY, {
     variables: {
       request: getAllowancePayload(DEFAULT_COLLECT_TOKEN)
     },
-    skip: !currentUser?.id
+    skip: !currentProfile?.id
   })
 
-  if (error) return <Custom500 />
-  if (loading) return <PageLoading message={t('Loading settings')} />
-  if (!currentUser) return <Custom404 />
+  if (error) {
+    return <Custom500 />
+  }
+
+  if (loading) {
+    return <PageLoading message="Loading settings" />
+  }
+
+  if (!currentProfile) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>

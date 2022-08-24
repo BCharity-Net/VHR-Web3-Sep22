@@ -5,7 +5,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { PaginatedResultInfo, Wallet } from '@generated/types'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import { CollectionIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC, useState } from 'react'
@@ -21,7 +21,7 @@ const COLLECTORS_QUERY = gql`
       items {
         address
         defaultProfile {
-          ...MinimalProfileFields
+          ...ProfileFields
           isFollowedByMe
         }
       }
@@ -31,7 +31,7 @@ const COLLECTORS_QUERY = gql`
       }
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
 `
 
 interface Props {
@@ -45,7 +45,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
   const { data, loading, error, fetchMore } = useQuery(COLLECTORS_QUERY, {
     variables: { request: { publicationId: pubId, limit: 10 } },
     skip: !pubId,
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.whoCollectedPublication?.pageInfo)
       setCollectors(data?.whoCollectedPublication?.items)
     }
@@ -68,9 +68,11 @@ const Collectors: FC<Props> = ({ pubId }) => {
     }
   })
 
-  if (loading) return <Loader message="Loading collectors" />
+  if (loading) {
+    return <Loader message="Loading collectors" />
+  }
 
-  if (data?.whoCollectedPublication?.items?.length === 0)
+  if (data?.whoCollectedPublication?.items?.length === 0) {
     return (
       <div className="p-5">
         <EmptyState
@@ -80,6 +82,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
         />
       </div>
     )
+  }
 
   return (
     <div className="overflow-y-auto max-h-[80vh]">

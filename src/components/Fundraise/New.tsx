@@ -1,7 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation, useQuery } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFile from '@components/Shared/ChooseFile'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'
@@ -16,6 +15,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Erc20 } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
@@ -33,12 +33,12 @@ import { useTranslation } from 'react-i18next'
 import {
   APP_NAME,
   CATEGORIES,
-  CONNECT_WALLET,
   DEFAULT_COLLECT_TOKEN,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
-  RELAY_ON
+  RELAY_ON,
+  SIGN_WALLET
 } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
@@ -60,20 +60,23 @@ const MODULES_CURRENCY_QUERY = gql`
 
 const NewFundraise: NextPage = () => {
   const { t } = useTranslation('common')
-  const [cover, setCover] = useState<string>()
-  const [coverType, setCoverType] = useState<string>()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const [uploading, setUploading] = useState<boolean>(false)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
-  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState<string>('WMATIC')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const [cover, setCover] = useState('')
+  const [coverType, setCoverType] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
+  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState('WMATIC')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(FUNDRAISE.NEW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(FUNDRAISE.NEW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY)
@@ -90,7 +93,9 @@ const NewFundraise: NextPage = () => {
     recipient: string()
       .max(42, { message: 'Ethereum address should be within 42 characters' })
       .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
-    description: string().max(1000, { message: 'Description should not exceed 1000 characters' })
+    description: string().max(1000, {
+      message: 'Description should not exceed 1000 characters'
+    })
   })
 
   useEffect(() => {
@@ -110,10 +115,10 @@ const NewFundraise: NextPage = () => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -121,7 +126,7 @@ const NewFundraise: NextPage = () => {
   const form = useZodForm({
     schema: newFundraiseSchema,
     defaultValues: {
-      recipient: currentUser?.ownedBy
+      recipient: currentProfile?.ownedBy
     }
   })
 
@@ -141,15 +146,18 @@ const NewFundraise: NextPage = () => {
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(FUNDRAISE.NEW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(FUNDRAISE.NEW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       const { id, typedData } = createPostTypedData
       const {
         profileId,
@@ -184,13 +192,15 @@ const NewFundraise: NextPage = () => {
             data: { broadcast: result }
           } = await broadcast({ variables: { request: { id, signature } } })
 
-          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {
+            write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
@@ -203,7 +213,9 @@ const NewFundraise: NextPage = () => {
     recipient: string,
     description: string | null
   ) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     setIsUploading(true)
     const id = await uploadToArweave({
@@ -230,7 +242,7 @@ const NewFundraise: NextPage = () => {
         {
           traitType: 'string',
           key: 'creator',
-          value: currentUser?.handle
+          value: currentProfile?.handle
         },
         {
           traitType: 'string',
@@ -253,7 +265,7 @@ const NewFundraise: NextPage = () => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
+          profileId: currentProfile?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             feeCollectModule: {
@@ -274,8 +286,10 @@ const NewFundraise: NextPage = () => {
     })
   }
 
-  if (loading) return <PageLoading message="Loading create fundraise" />
-  if (!isAuthenticated) return <Custom404 />
+  if (loading) {return <PageLoading message="Loading create fundraise" />}
+  if (!isAuthenticated) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>
@@ -408,14 +422,14 @@ const NewFundraise: NextPage = () => {
                   </div>
                 </div>
               </div>
-              {!isVerified(currentUser?.id) && (
+              {!isVerified(currentProfile?.id) && (
                 <a className="ml-auto text-red-500">You need to be verified to create a fundraiser</a>
               )}
               <Button
                 className="ml-auto"
                 type="submit"
                 disabled={
-                  !isVerified(currentUser?.id) ||
+                  !isVerified(currentProfile?.id) ||
                   typedDataLoading ||
                   isUploading ||
                   signLoading ||

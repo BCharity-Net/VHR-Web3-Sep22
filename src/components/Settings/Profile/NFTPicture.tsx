@@ -8,6 +8,10 @@ import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { CreateSetProfileImageUriBroadcastItemResult, NftImage, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import {
+  CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
+  CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateSetProfileImageURI'
 import { PencilIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
@@ -16,7 +20,7 @@ import gql from 'graphql-tag'
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, IS_MAINNET, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { ERROR_MESSAGE, ERRORS, IS_MAINNET, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { chain, useContractWrite, useSignMessage, useSignTypedData } from 'wagmi'
@@ -28,38 +32,6 @@ const editNftPictureSchema = object({
     .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Contract address' }),
   tokenId: string()
 })
-
-const CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION = gql`
-  mutation CreateSetProfileImageUriTypedData(
-    $options: TypedDataOptions
-    $request: UpdateProfileImageRequest!
-  ) {
-    createSetProfileImageURITypedData(options: $options, request: $request) {
-      id
-      expiresAt
-      typedData {
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        types {
-          SetProfileImageURIWithSig {
-            name
-            type
-          }
-        }
-        value {
-          nonce
-          deadline
-          imageURI
-          profileId
-        }
-      }
-    }
-  }
-`
 
 const CHALLENGE_QUERY = gql`
   query Challenge($request: NftOwnershipChallengeRequest!) {
@@ -78,14 +50,17 @@ const NFTPicture: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [chainId, setChainId] = useState<number>(IS_MAINNET ? chain.mainnet.id : chain.kovan.id)
+  const [chainId, setChainId] = useState(IS_MAINNET ? chain.mainnet.id : chain.kovan.id)
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
   const { signMessageAsync } = useSignMessage()
@@ -115,10 +90,10 @@ const NFTPicture: FC<Props> = ({ profile }) => {
     contractInterface: LensHubProxy,
     functionName: 'setProfileImageURIWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -126,7 +101,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
   const [loadChallenge, { loading: challengeLoading }] = useLazyQuery(CHALLENGE_QUERY)
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -136,14 +111,15 @@ const NFTPicture: FC<Props> = ({ profile }) => {
       })
     }
   })
+
   const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createSetProfileImageURITypedData
       }: {
         createSetProfileImageURITypedData: CreateSetProfileImageUriBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createSetProfileImageURITypedData
         const { deadline } = typedData?.value
 
@@ -167,25 +143,41 @@ const NFTPicture: FC<Props> = ({ profile }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
+  const [createSetProfileImageURIViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] =
+    useMutation(CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION, {
+      onCompleted,
+      onError: (error) => {
+        toast.error(error.message ?? ERROR_MESSAGE)
+        Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
+          result: 'dispatcher_error',
+          error: error?.message
+        })
+      }
+    })
+
   const setAvatar = async (contractAddress: string, tokenId: string) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     const challengeRes = await loadChallenge({
       variables: {
         request: {
-          ethereumAddress: currentUser?.ownedBy,
+          ethereumAddress: currentProfile?.ownedBy,
           nfts: {
             contractAddress,
             tokenId,
@@ -194,23 +186,36 @@ const NFTPicture: FC<Props> = ({ profile }) => {
         }
       }
     })
-    signMessageAsync({
+    const signature = await signMessageAsync({
       message: challengeRes?.data?.nftOwnershipChallenge?.text
-    }).then((signature) => {
+    })
+    const request = {
+      profileId: currentProfile?.id,
+      nftData: {
+        id: challengeRes?.data?.nftOwnershipChallenge?.id,
+        signature
+      }
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createSetProfileImageURIViaDispatcher({ variables: { request } })
+    } else {
       createSetProfileImageURITypedData({
         variables: {
           options: { overrideSigNonce: userSigNonce },
-          request: {
-            profileId: currentUser?.id,
-            nftData: {
-              id: challengeRes?.data?.nftOwnershipChallenge?.id,
-              signature
-            }
-          }
+          request
         }
       })
-    })
+    }
   }
+
+  const isLoading =
+    challengeLoading ||
+    typedDataLoading ||
+    dispatcherLoading ||
+    signLoading ||
+    writeLoading ||
+    broadcastLoading
 
   return (
     <Form
@@ -250,19 +255,21 @@ const NFTPicture: FC<Props> = ({ profile }) => {
         <Button
           className="ml-auto"
           type="submit"
-          disabled={challengeLoading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
-          icon={
-            challengeLoading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
-              <Spinner size="xs" />
-            ) : (
-              <PencilIcon className="w-4 h-4" />
-            )
-          }
+          disabled={isLoading}
+          icon={isLoading ? <Spinner size="xs" /> : <PencilIcon className="w-4 h-4" />}
         >
           {t('Save')}
         </Button>
-        {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-          <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
+        {writeData?.hash ??
+        broadcastData?.broadcast?.txHash ??
+        dispatcherData?.createSetProfileImageURIViaDispatcher?.txHash ? (
+          <IndexStatus
+            txHash={
+              writeData?.hash ??
+              broadcastData?.broadcast?.txHash ??
+              dispatcherData?.createSetProfileImageURIViaDispatcher?.txHash
+            }
+          />
         ) : null}
       </div>
     </Form>

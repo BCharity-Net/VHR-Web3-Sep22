@@ -1,6 +1,5 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation, useQuery } from '@apollo/client'
-import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/New'
 import { GridItemSix, GridLayout } from '@components/GridLayout'
 import Collectors from '@components/Shared/Collectors'
 import Markup from '@components/Shared/Markup'
@@ -15,6 +14,10 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { CreateCommentBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CommentFields } from '@gql/CommentFields'
+import {
+  CREATE_COMMENT_TYPED_DATA_MUTATION,
+  CREATE_COMMENT_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateComment'
 import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outline'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
@@ -22,7 +25,7 @@ import omit from '@lib/omit'
 import uploadToArweave from '@lib/uploadToArweave'
 import clsx from 'clsx'
 import { splitSignature } from 'ethers/lib/utils'
-import React, { FC, ReactNode, useEffect, useState } from 'react'
+import React, { FC, MouseEvent, ReactNode, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import {
@@ -105,8 +108,8 @@ export const CommentValue: FC<CommentProps> = ({ id, callback }) => {
         publicationId: id
       }
     },
-    onCompleted(data) {
-      if (callback) callback(data)
+    onCompleted: (data) => {
+      if (callback) {callback(data)}
     }
   })
   return <div />
@@ -114,14 +117,16 @@ export const CommentValue: FC<CommentProps> = ({ id, callback }) => {
 
 const Fundraise: FC<Props> = ({ fund }) => {
   const { t } = useTranslation('common')
-  const [showFundersModal, setShowFundersModal] = useState<boolean>(false)
-  const [revenue, setRevenue] = useState<number>(0)
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [newAmount, setNewAmount] = useState<string>()
+  const [showFundersModal, setShowFundersModal] = useState(false)
+  const [revenue, setRevenue] = useState(0)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const [isUploading, setIsUploading] = useState(false)
+  const [newAmount, setNewAmount] = useState('')
   const { data, loading } = useQuery(COLLECT_QUERY, {
-    variables: { request: { publicationId: fund?.pubId ?? fund?.id } }
+    variables: { request: { publicationId: fund?.id } }
   })
 
   const collectModule: any = data?.publication?.collectModule
@@ -131,8 +136,8 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const { data: commentFeed, loading: commentFeedLoading } = useQuery(COMMENT_FEED_QUERY, {
     variables: {
       request: { commentsOf: fund.id },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache'
   })
@@ -140,7 +145,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
     variables: {
       request: {
-        publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.pubId ?? fund?.id
+        publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.id
       }
     }
   })
@@ -150,12 +155,12 @@ const Fundraise: FC<Props> = ({ fund }) => {
   }, [revenueData])
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
     }
   })
   const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -167,7 +172,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
     contractInterface: LensHubProxy,
     functionName: 'commentWithSig',
     mode: 'recklesslyUnprepared',
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -175,11 +180,11 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const [createCommentTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COMMENT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCommentTypedData
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createCommentTypedData
         const {
           profileId,
@@ -222,17 +227,33 @@ const Fundraise: FC<Props> = ({ fund }) => {
               variables: { request: { id, signature } }
             })
 
-            if ('reason' in result) commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
+
+  // const [createCommentViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
+  //   CREATE_COMMENT_VIA_DISPATHCER_MUTATION,
+  //   {
+  //     onCompleted,
+  //     onError: (error) => {
+  //       toast.error(error.message ?? ERROR_MESSAGE)
+  //       Mixpanel.track(COMMENT.NEW, {
+  //         result: 'dispatcher_error',
+  //         error: error?.message
+  //       });
+  //     }
+  //   }
+  // )
 
   const createComment = async (
     title: string,
@@ -245,7 +266,9 @@ const Fundraise: FC<Props> = ({ fund }) => {
     referralFee: string,
     description: string | null
   ) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     setIsUploading(true)
     const id = await uploadToArweave({
@@ -299,8 +322,8 @@ const Fundraise: FC<Props> = ({ fund }) => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
-          publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.pubId ?? fund?.id,
+          profileId: currentProfile?.id,
+          publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             feeCollectModule: {
@@ -324,10 +347,10 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const goalAmount = fund?.metadata?.attributes[1]?.value
   const percentageReached = revenue ? (revenue / Number(goalAmount as string)) * 100 : 0
   const cover = fund?.metadata?.cover?.original?.url
-  if (loading) return <FundraiseShimmer />
+  if (loading) {return <FundraiseShimmer />}
 
   return (
-    <Card forceRounded>
+    <Card forceRounded onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}>
       <div
         className="h-40 rounded-t-xl border-b sm:h-52 dark:border-b-gray-700/80"
         style={{
@@ -372,7 +395,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                     show={showFundersModal}
                     onClose={() => setShowFundersModal(false)}
                   >
-                    <Collectors pubId={fund?.pubId ?? fund?.id} />
+                    <Collectors pubId={fund?.id} />
                   </Modal>
                 </>
               )}
@@ -434,7 +457,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
             </div>
             <ReferralAlert mirror={fund} referralFee={collectModule?.referralFee} />
           </div>
-          {currentUser ? (
+          {currentProfile ? (
             <div className="pt-3 sm:pt-0">
               <Fund fund={fund} collectModule={collectModule} revenue={revenue} setRevenue={setRevenue} />
             </div>
@@ -484,7 +507,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                           id={i.id}
                           callback={(data: any) => {
                             const value = data?.publicationRevenue?.revenue.total.value
-                            if (value) commentValue += Number(value)
+                            if (value) {commentValue += Number(value)}
                             setRevenue(revenue + commentValue)
                           }}
                         />

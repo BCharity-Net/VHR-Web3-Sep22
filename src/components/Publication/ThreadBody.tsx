@@ -21,15 +21,15 @@ const ThreadBody: FC<Props> = ({ publication }) => {
   const timestamp = isMirror ? publication?.mirrorOf?.createdAt : publication?.createdAt
 
   return (
-    <div>
+    <>
       <div className="flex justify-between space-x-1.5">
         <UserProfile
           profile={
             publication?.collectedBy?.defaultProfile ? publication?.collectedBy?.defaultProfile : profile
           }
         />
-        <Link href={`/posts/${publication?.id ?? publication?.pubId}`}>
-          <a href={`/posts/${publication?.id ?? publication?.pubId}`} className="text-sm text-gray-500">
+        <Link href={`/posts/${publication?.id}`}>
+          <a href={`/posts/${publication?.id}`} className="text-sm text-gray-500">
             {dayjs(new Date(timestamp)).fromNow()}
           </a>
         </Link>
@@ -47,7 +47,7 @@ const ThreadBody: FC<Props> = ({ publication }) => {
           )}
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

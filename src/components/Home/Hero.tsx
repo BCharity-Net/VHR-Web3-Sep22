@@ -10,8 +10,8 @@ const Hero: React.FC = () => {
           <div className="flex-1 flex-shrink-0 space-y-3">
             <div className="text-2xl font-extrabold sm:text-4xl">{t('Welcome')}</div>
             <div className="leading-7 text-gray-700 dark:text-gray-300">{t('Welcome Description')}</div>
-            <div className="text-2xl font-extrabold text-black sm:text-2xl">{t('VHR Title')}</div>
-            <div className="leading-7 text-gray-700">{t('VHR Description')}</div>
+            <div className="text-2xl font-extrabold sm:text-2xl">{t('VHR Title')}</div>
+            <div className="leading-7 text-gray-700 dark:text-gray-300">{t('VHR Description')}</div>
           </div>
           <div className="hidden flex-1 flex-shrink-0 w-full sm:block" />
         </div>

@@ -5,7 +5,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { Following, PaginatedResultInfo, Profile } from '@generated/types'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC, useState } from 'react'
@@ -18,7 +18,7 @@ const FOLLOWING_QUERY = gql`
     following(request: $request) {
       items {
         profile {
-          ...MinimalProfileFields
+          ...ProfileFields
           isFollowedByMe
         }
         totalAmountOfTimesFollowing
@@ -29,7 +29,7 @@ const FOLLOWING_QUERY = gql`
       }
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
 `
 
 interface Props {
@@ -43,7 +43,7 @@ const Following: FC<Props> = ({ profile }) => {
   const { data, loading, error, fetchMore } = useQuery(FOLLOWING_QUERY, {
     variables: { request: { address: profile?.ownedBy, limit: 10 } },
     skip: !profile?.id,
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.following?.pageInfo)
       setFollowing(data?.following?.items)
     }
@@ -66,9 +66,11 @@ const Following: FC<Props> = ({ profile }) => {
     }
   })
 
-  if (loading) return <Loader message={t('Loading following')} />
+  if (loading) {
+    return <Loader message="Loading following" />
+  }
 
-  if (data?.following?.items?.length === 0)
+  if (data?.following?.items?.length === 0) {
     return (
       <EmptyState
         message={
@@ -81,6 +83,7 @@ const Following: FC<Props> = ({ profile }) => {
         hideCard
       />
     )
+  }
 
   return (
     <div className="overflow-y-auto max-h-[80vh]">

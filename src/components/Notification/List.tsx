@@ -6,13 +6,13 @@ import { Spinner } from '@components/UI/Spinner'
 import { Notification, PaginatedResultInfo } from '@generated/types'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { MetadataFields } from '@gql/MetadataFields'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import { MailIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
 import NotificationShimmer from './Shimmer'
@@ -27,20 +27,22 @@ const NOTIFICATIONS_QUERY = gql`
     notifications(request: $request) {
       items {
         ... on NewFollowerNotification {
+          notificationId
           wallet {
             address
             defaultProfile {
-              ...MinimalProfileFields
+              ...ProfileFields
             }
           }
           createdAt
         }
         ... on NewMentionNotification {
+          notificationId
           mentionPublication {
             ... on Post {
               id
               profile {
-                ...MinimalProfileFields
+                ...ProfileFields
               }
               metadata {
                 content
@@ -49,7 +51,7 @@ const NOTIFICATIONS_QUERY = gql`
             ... on Comment {
               id
               profile {
-                ...MinimalProfileFields
+                ...ProfileFields
               }
               metadata {
                 content
@@ -59,8 +61,9 @@ const NOTIFICATIONS_QUERY = gql`
           createdAt
         }
         ... on NewCommentNotification {
+          notificationId
           profile {
-            ...MinimalProfileFields
+            ...ProfileFields
           }
           comment {
             id
@@ -82,8 +85,9 @@ const NOTIFICATIONS_QUERY = gql`
           createdAt
         }
         ... on NewMirrorNotification {
+          notificationId
           profile {
-            ...MinimalProfileFields
+            ...ProfileFields
           }
           publication {
             ... on Post {
@@ -110,10 +114,11 @@ const NOTIFICATIONS_QUERY = gql`
           createdAt
         }
         ... on NewCollectNotification {
+          notificationId
           wallet {
             address
             defaultProfile {
-              ...MinimalProfileFields
+              ...ProfileFields
             }
           }
           collectedPublication {
@@ -144,22 +149,22 @@ const NOTIFICATIONS_QUERY = gql`
       }
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
   ${CollectModuleFields}
   ${MetadataFields}
 `
 
 const List: FC = () => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(NOTIFICATIONS_QUERY, {
     variables: {
-      request: { profileId: currentUser?.id, limit: 10 }
+      request: { profileId: currentProfile?.id, limit: 10 }
     },
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.notifications?.pageInfo)
       setNotifications(data?.notifications?.items)
     }
@@ -170,7 +175,7 @@ const List: FC = () => {
       const { data } = await fetchMore({
         variables: {
           request: {
-            profileId: currentUser?.id,
+            profileId: currentProfile?.id,
             cursor: pageInfo?.next,
             limit: 10
           }
@@ -182,7 +187,7 @@ const List: FC = () => {
     }
   })
 
-  if (loading)
+  if (loading) {
     return (
       <Card className="divide-y dark:divide-gray-700">
         <NotificationShimmer />
@@ -191,10 +196,13 @@ const List: FC = () => {
         <NotificationShimmer />
       </Card>
     )
+  }
 
-  if (error) return <ErrorMessage className="m-3" title={t('Notification failed')} error={error} />
+  if (error) {
+    return <ErrorMessage className="m-3" title="Failed to load notifications" error={error} />
+  }
 
-  if (data?.notifications?.items?.length === 0)
+  if (data?.notifications?.items?.length === 0) {
     return (
       <EmptyState
         message={
@@ -206,11 +214,12 @@ const List: FC = () => {
         hideCard
       />
     )
+  }
 
   return (
     <Card className="divide-y dark:divide-gray-700">
-      {notifications?.map((notification: Notification, index: number) => (
-        <div key={index} className="p-5">
+      {notifications?.map((notification: Notification) => (
+        <div key={notification?.notificationId} className="p-5">
           {notification?.__typename === 'NewFollowerNotification' && (
             <FollowerNotification notification={notification as any} />
           )}

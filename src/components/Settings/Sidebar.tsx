@@ -1,12 +1,19 @@
 import UserProfile from '@components/Shared/UserProfile'
 import { Profile } from '@generated/types'
-import { ChipIcon, DatabaseIcon, ExclamationIcon, ShareIcon, UserIcon } from '@heroicons/react/outline'
+import {
+  ChipIcon,
+  DatabaseIcon,
+  ExclamationIcon,
+  FingerPrintIcon,
+  ShareIcon,
+  UserIcon
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { FC, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 interface MenuProps {
   children: ReactNode
@@ -31,12 +38,12 @@ const Menu: FC<MenuProps> = ({ children, current, url }) => (
 const Sidebar: FC = () => {
   const { t } = useTranslation('common')
   const { pathname } = useRouter()
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   return (
     <div className="px-3 mb-4 space-y-1.5 sm:px-0">
       <div className="pb-3">
-        <UserProfile profile={currentUser as Profile} />
+        <UserProfile profile={currentProfile as Profile} />
       </div>
       <Menu current={pathname == '/settings'} url="/settings">
         <UserIcon className="w-4 h-4" />
@@ -45,6 +52,10 @@ const Sidebar: FC = () => {
       <Menu current={pathname == '/settings/account'} url="/settings/account">
         <ChipIcon className="w-4 h-4" />
         <div>{t('Account')}</div>
+      </Menu>
+      <Menu current={pathname == '/settings/dispatcher'} url="/settings/dispatcher">
+        <FingerPrintIcon className="w-4 h-4" />
+        <div>Dispatcher</div>
       </Menu>
       <Menu current={pathname == '/settings/allowance'} url="/settings/allowance">
         <ShareIcon className="w-4 h-4" />

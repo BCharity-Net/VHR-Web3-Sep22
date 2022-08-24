@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppPersistStore, useAppStore } from 'src/store/app'
 
 import TranslateButton from '../TranslateButton'
 import MenuItems from './MenuItems'
@@ -27,12 +27,12 @@ const PING_QUERY = gql`
 
 const Navbar: FC = () => {
   const { t } = useTranslation('common')
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
   const staffMode = useAppPersistStore((state) => state.staffMode)
   const { data: pingData } = useQuery(PING_QUERY, {
     pollInterval: 3000,
-    skip: !currentUser
+    skip: !currentProfile
   })
 
   interface NavItemProps {
@@ -87,7 +87,7 @@ const Navbar: FC = () => {
     >
       {({ open }) => (
         <>
-          {isStaff(currentUser?.id) && staffMode && <StaffBar />}
+          {isStaff(currentProfile?.id) && staffMode && <StaffBar />}
           <div className="container px-5 mx-auto max-w-screen-xl">
             <div className="flex relative justify-between items-center h-14 sm:h-16">
               <div className="flex justify-start items-center">
@@ -119,8 +119,8 @@ const Navbar: FC = () => {
                 </div>
               </div>
               <div className="flex gap-8 items-center">
-                {isAuthenticated && currentUser && <NewPostModal />}
-                {isAuthenticated && currentUser && <NotificationIcon />}
+                {isAuthenticated && currentProfile && <NewPostModal />}
+                {isAuthenticated && currentProfile && <NotificationIcon />}
                 <TranslateButton />
                 <MenuItems pingData={pingData} />
               </div>

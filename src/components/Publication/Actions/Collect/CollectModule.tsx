@@ -118,15 +118,15 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [revenue, setRevenue] = useState<number>(0)
-  const [showCollectorsModal, setShowCollectorsModal] = useState<boolean>(false)
-  const [allowed, setAllowed] = useState<boolean>(true)
-  const [hoursAddressDisable, setHoursAddressDisable] = useState<boolean>(false)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [revenue, setRevenue] = useState(0)
+  const [showCollectorsModal, setShowCollectorsModal] = useState(false)
+  const [allowed, setAllowed] = useState(true)
+  const [hoursAddressDisable, setHoursAddressDisable] = useState(false)
 
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
       Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
         result: 'typed_data_error',
@@ -153,20 +153,20 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const { data, loading } = useQuery(COLLECT_QUERY, {
-    variables: { request: { publicationId: publication?.pubId ?? publication?.id } },
-    onCompleted() {
+    variables: { request: { publicationId: publication?.id } },
+    onCompleted: () => {
       if (
         publication?.metadata.attributes[0].value === 'hours' &&
-        publication?.metadata.attributes[1].value !== currentUser?.ownedBy
+        publication?.metadata.attributes[1].value !== currentProfile?.ownedBy
       ) {
         setHoursAddressDisable(true)
       }
@@ -185,8 +185,8 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
         referenceModules: []
       }
     },
-    skip: !collectModule?.amount?.asset?.address || !currentUser,
-    onCompleted(data) {
+    skip: !collectModule?.amount?.asset?.address || !currentProfile,
+    onCompleted: (data) => {
       setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
   })
@@ -194,10 +194,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
     variables: {
       request: {
-        publicationId:
-          publication?.__typename === 'Mirror'
-            ? publication?.mirrorOf?.id
-            : publication?.pubId ?? publication?.id
+        publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
       }
     },
     skip: !publication?.id
@@ -208,7 +205,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   }, [revenueData])
 
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
-    addressOrName: currentUser?.ownedBy,
+    addressOrName: currentProfile?.ownedBy,
     token: collectModule?.amount?.asset?.address,
     formatUnits: collectModule?.amount?.asset?.decimals,
     watch: true
@@ -223,21 +220,24 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCollectTypedData
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
 
@@ -263,30 +263,36 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     createCollectTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
-        request: { publicationId: publication?.pubId ?? publication?.id }
+        request: { publicationId: publication?.id }
       }
     })
   }
 
-  if (loading || revenueLoading) return <Loader message="Loading collect" />
+  if (loading || revenueLoading) {
+    return <Loader message="Loading collect" />
+  }
 
   return (
     <>
@@ -367,11 +373,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                 onClose={() => setShowCollectorsModal(false)}
               >
                 <Collectors
-                  pubId={
-                    publication?.__typename === 'Mirror'
-                      ? publication?.mirrorOf?.id
-                      : publication?.pubId ?? publication?.id
-                  }
+                  pubId={publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id}
                 />
               </Modal>
             </div>
@@ -462,7 +464,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
             <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
           </div>
         ) : null}
-        {currentUser ? (
+        {currentProfile ? (
           allowanceLoading || balanceLoading ? (
             <div className="mt-5 w-28 rounded-lg h-[34px] shimmer" />
           ) : allowed || collectModule.type === 'FreeCollectModule' ? (

@@ -1,5 +1,5 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import IndexStatus from '@components/Shared/IndexStatus'
 import UserProfile from '@components/Shared/UserProfile'
 import { Button } from '@components/UI/Button'
@@ -8,6 +8,7 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { Profile, SetDefaultProfileBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreateSetDefaultProfile'
 import { ExclamationIcon, PencilIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
@@ -15,43 +16,11 @@ import splitSignature from '@lib/splitSignature'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
-
-const CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION = gql`
-  mutation CreateSetDefaultProfileTypedData(
-    $options: TypedDataOptions
-    $request: CreateSetDefaultProfileRequest!
-  ) {
-    createSetDefaultProfileTypedData(options: $options, request: $request) {
-      id
-      expiresAt
-      typedData {
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        types {
-          SetDefaultProfileWithSig {
-            name
-            type
-          }
-        }
-        value {
-          nonce
-          deadline
-          wallet
-          profileId
-        }
-      }
-    }
-  }
-`
 
 const SetProfile: FC = () => {
   const { t } = useTranslation('common')
@@ -59,10 +28,10 @@ const SetProfile: FC = () => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const [selectedUser, setSelectedUser] = useState<string>()
+  const [selectedUser, setSelectedUser] = useState('')
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
       Mixpanel.track(SETTINGS.ACCOUNT.SET_DEFAULT_PROFILE, {
         result: 'typed_data_error',
@@ -88,10 +57,10 @@ const SetProfile: FC = () => {
     contractInterface: LensHubProxy,
     functionName: 'setDefaultProfileWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -108,7 +77,7 @@ const SetProfile: FC = () => {
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -118,14 +87,15 @@ const SetProfile: FC = () => {
       })
     }
   })
+
   const [createSetDefaultProfileTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createSetDefaultProfileTypedData
       }: {
         createSetDefaultProfileTypedData: SetDefaultProfileBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createSetDefaultProfileTypedData
         const { deadline } = typedData?.value
 
@@ -150,30 +120,39 @@ const SetProfile: FC = () => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const setDefaultProfile = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
+    const request = { profileId: selectedUser }
     createSetDefaultProfileTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
-        request: { profileId: selectedUser }
+        request
       }
     })
   }
 
-  if (!isAuthenticated) return <Custom404 />
+  if (!isAuthenticated) {
+    return <Custom404 />
+  }
+
+  const isLoading = typedDataLoading || signLoading || writeLoading || broadcastLoading
 
   return (
     <Card>
@@ -214,15 +193,9 @@ const SetProfile: FC = () => {
           <Button
             className="ml-auto"
             type={t('Submit')}
-            disabled={typedDataLoading || signLoading || writeLoading || broadcastLoading}
+            disabled={isLoading}
             onClick={setDefaultProfile}
-            icon={
-              typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
-                <Spinner size="xs" />
-              ) : (
-                <PencilIcon className="w-4 h-4" />
-              )
-            }
+            icon={isLoading ? <Spinner size="xs" /> : <PencilIcon className="w-4 h-4" />}
           >
             {t('Save')}
           </Button>

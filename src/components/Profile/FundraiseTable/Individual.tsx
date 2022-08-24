@@ -47,7 +47,7 @@ export interface Data {
 const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
 
   const bal = useContractRead({
@@ -60,7 +60,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
     // onSuccess(data) {
     //   console.log(data)
     // },
-    // onError(error) {
+    // onError: (error) => {
     //   console.log(error)
     // }
   })
@@ -121,7 +121,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -136,9 +136,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
             (result.attributes[0].value === 'fundraise' ||
               result.attributes[0].value === 'fundraise-comment') &&
             new Date(result.createdOn) >=
-              new Date(
-                'Thu Aug 04 2022 13:45:31 GMT-0600 (Mountain Daylight Saving Time)'
-              )
+              new Date('Thu Aug 04 2022 13:45:31 GMT-0600 (Mountain Daylight Saving Time)')
           ) {
             nft.push({
               orgName: result.attributes[2].value,
@@ -156,9 +154,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
                   : '',
               amountGOOD:
                 result.attributes[4] && result.attributes[4].key === 'newAmount'
-                  ? (+(result.attributes[4].value / goodToDAIPrice).toFixed(
-                      2
-                    )).toString()
+                  ? (+(result.attributes[4].value / goodToDAIPrice).toFixed(2)).toString()
                   : '',
               postID: ''
             })
@@ -192,9 +188,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
             (result.attributes[0].value === 'fundraise' ||
               result.attributes[0].value === 'fundraise-comment') &&
             new Date(result.createdOn) >=
-              new Date(
-                'Thu Aug 04 2022 13:45:31 GMT-0600 (Mountain Daylight Saving Time)'
-              )
+              new Date('Thu Aug 04 2022 13:45:31 GMT-0600 (Mountain Daylight Saving Time)')
           ) {
             nft.push({
               orgName: result.attributes[2].value,
@@ -210,10 +204,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
                 result.attributes[4] && result.attributes[4].key === 'newAmount'
                   ? result.attributes[4].value
                   : '',
-              amountGOOD: (
-                result.attributes[4].value *
-                (1 / goodToDAIPrice)
-              ).toString(),
+              amountGOOD: (result.attributes[4].value * (1 / goodToDAIPrice)).toString(),
               postID: ''
             })
             setTableData([...tableData, ...nft])
@@ -229,30 +220,22 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
   const columns = getColumns()
 
   const Table = () => {
-    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
-      useTable(
-        {
-          columns,
-          data: tableData
-        },
-        useFilters
-      )
+    const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } = useTable(
+      {
+        columns,
+        data: tableData
+      },
+      useFilters
+    )
 
     return (
-      <table
-        className="w-full text-md text-center mb-2 mt-2"
-        {...getTableProps()}
-      >
+      <table className="w-full text-md text-center mb-2 mt-2" {...getTableProps()}>
         <thead>
           {headerGroups.map((headerGroup, index) => {
             return index === 0 ? (
               <tr>
-                <th
-                  className="p-4"
-                  {...headerGroup.headers[0].getHeaderProps()}
-                >
-                  {headerGroup.headers[0] &&
-                    headerGroup.headers[0].render('Header')}
+                <th className="p-4" {...headerGroup.headers[0].getHeaderProps()}>
+                  {headerGroup.headers[0] && headerGroup.headers[0].render('Header')}
                 </th>
               </tr>
             ) : (
@@ -260,9 +243,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
                 {headerGroup.headers.map((column) => (
                   <th className="p-4" {...column.getHeaderProps()}>
                     {column.render('Header')}
-                    <div>
-                      {column.canFilter ? column.render('Filter') : null}
-                    </div>
+                    <div>{column.canFilter ? column.render('Filter') : null}</div>
                   </th>
                 ))}
               </tr>
@@ -288,14 +269,9 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
                   callback={(data: any) => {
                     if (tableData[index].amount === '') {
                       tableData[index].amount = data.collectModule.amount.value
-                      if (
-                        data.collectModule.amount.asset.address ==
-                        DAI_CHECK_FOR_CONVERSION
-                      ) {
+                      if (data.collectModule.amount.asset.address == DAI_CHECK_FOR_CONVERSION) {
                         tableData[index].amount += ' DAI'
-                      } else if (
-                        data.collectModule.amount.asset.address == WMATIC_TOKEN
-                      ) {
+                      } else if (data.collectModule.amount.asset.address == WMATIC_TOKEN) {
                         tableData[index].amount += ' WMATIC'
                       }
                       setTableData([...tableData])
@@ -303,17 +279,11 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
                     if (tableData[index].postID !== data.id) {
                       tableData[index].postID = data.id
                       if (tableData[index].amountGOOD === '') {
-                        if (
-                          data.collectModule.amount.asset.address ==
-                          DAI_CHECK_FOR_CONVERSION
-                        ) {
+                        if (data.collectModule.amount.asset.address == DAI_CHECK_FOR_CONVERSION) {
                           tableData[index].amountGOOD = (+(
                             data.collectModule.amount.value / goodToDAIPrice
                           ).toFixed(2)).toString()
-                        } else if (
-                          data.collectModule.amount.asset.address ==
-                          WMATIC_TOKEN
-                        ) {
+                        } else if (data.collectModule.amount.asset.address == WMATIC_TOKEN) {
                           tableData[index].amountGOOD = (+(
                             data.collectModule.amount.value * wmaticToGoodPrice
                           ).toFixed(2)).toString()

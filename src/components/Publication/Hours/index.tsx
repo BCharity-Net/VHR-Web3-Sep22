@@ -6,7 +6,7 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { ClockIcon } from '@heroicons/react/outline'
 import imagekitURL from '@lib/imagekitURL'
 import React, { FC, useState } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import Verify from './Verify'
 
@@ -19,9 +19,9 @@ interface MediaProps {
 }
 
 const Media: FC<MediaProps> = ({ media }) => {
-  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const [activeIndex, setActiveIndex] = useState(0)
   let attachments: any[] = []
-  if (media) attachments = JSON.parse(media)
+  if (media) {attachments = JSON.parse(media)}
   return (
     <div>
       {attachments && (
@@ -68,9 +68,9 @@ const Media: FC<MediaProps> = ({ media }) => {
 
 const Hours: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [showVerifyModal, setShowVerifyModal] = useState<boolean>(false)
-  if (publication.metadata.attributes.length < 9) return <div />
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  if (publication.metadata.attributes.length < 9) {return <div />}
   return (
     <Card forceRounded>
       <div className="p-5">
@@ -83,7 +83,7 @@ const Hours: FC<Props> = ({ publication }) => {
               Submitted by {publication.profile.name} ({publication.profile.handle}):
             </div>
           </div>
-          {currentUser &&
+          {currentProfile &&
             (publication?.stats?.totalAmountOfCollects < 1 ? (
               <div className="pt-3 sm:pt-0">
                 <Verify publication={publication} />
@@ -99,7 +99,7 @@ const Hours: FC<Props> = ({ publication }) => {
                   show={showVerifyModal}
                   onClose={() => setShowVerifyModal(false)}
                 >
-                  <Collectors pubId={publication?.pubId ?? publication?.id} />
+                  <Collectors pubId={publication?.id} />
                 </Modal>
               </div>
             ))}

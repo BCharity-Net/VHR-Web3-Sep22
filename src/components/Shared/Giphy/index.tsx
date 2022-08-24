@@ -22,7 +22,7 @@ interface Props {
 
 const Giphy: FC<Props> = ({ setGifAttachment }) => {
   const { t } = useTranslation('common')
-  const [showModal, setShowModal] = useState<boolean>(false)
+  const [showModal, setShowModal] = useState(false)
 
   return (
     <>
@@ -52,10 +52,7 @@ const Giphy: FC<Props> = ({ setGifAttachment }) => {
         show={showModal}
         onClose={() => setShowModal(false)}
       >
-        <GifSelector
-          setShowModal={setShowModal}
-          setGifAttachment={setGifAttachment}
-        />
+        <GifSelector setShowModal={setShowModal} setGifAttachment={setGifAttachment} />
       </Modal>
     </>
   )

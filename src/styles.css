@@ -51,7 +51,7 @@ table {
 .bg-hero {
   background: linear-gradient(90deg, theme('colors.white'), theme('colors.white') 50%, theme('colors.transparent')),
     url("../public/bg-hero.png");
-  background-size: cover
+  background-size: auto
 }
 .dark .bg-hero {
   background: linear-gradient(90deg, theme('colors.black'), theme('colors.black') 50%, theme('colors.transparent')),

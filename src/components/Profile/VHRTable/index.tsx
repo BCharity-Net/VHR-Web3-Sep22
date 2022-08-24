@@ -16,7 +16,7 @@ import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { Row, useFilters, useTable } from 'react-table'
 import { DAI_TOKEN, GIVE_DAI_LP, GOOD_TOKEN, VHR_TO_DAI_PRICE } from 'src/constants'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { useContractRead } from 'wagmi'
 
 import NFTDetails from './NFTDetails'
@@ -54,10 +54,10 @@ export interface Data {
 }
 
 const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request, from }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [vhrTxnData, setVhrTxnData] = useState<string[]>([])
@@ -117,7 +117,7 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
     return Promise.all(
       data.map(async (i: any, index: number) => {
         let verified = false
-        if (i.collectNftAddress) verified = true
+        if (i.collectNftAddress) {verified = true}
         return {
           orgName: from ? i.profile.handle : i.metadata.name,
           program: i.metadata.attributes[5].value,
@@ -176,12 +176,12 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
   const { data, loading, error, fetchMore } = useQuery(query, {
     variables: {
       request: request,
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -225,8 +225,8 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
       const { data } = await fetchMore({
         variables: {
           request: req,
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       const hours = handleQueryComplete(data)

@@ -13,7 +13,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import dynamic from 'next/dynamic'
 import React, { FC, ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { GROUP } from 'src/tracking'
 
 import Join from './Join'
@@ -29,10 +29,10 @@ interface Props {
 }
 
 const Details: FC<Props> = ({ group }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [showMembersModal, setShowMembersModal] = useState<boolean>(false)
-  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false)
-  const [joined, setJoined] = useState<boolean>(group?.hasCollectedByMe)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [joined, setJoined] = useState(group?.hasCollectedByMe)
 
   const { t } = useTranslation('common')
   const MetaDetails = ({ children, icon }: { children: ReactNode; icon: ReactNode }) => (
@@ -77,7 +77,7 @@ const Details: FC<Props> = ({ group }) => {
           ) : (
             <Join group={group} setJoined={setJoined} />
           )}
-          {currentUser?.id === group?.profile?.id && (
+          {currentProfile?.id === group?.profile?.id && (
             <>
               <Button
                 variant="secondary"

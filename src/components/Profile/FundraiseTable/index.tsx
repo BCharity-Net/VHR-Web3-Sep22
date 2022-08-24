@@ -12,7 +12,7 @@ import Logger from '@lib/logger'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useFilters, useTable } from 'react-table'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import PublicationRevenue from './PublicationRevenue'
 import TotalDonors from './TotalDonors'
@@ -35,10 +35,10 @@ export interface Data {
 }
 
 const FundraiseTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [fundsData, setFundsData] = useState<number[]>([])
@@ -62,12 +62,12 @@ const FundraiseTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, q
   const { data, loading, error, fetchMore } = useQuery(query, {
     variables: {
       request: request,
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -100,8 +100,8 @@ const FundraiseTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, q
       const { data } = await fetchMore({
         variables: {
           request: req,
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       const fundraisers = handleQueryComplete(data)

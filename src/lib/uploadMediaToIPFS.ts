@@ -2,8 +2,11 @@ import { BCharityAttachment } from '@generated/bcharitytypes'
 import axios from 'axios'
 import { v4 as uuid } from 'uuid'
 
-import shuffleArray from './shuffleArray'
-
+/**
+ *
+ * @param data - Data to upload to IPFS
+ * @returns attachment array
+ */
 const uploadMediaToIPFS = async (data: any): Promise<BCharityAttachment[]> => {
   try {
     const attachments = []
@@ -11,7 +14,7 @@ const uploadMediaToIPFS = async (data: any): Promise<BCharityAttachment[]> => {
       let file = data.item(i)
       const formData = new FormData()
       formData.append('data', file, uuid())
-      const upload = await axios(`https://shuttle-${shuffleArray([4, 5, 6])}.estuary.tech/content/add`, {
+      const upload = await axios(`https://shuttle-5.estuary.tech/content/add`, {
         method: 'POST',
         data: formData,
         headers: {

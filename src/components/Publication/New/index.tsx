@@ -1,5 +1,5 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import Attachments from '@components/Shared/Attachments'
 import Markup from '@components/Shared/Markup'
 import PubIndexStatus from '@components/Shared/PubIndexStatus'
@@ -12,6 +12,10 @@ import { BCharityAttachment } from '@generated/bcharitytypes'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import {
+  CREATE_POST_TYPED_DATA_MUTATION,
+  CREATE_POST_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreatePost'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
@@ -47,39 +51,6 @@ const Preview = dynamic(() => import('../../Shared/Preview'), {
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
 
-export const CREATE_POST_TYPED_DATA_MUTATION = gql`
-  mutation CreatePostTypedData($options: TypedDataOptions, $request: CreatePublicPostRequest!) {
-    createPostTypedData(options: $options, request: $request) {
-      id
-      expiresAt
-      typedData {
-        types {
-          PostWithSig {
-            name
-            type
-          }
-        }
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        value {
-          nonce
-          deadline
-          profileId
-          contentURI
-          collectModule
-          collectModuleInitData
-          referenceModule
-          referenceModuleInitData
-        }
-      }
-    }
-  }
-`
-
 interface Props {
   setShowModal?: Dispatch<boolean>
   hideCard?: boolean
@@ -88,9 +59,9 @@ interface Props {
 const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
-  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const publicationContent = usePublicationStore((state) => state.publicationContent)
   const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
   const previewPublication = usePublicationStore((state) => state.previewPublication)
@@ -99,14 +70,17 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
   const feeData = useCollectModuleStore((state) => state.feeData)
   const setFeeData = useCollectModuleStore((state) => state.setFeeData)
-  const [postContentError, setPostContentError] = useState<string>('')
-  const [onlyFollowers, setOnlyFollowers] = useState<boolean>(false)
-  const [isUploading, setIsUploading] = useState<boolean>(false)
+  const [postContentError, setPostContentError] = useState('')
+  const [onlyFollowers, setOnlyFollowers] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [attachments, setAttachments] = useState<BCharityAttachment[]>([])
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(POST.NEW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(POST.NEW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -128,25 +102,28 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(POST.NEW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(POST.NEW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       const { id, typedData } = createPostTypedData
       const {
         profileId,
@@ -181,19 +158,37 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
             data: { broadcast: result }
           } = await broadcast({ variables: { request: { id, signature } } })
 
-          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {
+            write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
 
+  const [createPostViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
+    CREATE_POST_VIA_DISPATHCER_MUTATION,
+    {
+      onCompleted,
+      onError: (error) => {
+        toast.error(error.message ?? ERROR_MESSAGE)
+        Mixpanel.track(POST.NEW, {
+          result: 'dispatcher_error',
+          error: error?.message
+        })
+      }
+    }
+  )
+
   const createPost = async () => {
-    if (!isAuthenticated) return toast.error(SIGN_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
     if (publicationContent.length === 0 && attachments.length === 0) {
       Mixpanel.track(POST.NEW, { result: 'empty' })
       return setPostContentError('Post should not be empty!')
@@ -207,10 +202,10 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
       metadata_id: uuid(),
       description: trimify(publicationContent),
       content: trimify(publicationContent),
-      external_url: `https://lenster.xyz/u/${currentUser?.handle}`,
+      external_url: `https://bcharity.vercel.app/u/${currentProfile?.handle}`,
       image: attachments.length > 0 ? attachments[0]?.item : null,
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
-      name: `Post by @${currentUser?.handle}`,
+      name: `Post by @${currentProfile?.handle}`,
       mainContentFocus:
         attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
       contentWarning: null, // TODO
@@ -227,23 +222,31 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
 
-    createPostTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: {
-          profileId: currentUser?.id,
-          contentURI: `https://arweave.net/${id}`,
-          collectModule: feeData.recipient
-            ? {
-                [getModule(selectedModule.moduleName).config]: feeData
-              }
-            : getModule(selectedModule.moduleName).config,
-          referenceModule: {
-            followerOnlyReferenceModule: onlyFollowers ? true : false
+    const request = {
+      profileId: currentProfile?.id,
+      contentURI: `https://arweave.net/${id}`,
+      collectModule: feeData.recipient
+        ? {
+            [getModule(selectedModule.moduleName).config]: feeData
           }
-        }
+        : getModule(selectedModule.moduleName).config,
+      referenceModule: {
+        followerOnlyReferenceModule: onlyFollowers ? true : false
       }
-    })
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createPostViaDispatcher({
+        variables: { request }
+      })
+    } else {
+      createPostTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request
+        }
+      })
+    }
   }
 
   const setGifAttachment = (gif: IGif) => {

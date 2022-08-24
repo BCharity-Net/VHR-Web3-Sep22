@@ -31,19 +31,12 @@ interface Props {
   profile: Profile
 }
 
-const FeedType: FC<Props> = ({
-  stats,
-  address,
-  id,
-  setFeedType,
-  feedType,
-  profile
-}) => {
+const FeedType: FC<Props> = ({ stats, address, id, setFeedType, feedType, profile }) => {
   const { t } = useTranslation('common')
-  const [orgVerifiedHours, setOrgVerifiedHours] = useState<number>()
-  const [orgVolunteers, setOrgVolunteers] = useState<number>()
-  const [orgDonors, setOrgDonors] = useState<number>()
-  const [orgGood, setOrgGood] = useState<number>()
+  const [orgVerifiedHours, setOrgVerifiedHours] = useState(0)
+  const [orgVolunteers, setOrgVolunteers] = useState(0)
+  const [orgDonors, setOrgDonors] = useState(0)
+  const [orgGood, setOrgGood] = useState(0)
   const { data: vhrBalance } = useBalance({
     addressOrName: address,
     token: VHR_TOKEN,
@@ -72,8 +65,7 @@ const FeedType: FC<Props> = ({
       }}
       className={clsx(
         {
-          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold':
-            feedType === type
+          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold': feedType === type
         },
         'flex items-center space-x-2 rounded-lg px-4 sm:px-3 py-2 sm:py-1 text-brand hover:bg-brand-100 dark:hover:bg-opacity-20 hover:bg-opacity-100'
       )}
@@ -148,57 +140,33 @@ const FeedType: FC<Props> = ({
           type="MIRROR"
           count={stats?.totalMirrors}
         />
-        <FeedLink
-          name="NFTs"
-          icon={<PhotographIcon className="w-4 h-4" />}
-          type="NFT"
-        />
+        <FeedLink name="NFTs" icon={<PhotographIcon className="w-4 h-4" />} type="NFT" />
       </div>
       <div className="w-[800px] flex flex-wrap gap-3 px-5 pb-2 mt-3 sm:px-0 sm:mt-0 md:pb-0">
         {isVerified(id) ? (
           <>
-            <FeedLink
-              name="OrgFunds"
-              icon={<CashIcon className="w-4 h-4" />}
-              type="funds-org"
-            />
+            <FeedLink name="OrgFunds" icon={<CashIcon className="w-4 h-4" />} type="funds-org" />
             <FeedLink
               name="OrgVHR"
               icon={<ClockIcon className="w-4 h-4" />}
               type="org"
               count={orgVerifiedHours}
             />
-            <FeedLink
-              name="OrgOpp"
-              icon={<ClipboardListIcon className="w-4 h-4" />}
-              type="org-opp"
-            />
+            <FeedLink name="OrgOpp" icon={<ClipboardListIcon className="w-4 h-4" />} type="org-opp" />
             <FeedLabel name={`Org Donors: ${orgDonors?.toString() ?? ''}`} />
-            <FeedLabel
-              name={`Org Volunteers: ${orgVolunteers?.toString() ?? ''}`}
-            />
-            <FeedLabel
-              name={`Org GOOD: ${orgGood?.toFixed(2)?.toString() ?? ''}`}
-            />
+            <FeedLabel name={`Org Volunteers: ${orgVolunteers?.toString() ?? ''}`} />
+            <FeedLabel name={`Org GOOD: ${orgGood?.toFixed(2)?.toString() ?? ''}`} />
           </>
         ) : (
           <>
-            <FeedLink
-              name="Funds"
-              icon={<CashIcon className="w-4 h-4" />}
-              type="funds"
-            />
+            <FeedLink name="Funds" icon={<CashIcon className="w-4 h-4" />} type="funds" />
             <FeedLink
               name="VHR"
               icon={<ClockIcon className="w-4 h-4" />}
               type="vhr"
               count={vhrBalance !== undefined ? vhrBalance.value.toNumber() : 0}
             />
-            <FeedLink
-              name="Opportunities"
-              icon={<ClipboardListIcon className="w-4 h-4" />}
-              type="opp"
-            />
+            <FeedLink name="Opportunities" icon={<ClipboardListIcon className="w-4 h-4" />} type="opp" />
           </>
         )}
       </div>

@@ -1,7 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFiles from '@components/Shared/ChooseFiles'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'
@@ -15,6 +14,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Profile } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import imagekitURL from '@lib/imagekitURL'
 import Logger from '@lib/logger'
@@ -30,11 +30,11 @@ import { useTranslation } from 'react-i18next'
 import {
   APP_NAME,
   CATEGORIES,
-  CONNECT_WALLET,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
-  RELAY_ON
+  RELAY_ON,
+  SIGN_WALLET
 } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
@@ -84,7 +84,7 @@ const newOpportunitySchema = object({
     .optional()
     .refine(
       (val) => {
-        if (val === '') return false
+        if (val === '') {return false}
         return true
       },
       { message: 'You should enter an end date' }
@@ -109,7 +109,7 @@ interface Props {
 
 const Media: FC<Props> = ({ media }) => {
   let attachments = []
-  if (media) attachments = JSON.parse(media)
+  if (media) {attachments = JSON.parse(media)}
   return (
     <div>
       {attachments &&
@@ -128,16 +128,18 @@ const Media: FC<Props> = ({ media }) => {
 
 const Opportunity: NextPage = () => {
   const { t } = useTranslation('common')
-  const [cover, setCover] = useState<string>()
-  const [singleDay, setSingleDay] = useState<boolean>(true)
-  const [coverType, setCoverType] = useState<string>()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const [uploading, setUploading] = useState<boolean>(false)
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [media, setMedia] = useState<string>('')
+  const [cover, setCover] = useState('')
+  const [singleDay, setSingleDay] = useState(true)
+  const [coverType, setCoverType] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const [media, setMedia] = useState('')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
     }
   })
@@ -151,7 +153,7 @@ const Opportunity: NextPage = () => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -177,7 +179,7 @@ const Opportunity: NextPage = () => {
   }
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -185,7 +187,7 @@ const Opportunity: NextPage = () => {
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       Logger.log('Mutation =>', 'Generated createPostTypedData')
       const { id, typedData } = createPostTypedData
       const {
@@ -221,13 +223,15 @@ const Opportunity: NextPage = () => {
             data: { broadcast: result }
           } = await broadcast({ variables: { request: { id, signature } } })
 
-          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {
+            write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
@@ -242,19 +246,21 @@ const Opportunity: NextPage = () => {
     endDate: string | undefined,
     totalHours: string,
     description: string,
-    currentUser: Profile | null
+    currentProfile: Profile | undefined
   ) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
     setIsUploading(true)
     const id = await uploadToArweave({
       version: '1.0.0',
       metadata_id: uuid(),
       description: description,
-      content: `@${currentUser?.handle} Volunteer opportunities`,
+      content: `@${currentProfile?.handle} Volunteer opportunities`,
       external_url: null,
       image: cover ? cover : `https://avatar.tobi.sh/${uuid()}.png`,
       imageMimeType: coverType,
-      name: currentUser?.handle,
+      name: currentProfile?.handle,
       contentWarning: null, // TODO
       attributes: [
         {
@@ -317,7 +323,7 @@ const Opportunity: NextPage = () => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
+          profileId: currentProfile?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             freeCollectModule: {
@@ -331,7 +337,9 @@ const Opportunity: NextPage = () => {
       }
     })
   }
-  if (!isAuthenticated) return <Custom404 />
+  if (!isAuthenticated) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>
@@ -377,7 +385,7 @@ const Opportunity: NextPage = () => {
                   endDate,
                   totalHours,
                   description,
-                  currentUser
+                  currentProfile
                 )
               }}
             >
@@ -440,7 +448,7 @@ const Opportunity: NextPage = () => {
                   }
                   const startDate = form.getValues('startDate')
                   const endDate = form.getValues('endDate')
-                  if (endDate === '') form.setValue('endDate', startDate)
+                  if (endDate === '') {form.setValue('endDate', startDate)}
                 }}
                 {...form.register('startDate')}
               />

@@ -15,8 +15,8 @@ interface Props {
 }
 
 const Followerings: FC<Props> = ({ profile }) => {
-  const [showFollowingModal, setShowFollowingModal] = useState<boolean>(false)
-  const [showFollowersModal, setShowFollowersModal] = useState<boolean>(false)
+  const [showFollowingModal, setShowFollowingModal] = useState(false)
+  const [showFollowersModal, setShowFollowersModal] = useState(false)
   const { t } = useTranslation('common')
 
   return (

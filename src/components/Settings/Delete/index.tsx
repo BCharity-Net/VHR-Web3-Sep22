@@ -8,17 +8,16 @@ import { Modal } from '@components/UI/Modal'
 import { Spinner } from '@components/UI/Spinner'
 import { WarningMessage } from '@components/UI/WarningMessage'
 import Seo from '@components/utils/Seo'
-import { CreateBurnProfileBroadcastItemResult } from '@generated/types'
-import { TrashIcon } from '@heroicons/react/outline'
-import { ExclamationIcon } from '@heroicons/react/solid'
+import { CreateBurnProfileBroadcastItemResult, Mutation } from '@generated/types'
+import { ExclamationIcon, TrashIcon } from '@heroicons/react/outline'
+import clearAuthData from '@lib/clearAuthData'
+import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
-import omit from '@lib/omit'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
-import Cookies from 'js-cookie'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useTranslation } from 'react-i18next'
-import { APP_NAME, ERROR_MESSAGE, LENSHUB_PROXY, SIGN_WALLET } from 'src/constants'
+import { APP_NAME, LENSHUB_PROXY, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PAGEVIEW, SETTINGS } from 'src/tracking'
@@ -59,31 +58,27 @@ const DeleteSettings: FC = () => {
     Mixpanel.track(PAGEVIEW.SETTINGS.DELETE)
   }, [])
 
-  const { t } = useTranslation('common')
-  const [showWarningModal, setShowWarningModal] = useState<boolean>(false)
+  const [showWarningModal, setShowWarningModal] = useState(false)
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
   const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const setCurrentUser = useAppPersistStore((state) => state.setCurrentUser)
+  const setProfileId = useAppPersistStore((state) => state.setProfileId)
+
   const { disconnect } = useDisconnect()
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
-      toast.error(error?.message)
-      Mixpanel.track(SETTINGS.DELETE, { result: 'typed_data_error', error: error?.message })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     Mixpanel.track(SETTINGS.DELETE)
     setIsAuthenticated(false)
-    setCurrentUser(null)
-    Cookies.remove('accessToken')
-    Cookies.remove('refreshToken')
-    localStorage.removeItem('lenster.store')
-    if (disconnect) disconnect()
+    setIsConnected(false)
+    setCurrentProfile(undefined)
+    setProfileId(null)
+    clearAuthData()
+    disconnect()
     location.href = '/'
   }
 
@@ -92,59 +87,51 @@ const DeleteSettings: FC = () => {
     contractInterface: LensHubProxy,
     functionName: 'burnWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
-      onCompleted()
-    },
-    onError(error: any) {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
-  const [createBurnProfileTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createBurnProfileTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_BURN_PROFILE_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createBurnProfileTypedData
       }: {
         createBurnProfileTypedData: CreateBurnProfileBroadcastItemResult
-      }) {
-        const { typedData } = createBurnProfileTypedData
-        const { deadline } = typedData?.value
-
+      }) => {
         try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { tokenId } = typedData?.value
+          const { typedData } = createBurnProfileTypedData
+          const { tokenId, deadline } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
 
+          setUserSigNonce(userSigNonce + 1)
           write?.({ recklesslySetUnpreparedArgs: [tokenId, sig] })
-        } catch (error) {}
+        } catch {}
       },
-      onError(error) {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 
   const handleDelete = () => {
-    if (!isAuthenticated) return toast.error(SIGN_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     createBurnProfileTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
-        request: { profileId: currentUser?.id }
+        request: { profileId: currentProfile?.id }
       }
     })
   }
 
   const isDeleting = typedDataLoading || signLoading || writeLoading
 
-  if (!currentUser) return <Custom404 />
+  if (!currentProfile) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>
@@ -155,14 +142,21 @@ const DeleteSettings: FC = () => {
       <GridItemEight>
         <Card>
           <CardBody className="space-y-5">
-            <UserProfile profile={currentUser} />
-            <div className="text-lg font-bold text-red-500">{t('Deactivate account')}</div>
-            <p>{t('Delete info')}</p>
-            <div className="text-lg font-bold">{t('What else')}</div>
+            <UserProfile profile={currentProfile} />
+            <div className="text-lg font-bold text-red-500">This will deactivate your account</div>
+            <p>
+              Deleting your account is permanent. All your data will be wiped out immediately and you
+              won&rsquo;t be able to get it back.
+            </p>
+            <div className="text-lg font-bold">What else you should know</div>
             <div className="text-sm text-gray-500 divide-y dark:divide-gray-700">
-              <p className="pb-3">{t('Delete info1')}</p>
-              <p className="py-3">{t('Delete info2')}</p>
-              <p className="py-3">{t('Delete info3')}</p>
+              <p className="pb-3">
+                You cannot restore your {APP_NAME} account if it was accidentally or wrongfully deleted.
+              </p>
+              <p className="py-3">
+                Some account information may still be available in search engines, such as Google or Bing.
+              </p>
+              <p className="py-3">Your @handle will be released immediately after deleting the account.</p>
             </div>
             <Button
               variant="danger"
@@ -170,7 +164,7 @@ const DeleteSettings: FC = () => {
               disabled={isDeleting}
               onClick={() => setShowWarningModal(true)}
             >
-              {isDeleting ? t('Delete load') : t('Delete your account')}
+              {isDeleting ? 'Deleting...' : 'Delete your account'}
             </Button>
             <Modal
               title="Danger Zone"

@@ -14,7 +14,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
 const SEARCH_PUBLICATIONS_QUERY = gql`
@@ -50,16 +50,16 @@ interface Props {
 
 const Publications: FC<Props> = ({ query }) => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(SEARCH_PUBLICATIONS_QUERY, {
     variables: {
       request: { query, type: 'PUBLICATION', limit: 10 },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.search?.pageInfo)
       setPublications(data?.search?.items)
     }
@@ -75,8 +75,8 @@ const Publications: FC<Props> = ({ query }) => {
             cursor: pageInfo?.next,
             limit: 10
           },
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       setPageInfo(data?.search?.pageInfo)

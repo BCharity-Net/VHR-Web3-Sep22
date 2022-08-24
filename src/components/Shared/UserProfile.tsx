@@ -29,7 +29,7 @@ const UserProfile: FC<Props> = ({
   isFollowing = false,
   isBig = false
 }) => {
-  const [following, setFollowing] = useState<boolean>(isFollowing)
+  const [following, setFollowing] = useState(isFollowing)
 
   return (
     <div className="flex justify-between items-center">
@@ -52,19 +52,11 @@ const UserProfile: FC<Props> = ({
                 <div className={clsx(isBig ? 'font-bold' : 'text-md')}>
                   {profile?.name ?? profile?.handle}
                 </div>
-                {isVerified(profile?.id) && (
-                  <BadgeCheckIcon className="w-4 h-4 text-brand" />
-                )}
+                {isVerified(profile?.id) && <BadgeCheckIcon className="w-4 h-4 text-brand" />}
               </div>
               <Slug className="text-sm" slug={profile?.handle} prefix="@" />
               {showBio && profile?.bio && (
-                <div
-                  className={clsx(
-                    isBig ? 'text-base' : 'text-sm',
-                    'mt-2',
-                    'linkify leading-6'
-                  )}
-                >
+                <div className={clsx(isBig ? 'text-base' : 'text-sm', 'mt-2', 'linkify leading-6')}>
                   <Markup>{profile?.bio}</Markup>
                 </div>
               )}

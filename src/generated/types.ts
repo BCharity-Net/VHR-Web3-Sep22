@@ -52,6 +52,7 @@ export type AchRequest = {
   ethereumAddress: Scalars['EthereumAddress']
   freeTextHandle?: InputMaybe<Scalars['Boolean']>
   handle?: InputMaybe<Scalars['CreateHandle']>
+  overrideAlreadyClaimed: Scalars['Boolean']
   overrideTradeMark: Scalars['Boolean']
   secret: Scalars['String']
 }
@@ -129,6 +130,13 @@ export type ClaimHandleRequest = {
   followModule?: InputMaybe<FollowModuleParams>
   freeTextHandle?: InputMaybe<Scalars['CreateHandle']>
   id?: InputMaybe<Scalars['HandleClaimIdScalar']>
+}
+
+/** The claim status */
+export enum ClaimStatus {
+  AlreadyClaimed = 'ALREADY_CLAIMED',
+  ClaimFailed = 'CLAIM_FAILED',
+  NotClaimed = 'NOT_CLAIMED'
 }
 
 export type ClaimableHandles = {
@@ -1189,6 +1197,10 @@ export type MainPostReference = Mirror | Post
 /** The Media url */
 export type Media = {
   __typename?: 'Media'
+  /** The alt tags for accessibility */
+  altTag?: Maybe<Scalars['String']>
+  /** The cover for any video or audio you attached */
+  cover?: Maybe<Scalars['String']>
   /** Height - will always be null on the public API */
   height?: Maybe<Scalars['Int']>
   /** The image/audio/video mime type for the publication */
@@ -1321,16 +1333,21 @@ export type Mutation = {
   createBurnProfileTypedData: CreateBurnProfileBroadcastItemResult
   createCollectTypedData: CreateCollectBroadcastItemResult
   createCommentTypedData: CreateCommentBroadcastItemResult
+  createCommentViaDispatcher: RelayResult
   createFollowTypedData: CreateFollowBroadcastItemResult
   createMirrorTypedData: CreateMirrorBroadcastItemResult
+  createMirrorViaDispatcher: RelayResult
   createPostTypedData: CreatePostBroadcastItemResult
+  createPostViaDispatcher: RelayResult
   createProfile: RelayResult
   createSetDefaultProfileTypedData: SetDefaultProfileBroadcastItemResult
   createSetDispatcherTypedData: CreateSetDispatcherBroadcastItemResult
   createSetFollowModuleTypedData: CreateSetFollowModuleBroadcastItemResult
   createSetFollowNFTUriTypedData: CreateSetFollowNftUriBroadcastItemResult
   createSetProfileImageURITypedData: CreateSetProfileImageUriBroadcastItemResult
+  createSetProfileImageURIViaDispatcher: RelayResult
   createSetProfileMetadataTypedData: CreateSetProfileMetadataUriBroadcastItemResult
+  createSetProfileMetadataViaDispatcher: RelayResult
   createToggleFollowTypedData: CreateToggleFollowBroadcastItemResult
   createUnfollowTypedData: CreateUnfollowBroadcastItemResult
   hidePublication?: Maybe<Scalars['Void']>
@@ -1374,6 +1391,10 @@ export type MutationCreateCommentTypedDataArgs = {
   request: CreatePublicCommentRequest
 }
 
+export type MutationCreateCommentViaDispatcherArgs = {
+  request: CreatePublicCommentRequest
+}
+
 export type MutationCreateFollowTypedDataArgs = {
   options?: InputMaybe<TypedDataOptions>
   request: FollowRequest
@@ -1384,8 +1405,16 @@ export type MutationCreateMirrorTypedDataArgs = {
   request: CreateMirrorRequest
 }
 
+export type MutationCreateMirrorViaDispatcherArgs = {
+  request: CreateMirrorRequest
+}
+
 export type MutationCreatePostTypedDataArgs = {
   options?: InputMaybe<TypedDataOptions>
+  request: CreatePublicPostRequest
+}
+
+export type MutationCreatePostViaDispatcherArgs = {
   request: CreatePublicPostRequest
 }
 
@@ -1418,8 +1447,16 @@ export type MutationCreateSetProfileImageUriTypedDataArgs = {
   request: UpdateProfileImageRequest
 }
 
+export type MutationCreateSetProfileImageUriViaDispatcherArgs = {
+  request: UpdateProfileImageRequest
+}
+
 export type MutationCreateSetProfileMetadataTypedDataArgs = {
   options?: InputMaybe<TypedDataOptions>
+  request: CreatePublicSetProfileMetadataUriRequest
+}
+
+export type MutationCreateSetProfileMetadataViaDispatcherArgs = {
   request: CreatePublicSetProfileMetadataUriRequest
 }
 
@@ -1620,6 +1657,8 @@ export type OnChainIdentity = {
   proofOfHumanity: Scalars['Boolean']
   /** The sybil dot org information */
   sybilDotOrg: SybilDotOrgIdentity
+  /** The worldcoin identity */
+  worldcoin: WorldcoinIdentity
 }
 
 /** The nft type */
@@ -2116,6 +2155,7 @@ export type Query = {
   approvedModuleAllowanceAmount: Array<ApprovedAllowanceAmount>
   challenge: AuthChallengeResult
   claimableHandles: ClaimableHandles
+  claimableStatus: ClaimStatus
   defaultProfile?: Maybe<Profile>
   doesFollow: Array<DoesFollowResponse>
   enabledModuleCurrencies: Array<Erc20>
@@ -2144,8 +2184,10 @@ export type Query = {
   publicationRevenue?: Maybe<PublicationRevenue>
   publications: PaginatedPublicationResult
   recommendedProfiles: Array<Profile>
+  rel?: Maybe<Scalars['Void']>
   search: SearchResult
   timeline: PaginatedTimelineResult
+  txIdToTxHash: Scalars['TxHash']
   userSigNonces: UserSigNonces
   verify: Scalars['Boolean']
   whoCollectedPublication: PaginatedWhoCollectedResult
@@ -2259,12 +2301,20 @@ export type QueryPublicationsArgs = {
   request: PublicationsQueryRequest
 }
 
+export type QueryRelArgs = {
+  request: RelRequest
+}
+
 export type QuerySearchArgs = {
   request: SearchQueryRequest
 }
 
 export type QueryTimelineArgs = {
   request: TimelineRequest
+}
+
+export type QueryTxIdToTxHashArgs = {
+  txId: Scalars['TxId']
 }
 
 export type QueryVerifyArgs = {
@@ -2311,6 +2361,11 @@ export enum ReferenceModules {
 export type RefreshRequest = {
   /** The refresh token */
   refreshToken: Scalars['Jwt']
+}
+
+export type RelRequest = {
+  ethereumAddress: Scalars['EthereumAddress']
+  secret: Scalars['String']
 }
 
 export type RelayError = {
@@ -2438,7 +2493,7 @@ export type SetDefaultProfileEip712TypedDataValue = {
 }
 
 export type SetDispatcherRequest = {
-  /** The dispatcher address - they can post, comment, mirror, set follow module, change your profile picture on your behalf. */
+  /** The dispatcher address - they can post, comment, mirror, set follow module, change your profile picture on your behalf, if left as none it will use the built in dispatcher address. */
   dispatcher?: InputMaybe<Scalars['EthereumAddress']>
   /** If you want to enable or disable it */
   enable?: InputMaybe<Scalars['Boolean']>
@@ -2626,6 +2681,12 @@ export type WhoCollectedPublicationRequest = {
   limit?: InputMaybe<Scalars['LimitScalar']>
   /** Internal publication id */
   publicationId: Scalars['InternalPublicationId']
+}
+
+export type WorldcoinIdentity = {
+  __typename?: 'WorldcoinIdentity'
+  /** If the profile has verified as a user */
+  isHuman: Scalars['Boolean']
 }
 
 export interface PossibleTypesResultData {

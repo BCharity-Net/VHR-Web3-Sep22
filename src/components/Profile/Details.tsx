@@ -19,7 +19,7 @@ import { useTheme } from 'next-themes'
 import React, { FC, ReactElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { STATIC_ASSETS } from 'src/constants'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppPersistStore, useAppStore } from 'src/store/app'
 
 import Badges from './Badges'
 import Followerings from './Followerings'
@@ -30,9 +30,9 @@ interface Props {
 
 const Details: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
-  const [following, setFollowing] = useState<boolean>(profile?.isFollowedByMe)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const staffMode = useAppPersistStore((state) => state.staffMode)
+  const [following, setFollowing] = useState(profile?.isFollowedByMe)
   const { resolvedTheme } = useTheme()
 
   const hasOnChainIdentity = profile?.onChainIdentity?.proofOfHumanity || profile?.onChainIdentity?.ens?.name
@@ -77,7 +77,7 @@ const Details: FC<Props> = ({ profile }) => {
           ) : (
             <Slug className="!text-sm sm:!text-base" slug={formatAddress(profile?.ownedBy)} />
           )}
-          {currentUser && currentUser?.id !== profile?.id && profile?.isFollowing && (
+          {currentProfile && currentProfile?.id !== profile?.id && profile?.isFollowing && (
             <div className="py-0.5 px-2 text-xs bg-gray-200 rounded-full dark:bg-gray-700">
               {t('Follows you')}
             </div>
@@ -101,7 +101,7 @@ const Details: FC<Props> = ({ profile }) => {
               <Follow profile={profile} setFollowing={setFollowing} showText />
             )
           ) : null}
-          {currentUser?.id === profile?.id && (
+          {currentProfile?.id === profile?.id && (
             <Link href="/settings">
               <a href="/settings">
                 <Button variant="secondary" className="!py-1.5" icon={<CogIcon className="w-5 h-5" />} />
@@ -226,7 +226,7 @@ const Details: FC<Props> = ({ profile }) => {
         </>
       )}
       <Badges profile={profile} />
-      {isStaff(currentUser?.id) && staffMode && <ProfileStaffTool profile={profile} />}
+      {isStaff(currentProfile?.id) && staffMode && <ProfileStaffTool profile={profile} />}
     </div>
   )
 }

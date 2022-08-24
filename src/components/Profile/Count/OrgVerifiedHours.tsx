@@ -4,7 +4,7 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { PaginatedResultInfo, Profile } from '@generated/types'
 import React, { FC, useMemo, useState } from 'react'
 import { Row, useFilters, useTable } from 'react-table'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const NOTIFICATIONS_QUERY = gql`
   query Notifications($request: NotificationRequest!) {
@@ -69,10 +69,10 @@ interface Data {
 }
 
 const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [vhrTxnData, setVhrTxnData] = useState<string[]>([])
@@ -83,7 +83,7 @@ const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
       data.map(async (j: any, index: number) => {
         const i = j.mentionPublication
         let verified = false
-        if (i.collectNftAddress) verified = true
+        if (i.collectNftAddress) {verified = true}
         return {
           orgName: i.profile.handle,
           program: i.metadata.attributes[5].value,
@@ -112,12 +112,12 @@ const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
         profileId: profile?.id,
         limit: tableLimit
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -234,7 +234,7 @@ const OrgVerifiedHours: FC<Props> = ({ profile, callback }) => {
   )
 
   const Complete = () => {
-    if (callback) callback(computeHours(rows), computeVolunteers(rows))
+    if (callback) {callback(computeHours(rows), computeVolunteers(rows))}
     return <div />
   }
 

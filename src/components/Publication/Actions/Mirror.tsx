@@ -1,10 +1,14 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CreateMirrorBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import {
+  CREATE_MIRROR_TYPED_DATA_MUTATION,
+  CREATE_MIRROR_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateMirror'
 import { SwitchHorizontalIcon } from '@heroicons/react/outline'
 import humanize from '@lib/humanize'
 import { Mixpanel } from '@lib/mixpanel'
@@ -15,55 +19,24 @@ import clsx from 'clsx'
 import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
-
-const CREATE_MIRROR_TYPED_DATA_MUTATION = gql`
-  mutation CreateMirrorTypedData($options: TypedDataOptions, $request: CreateMirrorRequest!) {
-    createMirrorTypedData(options: $options, request: $request) {
-      id
-      expiresAt
-      typedData {
-        types {
-          MirrorWithSig {
-            name
-            type
-          }
-        }
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        value {
-          nonce
-          deadline
-          profileId
-          profileIdPointed
-          pubIdPointed
-          referenceModule
-          referenceModuleData
-          referenceModuleInitData
-        }
-      }
-    }
-  }
-`
 
 interface Props {
   publication: BCharityPublication
 }
 
 const Mirror: FC<Props> = ({ publication }) => {
-  const [count, setCount] = useState<number>(0)
-  const [mirrored, setMirrored] = useState<boolean>(publication?.mirrors?.length > 0)
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const [count, setCount] = useState(0)
+  const [mirrored, setMirrored] = useState(
+    publication?.mirrors?.length > 0 || publication?.mirrorOf?.mirrors?.length > 0
+  )
 
   useEffect(() => {
     if (publication?.mirrorOf?.stats?.totalAmountOfMirrors || publication?.stats?.totalAmountOfMirrors) {
@@ -77,9 +50,12 @@ const Mirror: FC<Props> = ({ publication }) => {
   }, [])
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(PUBLICATION.MIRROR, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(PUBLICATION.MIRROR, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -95,31 +71,35 @@ const Mirror: FC<Props> = ({ publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'mirrorWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(PUBLICATION.MIRROR, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(PUBLICATION.MIRROR, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
+
   const [createMirrorTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_MIRROR_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createMirrorTypedData
       }: {
         createMirrorTypedData: CreateMirrorBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createMirrorTypedData
         const {
           profileId,
@@ -154,43 +134,63 @@ const Mirror: FC<Props> = ({ publication }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
-  const createMirror = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
-
-    createMirrorTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: {
-          profileId: currentUser?.id,
-          publicationId: publication?.pubId ?? publication?.id,
-          referenceModule: {
-            followerOnlyReferenceModule: false
-          }
-        }
+  const [createMirrorViaDispatcher, { loading: dispatcherLoading }] = useMutation(
+    CREATE_MIRROR_VIA_DISPATHCER_MUTATION,
+    {
+      onCompleted,
+      onError: (error) => {
+        toast.error(error.message ?? ERROR_MESSAGE)
+        Mixpanel.track(PUBLICATION.MIRROR, {
+          result: 'dispatcher_error',
+          error: error?.message
+        })
       }
-    })
+    }
+  )
+
+  const createMirror = () => {
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
+
+    const request = {
+      profileId: currentProfile?.id,
+      publicationId: publication?.id,
+      referenceModule: {
+        followerOnlyReferenceModule: false
+      }
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createMirrorViaDispatcher({ variables: { request } })
+    } else {
+      createMirrorTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request
+        }
+      })
+    }
   }
 
+  const isLoading = typedDataLoading || dispatcherLoading || signLoading || writeLoading || broadcastLoading
+
   return (
-    <motion.button
-      whileTap={{ scale: 0.9 }}
-      onClick={createMirror}
-      disabled={typedDataLoading || writeLoading}
-      aria-label="Mirror"
-      data-test="publication-mirror"
-    >
+    <motion.button whileTap={{ scale: 0.9 }} onClick={createMirror} disabled={isLoading} aria-label="Mirror">
       <div className={clsx(mirrored ? 'text-green-500' : 'text-brand', 'flex items-center space-x-1')}>
         <div
           className={clsx(
@@ -198,8 +198,8 @@ const Mirror: FC<Props> = ({ publication }) => {
             'p-1.5 rounded-full hover:bg-opacity-20'
           )}
         >
-          {typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
-            <Spinner size="xs" />
+          {isLoading ? (
+            <Spinner variant={mirrored ? 'success' : 'primary'} size="xs" />
           ) : (
             <Tooltip placement="top" content={count > 0 ? `${humanize(count)} Mirrors` : 'Mirror'} withDelay>
               <SwitchHorizontalIcon className="w-[15px] sm:w-[18px]" />

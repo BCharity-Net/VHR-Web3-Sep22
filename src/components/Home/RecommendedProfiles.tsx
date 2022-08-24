@@ -5,31 +5,31 @@ import { Card, CardBody } from '@components/UI/Card'
 import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Profile } from '@generated/types'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
 import { LightningBoltIcon, SparklesIcon } from '@heroicons/react/solid'
 import randomizeArray from '@lib/randomizeArray'
 import React, { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const RECOMMENDED_PROFILES_QUERY = gql`
   query RecommendedProfiles {
     recommendedProfiles {
-      ...MinimalProfileFields
+      ...ProfileFields
       isFollowedByMe
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
 `
 
 const Title = () => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const { t } = useTranslation('common')
 
   return (
     <div className="flex gap-2 items-center px-5 mb-2 sm:px-0">
-      {currentUser ? (
+      {currentProfile ? (
         <>
           <SparklesIcon className="w-4 h-4 text-yellow-500" />
           <div>{t('Who to follow')}</div>
@@ -48,7 +48,7 @@ const RecommendedProfiles: FC = () => {
   const { t } = useTranslation('common')
   const { data, loading, error } = useQuery(RECOMMENDED_PROFILES_QUERY)
 
-  if (loading)
+  if (loading) {
     return (
       <>
         <Title />
@@ -63,8 +63,9 @@ const RecommendedProfiles: FC = () => {
         </Card>
       </>
     )
+  }
 
-  if (data?.recommendedProfiles?.length === 0)
+  if (data?.recommendedProfiles?.length === 0) {
     return (
       <>
         <Title />
@@ -78,6 +79,7 @@ const RecommendedProfiles: FC = () => {
         />
       </>
     )
+  }
 
   return (
     <>

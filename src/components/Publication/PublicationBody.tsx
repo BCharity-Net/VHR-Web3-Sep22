@@ -7,6 +7,7 @@ import { Button } from '@components/UI/Button'
 import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { UserAddIcon, UsersIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import getURLs from '@lib/getURLs'
 import imagekitURL from '@lib/imagekitURL'
 import clsx from 'clsx'
@@ -15,7 +16,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import Approve from './Approve'
 import FundraiseComment from './Fundraise/Comment'
@@ -32,12 +33,12 @@ interface Props {
 }
 
 const PublicationBody: FC<Props> = ({ publication }) => {
-  const [showVerifyModal, setShowVerifyModal] = useState<boolean>(false)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const { t } = useTranslation('common')
   const { pathname } = useRouter()
   const publicationType = publication?.metadata?.attributes[0]?.value
-  const [showMore, setShowMore] = useState<boolean>(publication?.metadata?.content?.length > 450)
+  const [showMore, setShowMore] = useState(publication?.metadata?.content?.length > 450)
 
   return (
     <div className="break-words">
@@ -55,9 +56,11 @@ const PublicationBody: FC<Props> = ({ publication }) => {
             <a href={`/groups/${publication?.id}`} className="flex items-center space-x-1.5 font-bold">
               <img
                 src={imagekitURL(
-                  publication?.metadata?.cover?.original?.url
-                    ? publication?.metadata?.cover?.original?.url
-                    : `https://avatar.tobi.sh/${publication?.id}.png`,
+                  getIPFSLink(
+                    publication?.metadata?.cover?.original?.url
+                      ? publication?.metadata?.cover?.original?.url
+                      : `https://avatar.tobi.sh/${publication?.id}.png`
+                  ),
                   'avatar'
                 )}
                 className="bg-gray-200 rounded ring-2 ring-gray-50 dark:bg-gray-700 dark:ring-black w-[19px] h-[19px]"
@@ -113,7 +116,7 @@ const PublicationBody: FC<Props> = ({ publication }) => {
         publication.commentOn &&
         publication?.commentOn?.metadata?.attributes[0]?.value === 'opportunities' && (
           <div>
-            {currentUser &&
+            {currentProfile &&
               (publication?.stats?.totalAmountOfCollects < 1 ? (
                 <div className="pt-3 sm:pt-0">
                   <Approve publication={publication} />
@@ -133,7 +136,7 @@ const PublicationBody: FC<Props> = ({ publication }) => {
                       show={showVerifyModal}
                       onClose={() => setShowVerifyModal(false)}
                     >
-                      <Collectors pubId={publication?.pubId ?? publication?.id} />
+                      <Collectors pubId={publication?.id} />
                     </Modal>
                   </div>
                 </div>

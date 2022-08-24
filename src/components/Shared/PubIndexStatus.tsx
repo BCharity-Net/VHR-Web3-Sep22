@@ -28,13 +28,13 @@ interface Props {
 const PubIndexStatus: FC<Props> = ({ setShowModal, type, txHash }) => {
   const { t } = useTranslation('common')
   const { push } = useRouter()
-  const [pollInterval, setPollInterval] = useState<number>(500)
+  const [pollInterval, setPollInterval] = useState(500)
   const { data, loading } = useQuery(TX_STATUS_QUERY, {
     variables: {
       request: { txHash }
     },
     pollInterval,
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (data?.publication) {
         setPollInterval(0)
         if (setShowModal) {

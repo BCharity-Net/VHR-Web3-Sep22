@@ -36,9 +36,7 @@ const LENSTER_STATS_QUERY = gql`
     groupStats: globalProtocolStats(request: { sources: "BCharity Group" }) {
       totalPosts
     }
-    fundraiseStats: globalProtocolStats(
-      request: { sources: "BCharity Fundraise" }
-    ) {
+    fundraiseStats: globalProtocolStats(request: { sources: "BCharity Fundraise" }) {
       totalPosts
     }
   }
@@ -51,21 +49,12 @@ interface Props {
 }
 
 const MenuItem: FC<Props> = ({ icon, title, isBCharity = false }) => (
-  <Menu.Item
-    as="div"
-    className="py-1 px-4 m-2 text-sm text-gray-700 dark:text-gray-200"
-  >
+  <Menu.Item as="div" className="py-1 px-4 m-2 text-sm text-gray-700 dark:text-gray-200">
     <div className="flex items-center space-x-2">
       <div className="flex items-center space-x-1">
         {icon}
         {isBCharity && (
-          <img
-            src="/logo.jpg"
-            className="w-3 h-3"
-            height={12}
-            width={12}
-            alt="BCharity's Data"
-          />
+          <img src="/logo.jpg" className="w-3 h-3" height={12} width={12} alt="BCharity's Data" />
         )}
       </div>
       <div>{title}</div>
@@ -78,9 +67,13 @@ const Stats: FC = () => {
     pollInterval: 1000
   })
 
-  if (loading) return <div className="m-3 w-52 h-4 rounded-lg shimmer" />
-  if (error)
+  if (loading) {
+    return <div className="m-3 w-52 h-4 rounded-lg shimmer" />
+  }
+
+  if (error) {
     return <div className="m-3 font-bold text-red-500">{ERROR_MESSAGE}</div>
+  }
 
   const stats: GlobalProtocolStats = data?.globalProtocolStats
   const groupStats: GlobalProtocolStats = data?.groupStats
@@ -176,10 +169,7 @@ const Stats: FC = () => {
           </Disclosure.Button>
           <Disclosure.Panel className="px-6 pb-3 space-y-2 text-sm text-gray-500">
             {stats?.totalRevenue.map((revenue: Erc20Amount) => (
-              <div
-                key={revenue?.asset?.address}
-                className="flex items-center space-x-1"
-              >
+              <div key={revenue?.asset?.address} className="flex items-center space-x-1">
                 <img
                   className="w-5 h-5"
                   src={getTokenImage(revenue?.asset?.symbol)}

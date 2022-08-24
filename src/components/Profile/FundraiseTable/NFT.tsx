@@ -3,7 +3,7 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { FC } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import { Data } from './Individual'
 
@@ -56,7 +56,7 @@ interface Props {
 }
 
 const Profile: FC<ProfileProps> = ({ id, nft, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   useQuery(PROFILE_FEED_QUERY, {
     variables: {
@@ -64,12 +64,12 @@ const Profile: FC<ProfileProps> = ({ id, nft, callback }) => {
         publicationTypes: 'POST',
         profileId: id
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
-      if (!callback) return
+    onCompleted: (data) => {
+      if (!callback) {return}
       data?.publications?.items?.forEach((item: any) => {
         if (item?.metadata?.attributes[3]?.value === nft.uuid) {
           callback(item)

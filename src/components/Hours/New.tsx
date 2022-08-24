@@ -1,7 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useLazyQuery, useMutation } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFiles from '@components/Shared/ChooseFiles'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'
@@ -16,6 +15,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import imagekitURL from '@lib/imagekitURL'
 import Logger from '@lib/logger'
@@ -31,11 +31,11 @@ import { useTranslation } from 'react-i18next'
 import {
   APP_NAME,
   CATEGORIES,
-  CONNECT_WALLET,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
-  RELAY_ON
+  RELAY_ON,
+  SIGN_WALLET
 } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
@@ -68,7 +68,7 @@ const newHourSchema = object({
     .optional()
     .refine(
       (val) => {
-        if (val === '') return false
+        if (val === '') {return false}
         return true
       },
       { message: 'You should enter an end date' }
@@ -105,7 +105,7 @@ interface Props {
 
 const Media: FC<Props> = ({ media }) => {
   let attachments = []
-  if (media) attachments = JSON.parse(media)
+  if (media) {attachments = JSON.parse(media)}
   return (
     <div>
       {attachments &&
@@ -124,22 +124,24 @@ const Media: FC<Props> = ({ media }) => {
 
 const NewHours: NextPage = () => {
   const { t } = useTranslation('common')
-  const [cover, setCover] = useState<string>()
-  const [singleDay, setSingleDay] = useState<boolean>(true)
-  const [coverType, setCoverType] = useState<string>()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const [uploading, setUploading] = useState<boolean>(false)
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
-  const [media, setMedia] = useState<string>('')
+  const [cover, setCover] = useState('')
+  const [singleDay, setSingleDay] = useState(true)
+  const [coverType, setCoverType] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const [media, setMedia] = useState('')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
     }
   })
 
   const [getWalletAddress] = useLazyQuery(PROFILE_QUERY, {
-    onCompleted(data) {
+    onCompleted: (data) => {
       Logger.log('Lazy Query =>', `Fetched ${data?.id} profile result`)
     }
   })
@@ -161,7 +163,7 @@ const NewHours: NextPage = () => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -187,7 +189,7 @@ const NewHours: NextPage = () => {
   }
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -195,7 +197,7 @@ const NewHours: NextPage = () => {
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       Logger.log('Mutation =>', 'Generated createPostTypedData')
       const { id, typedData } = createPostTypedData
       const {
@@ -231,13 +233,15 @@ const NewHours: NextPage = () => {
             data: { broadcast: result }
           } = await broadcast({ variables: { request: { id, signature } } })
 
-          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {
+            write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
@@ -253,7 +257,9 @@ const NewHours: NextPage = () => {
     category: string,
     description: string
   ) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     setIsUploading(true)
     const id = await uploadToArweave({
@@ -322,7 +328,7 @@ const NewHours: NextPage = () => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
+          profileId: currentProfile?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             freeCollectModule: {
@@ -336,7 +342,9 @@ const NewHours: NextPage = () => {
       }
     })
   }
-  if (!isAuthenticated) return <Custom404 />
+  if (!isAuthenticated) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>
@@ -416,7 +424,7 @@ const NewHours: NextPage = () => {
                   }
                   const startDate = form.getValues('startDate')
                   const endDate = form.getValues('endDate')
-                  if (endDate === '') form.setValue('endDate', startDate)
+                  if (endDate === '') {form.setValue('endDate', startDate)}
                 }}
                 {...form.register('startDate')}
               />

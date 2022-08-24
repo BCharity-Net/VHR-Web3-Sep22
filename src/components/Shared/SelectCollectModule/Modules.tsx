@@ -40,7 +40,7 @@ const Modules: FC<Props> = ({ setShowModal }) => {
   const { error, data, loading } = useQuery(MODULES_QUERY)
   const selectedModule = useCollectModuleStore((state) => state.selectedModule)
   const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
-  const [showFeeEntry, setShowFeeEntry] = useState<boolean>(false)
+  const [showFeeEntry, setShowFeeEntry] = useState(false)
 
   const handleSelectModule = (module: EnabledModule) => {
     setSelectedModule(module)
@@ -53,13 +53,14 @@ const Modules: FC<Props> = ({ setShowModal }) => {
     Mixpanel.track(`Select ${module?.moduleName.toLowerCase()} for new publication`)
   }
 
-  if (loading)
+  if (loading) {
     return (
       <div className="py-3.5 px-5 space-y-2 font-bold text-center">
         <Spinner size="md" className="mx-auto" />
         <div>{t('Loading modules')}</div>
       </div>
     )
+  }
 
   return (
     <div className="py-3.5 px-5 space-y-3">

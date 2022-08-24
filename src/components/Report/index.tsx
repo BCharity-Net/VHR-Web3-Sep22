@@ -20,7 +20,7 @@ import React, { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, ZERO_ADDRESS } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW, PUBLICATION } from 'src/tracking'
 import { object, string } from 'zod'
 
@@ -43,9 +43,9 @@ const Report: FC = () => {
     query: { id }
   } = useRouter()
   const { t } = useTranslation('common')
-  const [type, setType] = useState<string>('')
-  const [subReason, setSubReason] = useState<string>('')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [type, setType] = useState('')
+  const [subReason, setSubReason] = useState('')
 
   useEffect(() => {
     Mixpanel.track(PAGEVIEW.REPORT)
@@ -56,7 +56,7 @@ const Report: FC = () => {
       request: { publicationId: id },
       followRequest: {
         followInfos: {
-          followerAddress: currentUser?.ownedBy ?? ZERO_ADDRESS,
+          followerAddress: currentProfile?.ownedBy ?? ZERO_ADDRESS,
           profileId: id?.toString().split('-')[0]
         }
       }
@@ -66,7 +66,7 @@ const Report: FC = () => {
   const [createReport, { data: submitData, loading: submitLoading, error: submitError }] = useMutation(
     CREATE_REPORT_PUBLICATION_MUTATION,
     {
-      onCompleted() {
+      onCompleted: () => {
         Mixpanel.track(PUBLICATION.REPORT, { result: 'success' })
       }
     }
@@ -93,7 +93,9 @@ const Report: FC = () => {
     })
   }
 
-  if (!currentUser || !id) return <Custom404 />
+  if (!currentProfile || !id) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>

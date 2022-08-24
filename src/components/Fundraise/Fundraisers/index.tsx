@@ -20,7 +20,7 @@ import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, STATIC_ASSETS } from 'src/constants'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import RevenueDetails from './PublicationRevenue'
 
@@ -63,7 +63,7 @@ const Fundraisers: FC<Props> = ({}) => {
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [revenueData, setRevenueData] = useState<number[]>([])
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
     variables: {
@@ -72,10 +72,10 @@ const Fundraisers: FC<Props> = ({}) => {
         limit: 50,
         noRandomize: feedType === 'LATEST'
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
-    onCompleted(data) {
+    onCompleted: (data) => {
       const fundraise = data?.explorePublications?.items.filter((i: any) => {
         return i?.metadata?.attributes[0]?.value == 'fundraise'
       })
@@ -104,8 +104,8 @@ const Fundraisers: FC<Props> = ({}) => {
             limit: 50,
             noRandomize: feedType === 'LATEST'
           },
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       const fundraise = data?.explorePublications?.items.filter((i: any) => {

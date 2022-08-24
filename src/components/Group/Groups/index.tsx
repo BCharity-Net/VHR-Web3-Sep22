@@ -74,8 +74,13 @@ const Groups: NextPage = () => {
     }
   })
 
-  if (error) return <Custom500 />
-  if (loading || !data) return <PageLoading message="Loading group" />
+  if (error) {
+    return <Custom500 />
+  }
+
+  if (loading || !data) {
+    return <PageLoading message="Loading group" />
+  }
 
   return (
     <GridLayout>

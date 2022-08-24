@@ -15,7 +15,7 @@ import {
   TimedFeeCollectModuleSettings
 } from './types'
 
-export type BCharityPublication = Post & Mirror & Comment & { pubId: string }
+export type BCharityPublication = Post & Mirror & Comment
 export type BCharityNotification = Notification & { profile: Profile }
 export type Group = Post
 export type BCharityCollectModule = FreeCollectModuleSettings &

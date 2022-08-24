@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 import React, { FC, useMemo, useState } from 'react'
 import { useFilters, useTable } from 'react-table'
 import { getGoodSent } from 'src/good'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import VHRToken from '../VHRTable/VHRToken'
 
@@ -77,10 +77,10 @@ export interface Data {
 }
 
 const OrgGOOD: FC<Props> = ({ profile, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [goodTxnData, setGoodTxnData] = useState<string[]>([])
@@ -90,7 +90,7 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
       data.map(async (j: any, index: number) => {
         const i = j.mentionPublication
         let verified = false
-        if (i.collectNftAddress) verified = true
+        if (i.collectNftAddress) {verified = true}
         return {
           orgName: i.profile.handle,
           program: i.metadata.attributes[5].value,
@@ -123,12 +123,12 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
         profileId: profile?.id,
         limit: tableLimit
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -259,7 +259,7 @@ const OrgGOOD: FC<Props> = ({ profile, callback }) => {
                       tableData.forEach((item) => {
                         result += item.totalGood.value
                       })
-                      if (callback) callback(result)
+                      if (callback) {callback(result)}
                       goodTxnData[index] = good[0]
                       setGoodTxnData(goodTxnData)
                       setTableData([...tableData])

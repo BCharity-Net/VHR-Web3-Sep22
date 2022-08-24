@@ -1,7 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { useMutation } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@components/Publication/New'
 import ChooseFile from '@components/Shared/ChooseFile'
 import Pending from '@components/Shared/Pending'
 import SettingsHelper from '@components/Shared/SettingsHelper'
@@ -14,6 +13,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
@@ -24,7 +24,7 @@ import { NextPage } from 'next'
 import React, { ChangeEvent, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { APP_NAME, CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { APP_NAME, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { GROUP, PAGEVIEW } from 'src/tracking'
@@ -36,16 +36,19 @@ const NewGroup: NextPage = () => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [avatar, setAvatar] = useState<string>()
-  const [avatarType, setAvatarType] = useState<string>()
-  const [isUploading, setIsUploading] = useState<boolean>(false)
-  const [uploading, setUploading] = useState<boolean>(false)
+  const [avatar, setAvatar] = useState('')
+  const [avatarType, setAvatarType] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(GROUP.NEW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(GROUP.NEW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -53,7 +56,9 @@ const NewGroup: NextPage = () => {
     name: string()
       .min(2, { message: 'Name should be atleast 2 characters' })
       .max(31, { message: 'Name should be less than 32 characters' }),
-    description: string().max(260, { message: 'Description should not exceed 260 characters' })
+    description: string().max(260, {
+      message: 'Description should not exceed 260 characters'
+    })
   })
 
   useEffect(() => {
@@ -73,10 +78,10 @@ const NewGroup: NextPage = () => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -101,15 +106,18 @@ const NewGroup: NextPage = () => {
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(GROUP.NEW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(GROUP.NEW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    async onCompleted({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) {
+    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       const { id, typedData } = createPostTypedData
       const {
         profileId,
@@ -144,19 +152,23 @@ const NewGroup: NextPage = () => {
             data: { broadcast: result }
           } = await broadcast({ variables: { request: { id, signature } } })
 
-          if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {
+            write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
 
   const createGroup = async (name: string, description: string | null) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     setIsUploading(true)
     const id = await uploadToArweave({
@@ -186,7 +198,7 @@ const NewGroup: NextPage = () => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
+          profileId: currentProfile?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: {
             freeCollectModule: {
@@ -201,7 +213,9 @@ const NewGroup: NextPage = () => {
     })
   }
 
-  if (!isAuthenticated) return <Custom404 />
+  if (!isAuthenticated) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>

@@ -18,10 +18,7 @@ interface UserProps {
 
 const User: FC<UserProps> = ({ suggestion, focused }) => (
   <div
-    className={clsx(
-      { 'dropdown-active': focused },
-      'flex items-center space-x-2 m-1.5 px-3 py-1 rounded-xl'
-    )}
+    className={clsx({ 'dropdown-active': focused }, 'flex items-center space-x-2 m-1.5 px-3 py-1 rounded-xl')}
   >
     <img
       className="w-7 h-7 rounded-full"
@@ -33,9 +30,7 @@ const User: FC<UserProps> = ({ suggestion, focused }) => (
     <div className="flex flex-col truncate">
       <div className="flex gap-1 items-center">
         <div className="text-sm truncate">{suggestion.name}</div>
-        {isVerified(suggestion.uid) && (
-          <BadgeCheckIcon className="w-3 h-3 text-brand" />
-        )}
+        {isVerified(suggestion.uid) && <BadgeCheckIcon className="w-3 h-3 text-brand" />}
       </div>
       <Slug className="text-xs" slug={suggestion.id} prefix="@" />
     </div>
@@ -60,16 +55,15 @@ export const OrganizationNameInput: FC<Props> = ({
   onAdd
 }) => {
   const [searchUsers] = useLazyQuery(SEARCH_USERS_QUERY, {
-    onCompleted(data) {
-      Logger.log(
-        'Lazy Query =>',
-        `Fetched ${data?.search?.items?.length} user mention result`
-      )
+    onCompleted: (data) => {
+      Logger.log('Lazy Query =>', `Fetched ${data?.search?.items?.length} user mention result`)
     }
   })
 
   const fetchUsers = (query: string, callback: any) => {
-    if (!query) return
+    if (!query) {
+      return
+    }
 
     searchUsers({
       variables: { request: { type: 'PROFILE', query, limit: 5 } }
@@ -78,18 +72,16 @@ export const OrganizationNameInput: FC<Props> = ({
         const users = data?.search?.items.filter((i: any) => {
           return isVerified(i.id)
         })
-        return users.map(
-          (user: Profile & { picture: MediaSet & NftImage }) => ({
-            uid: user.id,
-            id: user.handle,
-            display: user.handle,
-            name: user?.name ?? user?.handle,
-            picture:
-              user?.picture?.original?.url ??
-              user?.picture?.uri ??
-              `https://avatar.tobi.sh/${user?.id}_${user?.handle}.png`
-          })
-        )
+        return users.map((user: Profile & { picture: MediaSet & NftImage }) => ({
+          uid: user.id,
+          id: user.handle,
+          display: user.handle,
+          name: user?.name ?? user?.handle,
+          picture:
+            user?.picture?.original?.url ??
+            user?.picture?.uri ??
+            `https://avatar.tobi.sh/${user?.id}_${user?.handle}.png`
+        }))
       })
       .then(callback)
   }
@@ -98,9 +90,7 @@ export const OrganizationNameInput: FC<Props> = ({
     <div>
       {label && (
         <div className="flex items-center mb-1 space-x-1.5">
-          <div className="font-medium text-gray-800 dark:text-gray-200">
-            {label}
-          </div>
+          <div className="font-medium text-gray-800 dark:text-gray-200">{label}</div>
         </div>
       )}
       <MentionsInput
@@ -117,22 +107,16 @@ export const OrganizationNameInput: FC<Props> = ({
           displayTransform={(login) => `${login} `}
           markup="__id__ "
           // @ts-ignore
-          renderSuggestion={(
-            suggestion: UserSuggestion,
-            search,
-            highlightedDisplay,
-            index,
-            focused
-          ) => <User suggestion={suggestion} focused={focused} />}
+          renderSuggestion={(suggestion: UserSuggestion, search, highlightedDisplay, index, focused) => (
+            <User suggestion={suggestion} focused={focused} />
+          )}
           data={fetchUsers}
           onAdd={(e) => {
             onAdd(e)
           }}
         />
       </MentionsInput>
-      {error && (
-        <div className="mt-1 text-sm font-bold text-red-500">{error}</div>
-      )}
+      {error && <div className="mt-1 text-sm font-bold text-red-500">{error}</div>}
     </div>
   )
 }

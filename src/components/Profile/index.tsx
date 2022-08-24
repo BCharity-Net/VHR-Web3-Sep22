@@ -13,7 +13,7 @@ import React, { useEffect, useState } from 'react'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import Cover from './Cover'
@@ -54,6 +54,9 @@ export const PROFILE_QUERY = gql`
         ens {
           name
         }
+        worldcoin {
+          isHuman
+        }
       }
       stats {
         totalFollowers
@@ -90,13 +93,13 @@ const ViewProfile: NextPage = () => {
   const {
     query: { username, type }
   } = useRouter()
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [feedType, setFeedType] = useState<string>(
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [feedType, setFeedType] = useState(
     type &&
       ['post', 'comment', 'mirror', 'nft', 'vhr', 'org', 'opp', 'org-opp', 'funds', 'funds-org'].includes(
         type as string
       )
-      ? type?.toString().toUpperCase()
+      ? type.toString().toUpperCase()
       : 'POST'
   )
 
@@ -105,13 +108,21 @@ const ViewProfile: NextPage = () => {
   }, [])
 
   const { data, loading, error } = useQuery(PROFILE_QUERY, {
-    variables: { request: { handle: username }, who: currentUser?.id ?? null },
+    variables: { request: { handle: username }, who: currentProfile?.id ?? null },
     skip: !username
   })
 
-  if (error) return <Custom500 />
-  if (loading || !data) return <ProfilePageShimmer />
-  if (!data?.profile) return <Custom404 />
+  if (error) {
+    return <Custom500 />
+  }
+
+  if (loading || !data) {
+    return <ProfilePageShimmer />
+  }
+
+  if (!data?.profile) {
+    return <Custom404 />
+  }
 
   const profile = data?.profile
 

@@ -8,7 +8,7 @@ import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outlin
 import Logger from '@lib/logger'
 import React, { FC, ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import { COLLECT_QUERY } from '../Actions/Collect/CollectModule'
 import Fund from './Fund'
@@ -31,13 +31,13 @@ interface Props {
 
 const FundraiseComment: FC<Props> = ({ fund }) => {
   const { t } = useTranslation('common')
-  const [showFundersModal, setShowFundersModal] = useState<boolean>(false)
-  const [revenue, setRevenue] = useState<number>(0)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const [showFundersModal, setShowFundersModal] = useState(false)
+  const [revenue, setRevenue] = useState(0)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const { data } = useQuery(COLLECT_QUERY, {
-    variables: { request: { publicationId: fund?.pubId ?? fund?.id } },
-    onCompleted() {
-      Logger.log('[Query]', `Fetched collect module details Fundraise:${fund?.pubId ?? fund?.id}`)
+    variables: { request: { publicationId: fund?.id } },
+    onCompleted: () => {
+      Logger.log('[Query]', `Fetched collect module details Fundraise:${fund?.id}`)
     }
   })
 
@@ -76,7 +76,7 @@ const FundraiseComment: FC<Props> = ({ fund }) => {
                     show={showFundersModal}
                     onClose={() => setShowFundersModal(false)}
                   >
-                    <Collectors pubId={fund?.pubId ?? fund?.id} />
+                    <Collectors pubId={fund?.id} />
                   </Modal>
                 </>
               )}
@@ -92,7 +92,7 @@ const FundraiseComment: FC<Props> = ({ fund }) => {
             </div>
             <ReferralAlert mirror={fund} referralFee={collectModule?.referralFee} />
           </div>
-          {currentUser ? (
+          {currentProfile ? (
             <div className="pt-3 sm:pt-0">
               <Fund fund={fund} collectModule={collectModule} revenue={revenue} setRevenue={setRevenue} />
             </div>

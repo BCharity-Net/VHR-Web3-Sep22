@@ -1,7 +1,6 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
 import { VHR_ABI } from '@abis/VHR_ABI'
 import { gql, useMutation, useQuery } from '@apollo/client'
-import { CREATE_COMMENT_TYPED_DATA_MUTATION } from '@components/Comment/New'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
@@ -13,6 +12,10 @@ import {
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { CommentFields } from '@gql/CommentFields'
+import {
+  CREATE_COMMENT_TYPED_DATA_MUTATION,
+  CREATE_COMMENT_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateComment'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, FEE_DATA_TYPE, getModule } from '@lib/getModule'
 import Logger from '@lib/logger'
@@ -121,16 +124,18 @@ interface Props {
 
 const Apply: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
-  const [hoursAddressDisable, setHoursAddressDisable] = useState<boolean>(false)
+  const [hoursAddressDisable, setHoursAddressDisable] = useState(false)
   const [selectedModule, setSelectedModule] = useState<EnabledModule>(defaultModuleData)
   const [feeData, setFeeData] = useState<FEE_DATA_TYPE>(defaultFeeData)
-  const [txnData, setTxnData] = useState<string>()
-  const [hasVhrTxn, setHasVrhTxn] = useState<boolean>(false)
+  const [txnData, setTxnData] = useState('')
+  const [hasVhrTxn, setHasVrhTxn] = useState(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
     }
   })
@@ -138,11 +143,11 @@ const Apply: FC<Props> = ({ publication }) => {
   useQuery(COMMENT_FEED_QUERY, {
     variables: {
       request: { commentsOf: publication.id },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       const publications = data.publications.items.filter((i: any) =>
         ethers.utils.isHexString(i.metadata.content)
       )
@@ -153,18 +158,15 @@ const Apply: FC<Props> = ({ publication }) => {
   })
 
   useQuery(COLLECT_QUERY, {
-    variables: { request: { publicationId: publication?.pubId ?? publication?.id } },
-    onCompleted() {
+    variables: { request: { publicationId: publication?.id } },
+    onCompleted: () => {
       if (
         publication?.metadata.attributes[0].value === 'hours' &&
-        publication?.metadata.attributes[1].value !== currentUser?.ownedBy
+        publication?.metadata.attributes[1].value !== currentProfile?.ownedBy
       ) {
         setHoursAddressDisable(true)
       }
-      Logger.log(
-        '[Query]',
-        `Fetched collect module details Publication:${publication?.pubId ?? publication?.id}`
-      )
+      Logger.log('[Query]', `Fetched collect module details Publication:${publication?.id}`)
     }
   })
 
@@ -178,7 +180,7 @@ const Apply: FC<Props> = ({ publication }) => {
       setTxnData(data.hash)
       createComment(data.hash)
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -188,18 +190,18 @@ const Apply: FC<Props> = ({ publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'commentWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       setSelectedModule(defaultModuleData)
       setFeeData(defaultFeeData)
     },
-    onError(error: any) {
-      if (txnData) createComment(txnData)
+    onError: (error: any) => {
+      if (txnData) {createComment(txnData)}
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [commentBroadcast, { loading: commentBroadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -207,11 +209,11 @@ const Apply: FC<Props> = ({ publication }) => {
     }
   })
   const [createCommentTypedData] = useMutation(CREATE_COMMENT_TYPED_DATA_MUTATION, {
-    async onCompleted({
+    onCompleted: async ({
       createCommentTypedData
     }: {
       createCommentTypedData: CreateCommentBroadcastItemResult
-    }) {
+    }) => {
       Logger.log('[Mutation]', 'Generated createCommentTypedData')
       const { id, typedData } = createCommentTypedData
       const {
@@ -255,19 +257,21 @@ const Apply: FC<Props> = ({ publication }) => {
             variables: { request: { id, signature } }
           })
 
-          if ('reason' in result) commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+          if ('reason' in result) {commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })}
         } else {
           commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch (error) {}
     },
-    onError(error) {
+    onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
     }
   })
 
   const createComment = async (hash: string) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     // TODO: Add animated_url support
     const id = await uploadToArweave({
@@ -291,11 +295,8 @@ const Apply: FC<Props> = ({ publication }) => {
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
-          publicationId:
-            publication?.__typename === 'Mirror'
-              ? publication?.mirrorOf?.id
-              : publication?.pubId ?? publication?.id,
+          profileId: currentProfile?.id,
+          publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id,
           contentURI: `https://arweave.net/${id}`,
           collectModule: feeData.recipient
             ? {
@@ -323,10 +324,10 @@ const Apply: FC<Props> = ({ publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       createCollect()
       toast.error(error?.data?.message ?? error?.message)
     }
@@ -335,7 +336,7 @@ const Apply: FC<Props> = ({ publication }) => {
     BROADCAST_MUTATION,
     {
       onCompleted,
-      onError(error) {
+      onError: (error) => {
         if (error.message === ERRORS.notMined) {
           toast.error(error.message)
         }
@@ -346,11 +347,11 @@ const Apply: FC<Props> = ({ publication }) => {
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCollectTypedData
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
-      }) {
+      }) => {
         Logger.log('[Mutation]', 'Generated createCollectTypedData')
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
@@ -379,25 +380,27 @@ const Apply: FC<Props> = ({ publication }) => {
               variables: { request: { id, signature } }
             })
 
-            if ('reason' in result) collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })}
           } else {
             collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     createCollectTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
-        request: { publicationId: publication?.pubId ?? publication?.id }
+        request: { publicationId: publication?.id }
       }
     })
   }
@@ -409,7 +412,7 @@ const Apply: FC<Props> = ({ publication }) => {
           <Button
             className="sm:mt-0 sm:ml-auto"
             onClick={() => {
-              if (!hasVhrTxn) writeVhrTransfer()
+              if (!hasVhrTxn) {writeVhrTransfer()}
               createCollect()
             }}
             disabled={

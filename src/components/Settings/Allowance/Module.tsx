@@ -13,7 +13,7 @@ interface Props {
 }
 
 const Module: FC<Props> = ({ module }) => {
-  const [allowed, setAllowed] = useState<boolean>(module?.allowance !== '0x00')
+  const [allowed, setAllowed] = useState(module?.allowance !== '0x00')
 
   return (
     <Card key={module?.module} forceRounded>
@@ -23,9 +23,7 @@ const Module: FC<Props> = ({ module }) => {
             <div className="text-brand">
               <GetModuleIcon module={module?.module} size={4} />
             </div>
-            <div className="font-bold whitespace-nowrap">
-              {getModule(module?.module).name}
-            </div>
+            <div className="font-bold whitespace-nowrap">{getModule(module?.module).name}</div>
             <HelpTooltip content={getModule(module?.module).helper} />
           </div>
           <a
@@ -37,11 +35,7 @@ const Module: FC<Props> = ({ module }) => {
             {module?.contractAddress}
           </a>
         </div>
-        <AllowanceButton
-          module={module}
-          allowed={allowed}
-          setAllowed={setAllowed}
-        />
+        <AllowanceButton module={module} allowed={allowed} setAllowed={setAllowed} />
       </CardBody>
     </Card>
   )

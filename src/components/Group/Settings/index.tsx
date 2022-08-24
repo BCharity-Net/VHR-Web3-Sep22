@@ -16,7 +16,7 @@ interface Props {
 const Settings: FC<Props> = ({ group }) => {
   const { push } = useRouter()
   const [hidePost] = useMutation(HIDE_POST_MUTATION, {
-    onCompleted() {
+    onCompleted: () => {
       Mixpanel.track(GROUP.SETTINGS.DELETE, { result: 'success' })
       push('/')
     }
@@ -29,10 +29,7 @@ const Settings: FC<Props> = ({ group }) => {
       </div>
       <div className="space-y-2">
         <div className="font-bold text-red-500">Danger Zone</div>
-        <p>
-          Deleting your group will delete only from indexers and not from the
-          blockchain.
-        </p>
+        <p>Deleting your group will delete only from indexers and not from the blockchain.</p>
         <Button
           className="!mt-5"
           icon={<TrashIcon className="w-5 h-5" />}

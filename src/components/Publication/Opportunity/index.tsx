@@ -12,9 +12,9 @@ interface MediaProps {
 }
 
 const Media: FC<MediaProps> = ({ media }) => {
-  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const [activeIndex, setActiveIndex] = useState(0)
   let attachments: any[] = []
-  if (media) attachments = JSON.parse(media)
+  if (media) {attachments = JSON.parse(media)}
   return (
     <div>
       {attachments && (
@@ -59,29 +59,23 @@ const Media: FC<MediaProps> = ({ media }) => {
 
 const Opportunities: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
-  if (publication.metadata.attributes.length < 9) return <div />
+  if (publication.metadata.attributes.length < 9) {return <div />}
   return (
     <Card forceRounded>
       <div className="p-5">
-        <div className="mr-0 space-y-1 sm:mr-16"></div>
+        <div className="mr-0 space-y-1 sm:mr-16" />
         <div className="block justify-between items-center sm:flex">
           <div className="text-xl font-bold">
             {' '}
             <div className="text-2xl">Volunteer Opportunities </div>
-            <div className="text-xl">
-              Make a comment to apply for this volunteer opportunity.
-            </div>
+            <div className="text-xl">Make a comment to apply for this volunteer opportunity.</div>
           </div>
         </div>
         <div>
           <table className="border border-violet-500 w-10 whitespace-nowrap">
             <tr className="text-center font-bold bg-violet-200">
-              <th className="border border-violet-500 px-6 py-2">
-                Organization
-              </th>
-              <th className="border border-violet-500 px-6 py-2">
-                {publication.metadata.name}
-              </th>
+              <th className="border border-violet-500 px-6 py-2">Organization</th>
+              <th className="border border-violet-500 px-6 py-2">{publication.metadata.name}</th>
             </tr>
 
             <tr className="text-center font-bold bg-violet-200">
@@ -98,18 +92,14 @@ const Opportunities: FC<Props> = ({ publication }) => {
             </tr>
 
             <tr className="text-center font-bold bg-violet-200">
-              <th className="border border-violet-500 px-6 py-2">
-                Number of Volunteers
-              </th>
+              <th className="border border-violet-500 px-6 py-2">Number of Volunteers</th>
               <th className="border border-violet-500 px-6 py-2">
                 {publication.metadata.attributes[3].value}
               </th>
             </tr>
 
             <tr className="text-center font-bold bg-violet-200">
-              <th className="border border-violet-500 px-6 py-2">
-                City/Region
-              </th>
+              <th className="border border-violet-500 px-6 py-2">City/Region</th>
               <th className="border border-violet-500 px-6 py-2">
                 {publication.metadata.attributes[4].value}
               </th>
@@ -122,13 +112,8 @@ const Opportunities: FC<Props> = ({ publication }) => {
               </th>
             </tr>
             <tr className="text-center font-bold bg-violet-200">
-              {!(
-                publication.metadata.attributes[6].value ===
-                publication.metadata.attributes[7].value
-              ) ? (
-                <th className="border border-violet-500 px-6 py-2">
-                  Start Date
-                </th>
+              {!(publication.metadata.attributes[6].value === publication.metadata.attributes[7].value) ? (
+                <th className="border border-violet-500 px-6 py-2">Start Date</th>
               ) : (
                 <th className="border border-violet-500 px-6 py-2">Date</th>
               )}
@@ -137,10 +122,7 @@ const Opportunities: FC<Props> = ({ publication }) => {
               </th>
             </tr>
 
-            {!(
-              publication.metadata.attributes[6].value ===
-              publication.metadata.attributes[7].value
-            ) && (
+            {!(publication.metadata.attributes[6].value === publication.metadata.attributes[7].value) && (
               <tr className="text-center font-bold bg-violet-200">
                 <th className="border border-violet-500 px-6 py-2">End Date</th>
                 <th className="border border-violet-500 px-6 py-2">
@@ -150,26 +132,20 @@ const Opportunities: FC<Props> = ({ publication }) => {
             )}
 
             <tr className="text-center font-bold bg-violet-200">
-              <th className="border border-violet-500 px-6 py-2">
-                Total Hours
-              </th>
+              <th className="border border-violet-500 px-6 py-2">Total Hours</th>
               <th className="border border-violet-500 px-6 py-2">
                 {publication.metadata.attributes[8].value}
               </th>
             </tr>
 
             <tr className="text-center font-bold bg-violet-200">
-              <th className="border border-violet-500 px-6 py-2">
-                Description and Requirements
-              </th>
-              <th className="border border-violet-500 px-6 py-2">
-                {publication.metadata.description}
-              </th>
+              <th className="border border-violet-500 px-6 py-2">Description and Requirements</th>
+              <th className="border border-violet-500 px-6 py-2">{publication.metadata.description}</th>
             </tr>
           </table>
         </div>
 
-        <br></br>
+        <br />
         <div>
           {publication.metadata.attributes[9].value && (
             <>

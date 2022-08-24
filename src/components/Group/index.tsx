@@ -42,9 +42,17 @@ const ViewGroup: NextPage = () => {
     skip: !id
   })
 
-  if (error) return <Custom500 />
-  if (loading || !data) return <GroupPageShimmer />
-  if (!data.publication || data.publication?.metadata?.attributes[0]?.value !== 'group') return <Custom404 />
+  if (error) {
+    return <Custom500 />
+  }
+
+  if (loading || !data) {
+    return <GroupPageShimmer />
+  }
+
+  if (!data.publication || data.publication?.metadata?.attributes[0]?.value !== 'group') {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>

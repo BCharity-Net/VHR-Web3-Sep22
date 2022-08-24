@@ -64,12 +64,15 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const [allowed, setAllowed] = useState<boolean>(true)
+  const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(FUNDRAISE.FUND, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(FUNDRAISE.FUND, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
@@ -96,7 +99,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
       }
     },
     skip: !collectModule?.amount?.asset?.address || !isAuthenticated,
-    onCompleted(data) {
+    onCompleted: (data) => {
       setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
   })
@@ -116,31 +119,34 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(FUNDRAISE.FUND, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(FUNDRAISE.FUND, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCollectTypedData
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
 
@@ -166,20 +172,24 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     createCollectTypedData({
       variables: {

@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import Sidebar from '../Sidebar'
@@ -55,7 +55,7 @@ const PROFILE_SETTINGS_QUERY = gql`
 
 const ProfileSettings: NextPage = () => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [settingsType, setSettingsType] = useState<'NFT' | 'AVATAR'>('AVATAR')
 
   useEffect(() => {
@@ -63,16 +63,24 @@ const ProfileSettings: NextPage = () => {
   }, [])
 
   const { data, loading, error } = useQuery(PROFILE_SETTINGS_QUERY, {
-    variables: { request: { profileId: currentUser?.id } },
-    skip: !currentUser?.id,
-    onCompleted(data) {
+    variables: { request: { profileId: currentProfile?.id } },
+    skip: !currentProfile?.id,
+    onCompleted: (data) => {
       setSettingsType(data?.profile?.picture?.uri ? 'NFT' : 'AVATAR')
     }
   })
 
-  if (error) return <Custom500 />
-  if (loading) return <PageLoading message={t('Loading settings')} />
-  if (!currentUser) return <Custom404 />
+  if (error) {
+    return <Custom500 />
+  }
+
+  if (loading) {
+    return <PageLoading message="Loading settings" />
+  }
+
+  if (!currentProfile) {
+    return <Custom404 />
+  }
 
   const profile = data?.profile
 

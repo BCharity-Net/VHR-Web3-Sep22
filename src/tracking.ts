@@ -1,3 +1,5 @@
+// Strings used for mixpanel tracking
+
 export const USER = {
   LOGIN: 'User login',
   LOGOUT: 'User logout',
@@ -104,6 +106,9 @@ export const SETTINGS = {
     SET_NFT_PICTURE: 'Set NFT profile picture',
     SET_PICTURE: 'Set profile picture'
   },
+  DISPATCHER: {
+    TOGGLE: 'Toggle dispatcher'
+  },
   DELETE: 'Delete profile'
 }
 
@@ -142,6 +147,7 @@ export const PAGEVIEW = {
   SETTINGS: {
     ACCOUNT: 'Account settings page',
     PROFILE: 'Profile settings page',
+    DISPATCHER: 'Dispatcher settings page',
     ALLOWANCE: 'Allowance settings page',
     DATA: 'Data settings page',
     DELETE: 'Delete settings page'

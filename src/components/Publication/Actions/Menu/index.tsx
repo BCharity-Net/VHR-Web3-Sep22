@@ -6,7 +6,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import { FC, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 
 import Delete from './Delete'
@@ -19,7 +19,7 @@ interface Props {
 
 const PublicationMenu: FC<Props> = ({ publication }) => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   return (
     <Menu as="div">
@@ -48,7 +48,7 @@ const PublicationMenu: FC<Props> = ({ publication }) => {
               static
               className="absolute py-1 w-max bg-white rounded-xl border shadow-sm dark:bg-gray-900 focus:outline-none z-[5] dark:border-gray-700/80"
             >
-              {currentUser?.id === publication?.profile?.id ? (
+              {currentProfile?.id === publication?.profile?.id ? (
                 <Delete publication={publication} />
               ) : (
                 <Menu.Item

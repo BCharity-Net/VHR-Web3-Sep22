@@ -1,10 +1,10 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { gql, useQuery } from '@apollo/client'
 import { CommentFields } from '@gql/CommentFields'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import Logger from '@lib/logger'
 import { FC } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const COMMENT_FEED_QUERY = gql`
   query CommentFeed(
@@ -33,7 +33,7 @@ const COLLECTORS_QUERY = gql`
       items {
         address
         defaultProfile {
-          ...MinimalProfileFields
+          ...ProfileFields
           isFollowedByMe
         }
       }
@@ -43,7 +43,7 @@ const COLLECTORS_QUERY = gql`
       }
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
 `
 
 interface Props {
@@ -60,8 +60,8 @@ export const CollectDonors: FC<CollectProps> = ({ id, callback }) => {
   useQuery(COLLECTORS_QUERY, {
     variables: { request: { publicationId: id, limit: 10 } },
     skip: !id,
-    onCompleted(data) {
-      if (callback) callback(data)
+    onCompleted: (data) => {
+      if (callback) {callback(data)}
       Logger.log('[Query]', `Fetched first 10 collectors Publication:${id}`)
     }
   })
@@ -69,13 +69,13 @@ export const CollectDonors: FC<CollectProps> = ({ id, callback }) => {
 }
 
 const PublicationDonors: FC<Props> = ({ pubId, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   const { data, loading } = useQuery(COMMENT_FEED_QUERY, {
     variables: {
       request: { commentsOf: pubId },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache'
   })
@@ -91,7 +91,7 @@ const PublicationDonors: FC<Props> = ({ pubId, callback }) => {
                 id={i.id}
                 callback={(data: any) => {
                   data?.whoCollectedPublication?.items?.forEach((pub: any) => {
-                    if (callback) callback(pub.defaultProfile.handle)
+                    if (callback) {callback(pub.defaultProfile.handle)}
                   })
                 }}
               />

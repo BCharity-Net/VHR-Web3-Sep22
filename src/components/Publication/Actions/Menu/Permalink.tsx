@@ -16,7 +16,7 @@ interface Props {
 const Permalink: FC<Props> = ({ publication }) => {
   return (
     <CopyToClipboard
-      text={`${PUBLIC_URL}/posts/${publication?.id ?? publication?.pubId}`}
+      text={`${PUBLIC_URL}/posts/${publication?.id}`}
       onCopy={() => {
         toast.success('Copied to clipboard!')
         Mixpanel.track(PUBLICATION.PERMALINK)
@@ -25,10 +25,7 @@ const Permalink: FC<Props> = ({ publication }) => {
       <Menu.Item
         as="div"
         className={({ active }: { active: boolean }) =>
-          clsx(
-            { 'dropdown-active': active },
-            'block px-4 py-1.5 text-sm m-2 rounded-lg cursor-pointer'
-          )
+          clsx({ 'dropdown-active': active }, 'block px-4 py-1.5 text-sm m-2 rounded-lg cursor-pointer')
         }
         onClick={() => {}}
       >

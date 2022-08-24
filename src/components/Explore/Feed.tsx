@@ -15,7 +15,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
 const EXPLORE_FEED_QUERY = gql`
@@ -53,7 +53,7 @@ interface Props {
 
 const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
@@ -63,10 +63,10 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
         limit: 10,
         noRandomize: feedType === 'LATEST'
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.explorePublications?.pageInfo)
       setPublications(data?.explorePublications?.items)
     }
@@ -82,8 +82,8 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
             limit: 10,
             noRandomize: feedType === 'LATEST'
           },
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       setPageInfo(data?.explorePublications?.pageInfo)

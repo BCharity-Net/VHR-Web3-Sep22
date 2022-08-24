@@ -4,7 +4,7 @@ import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import useOnClickOutside from '@components/utils/hooks/useOnClickOutside'
 import { Profile } from '@generated/types'
-import { MinimalProfileFields } from '@gql/MinimalProfileFields'
+import { ProfileFields } from '@gql/ProfileFields'
 import { SearchIcon, XIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
@@ -21,12 +21,12 @@ export const SEARCH_USERS_QUERY = gql`
     search(request: $request) {
       ... on ProfileSearchResult {
         items {
-          ...MinimalProfileFields
+          ...ProfileFields
         }
       }
     }
   }
-  ${MinimalProfileFields}
+  ${ProfileFields}
 `
 
 interface Props {
@@ -35,7 +35,7 @@ interface Props {
 
 const Search: FC<Props> = ({ hideDrodown = false }) => {
   const { push, pathname, query } = useRouter()
-  const [searchText, setSearchText] = useState<string>('')
+  const [searchText, setSearchText] = useState('')
   const dropdownRef = useRef(null)
   const { t } = useTranslation('common')
 

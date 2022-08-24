@@ -8,7 +8,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { Dispatch, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DEFAULT_COLLECT_TOKEN } from 'src/constants'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { useCollectModuleStore } from 'src/store/collectmodule'
 import { PUBLICATION } from 'src/tracking'
 import { object, string } from 'zod'
@@ -29,13 +29,13 @@ interface Props {
 
 const FeeEntry: FC<Props> = ({ enabledModuleCurrencies, setShowFeeEntry, setShowModal }) => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const selectedModule = useCollectModuleStore((state) => state.selectedModule)
   const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
   const feeData = useCollectModuleStore((state) => state.feeData)
   const setFeeData = useCollectModuleStore((state) => state.setFeeData)
-  const [followerOnly, setFollowerOnly] = useState<boolean>(false)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
+  const [followerOnly, setFollowerOnly] = useState(false)
+  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
   const form = useZodForm({
     schema: feeDataSchema,
     defaultValues: {
@@ -128,7 +128,7 @@ const FeeEntry: FC<Props> = ({ enabledModuleCurrencies, setShowFeeEntry, setShow
                 value: form.getValues('value')
               },
               collectLimit: form.getValues('collectLimit'),
-              recipient: currentUser?.ownedBy,
+              recipient: currentProfile?.ownedBy,
               referralFee: parseFloat(form.getValues('referralFee')),
               followerOnly: followerOnly
             })

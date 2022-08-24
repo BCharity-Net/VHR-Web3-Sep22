@@ -13,20 +13,14 @@ interface Props {
   onlyFollowers: boolean
 }
 
-const SelectReferenceModule: FC<Props> = ({
-  setOnlyFollowers,
-  onlyFollowers
-}) => {
-  const [showModal, setShowModal] = useState<boolean>(false)
+const SelectReferenceModule: FC<Props> = ({ setOnlyFollowers, onlyFollowers }) => {
+  const [showModal, setShowModal] = useState(false)
   const ONLY_FOLLOWERS = 'Only followers can comment or mirror'
   const EVERYONE = 'Everyone can comment or mirror'
 
   return (
     <>
-      <Tooltip
-        placement="top"
-        content={onlyFollowers ? ONLY_FOLLOWERS : EVERYONE}
-      >
+      <Tooltip placement="top" content={onlyFollowers ? ONLY_FOLLOWERS : EVERYONE}>
         <motion.button
           whileTap={{ scale: 0.9 }}
           type="button"
@@ -37,11 +31,7 @@ const SelectReferenceModule: FC<Props> = ({
           aria-label="Choose Reference Module"
         >
           <div className="text-brand">
-            {onlyFollowers ? (
-              <UsersIcon className="w-5 h-5" />
-            ) : (
-              <GlobeAltIcon className="w-5 h-5" />
-            )}
+            {onlyFollowers ? <UsersIcon className="w-5 h-5" /> : <GlobeAltIcon className="w-5 h-5" />}
           </div>
         </motion.button>
       </Tooltip>
@@ -68,9 +58,7 @@ const SelectReferenceModule: FC<Props> = ({
               <GlobeAltIcon className="w-5 h-5 text-brand" />
               <div>{EVERYONE}</div>
             </div>
-            {!onlyFollowers && (
-              <CheckCircleIcon className="w-7 text-green-500" />
-            )}
+            {!onlyFollowers && <CheckCircleIcon className="w-7 text-green-500" />}
           </button>
           <button
             type="button"
@@ -88,9 +76,7 @@ const SelectReferenceModule: FC<Props> = ({
               <UsersIcon className="w-5 h-5 text-brand" />
               <div>{ONLY_FOLLOWERS}</div>
             </div>
-            {onlyFollowers && (
-              <CheckCircleIcon className="w-7 h-7 text-green-500" />
-            )}
+            {onlyFollowers && <CheckCircleIcon className="w-7 h-7 text-green-500" />}
           </button>
         </div>
       </Modal>

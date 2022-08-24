@@ -12,7 +12,7 @@ import Logger from '@lib/logger'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useFilters, useTable } from 'react-table'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 interface Props {
   profile: Profile
@@ -38,10 +38,10 @@ export interface Data {
 }
 
 const OpportunitiesTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, request }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [addressData, setAddressData] = useState<string[]>([])
@@ -50,7 +50,7 @@ const OpportunitiesTable: FC<Props> = ({ profile, handleQueryComplete, getColumn
     return Promise.all(
       data.map(async (i: any, index: number) => {
         let verified = false
-        if (i.collectNftAddress) verified = true
+        if (i.collectNftAddress) {verified = true}
         return {
           orgName: i.commentOn.profile.handle,
           program: i.commentOn.metadata.attributes[1].value,
@@ -72,12 +72,12 @@ const OpportunitiesTable: FC<Props> = ({ profile, handleQueryComplete, getColumn
   const { data, loading, error, fetchMore } = useQuery(query, {
     variables: {
       request: request,
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -110,8 +110,8 @@ const OpportunitiesTable: FC<Props> = ({ profile, handleQueryComplete, getColumn
       const { data } = await fetchMore({
         variables: {
           request: req,
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       const opportunities = handleQueryComplete(data)

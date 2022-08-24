@@ -17,12 +17,12 @@ import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import {
-  CONNECT_WALLET,
   DEFAULT_COLLECT_TOKEN,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
-  RELAY_ON
+  RELAY_ON,
+  SIGN_WALLET
 } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
@@ -81,20 +81,20 @@ export const CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION = gql`
 const SuperFollow: FC = () => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
   const { t } = useTranslation('common')
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(DEFAULT_COLLECT_TOKEN)
-  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState<string>('WMATIC')
+  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
+  const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState('WMATIC')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
       Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, { result: 'typed_data_error', error: error?.message })
     }
   })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY, {
-    variables: { request: { profileId: currentUser?.id } },
-    skip: !currentUser?.id
+    variables: { request: { profileId: currentProfile?.id } },
+    skip: !currentProfile?.id
   })
 
   const onCompleted = () => {
@@ -112,10 +112,10 @@ const SuperFollow: FC = () => {
     contractInterface: LensHubProxy,
     functionName: 'setFollowModuleWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -130,13 +130,13 @@ const SuperFollow: FC = () => {
   const form = useZodForm({
     schema: newFundraiseSchema,
     defaultValues: {
-      recipient: currentUser?.ownedBy
+      recipient: currentProfile?.ownedBy
     }
   })
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
@@ -149,11 +149,11 @@ const SuperFollow: FC = () => {
   const [createSetFollowModuleTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createSetFollowModuleTypedData
       }: {
         createSetFollowModuleTypedData: CreateSetFollowModuleBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createSetFollowModuleTypedData
         const { profileId, followModule, followModuleInitData, deadline } = typedData?.value
 
@@ -177,26 +177,30 @@ const SuperFollow: FC = () => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const setSuperFollow = (amount: string | null, recipient: string | null) => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     createSetFollowModuleTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
         request: {
-          profileId: currentUser?.id,
+          profileId: currentProfile?.id,
           followModule: amount
             ? {
                 feeFollowModule: {
@@ -216,14 +220,14 @@ const SuperFollow: FC = () => {
   }
 
   if (loading)
-    return (
+    {return (
       <Card>
         <div className="p-5 py-10 space-y-2 text-center">
           <Spinner size="md" className="mx-auto" />
           <div>{t('Loading super follow settings')}</div>
         </div>
       </Card>
-    )
+    )}
 
   const followType = currencyData?.profile?.followModule?.__typename
 

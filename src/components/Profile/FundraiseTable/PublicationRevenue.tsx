@@ -4,7 +4,7 @@ import { CommentValue, PUBLICATION_REVENUE_QUERY } from '@components/Publication
 import { CommentFields } from '@gql/CommentFields'
 import Logger from '@lib/logger'
 import { FC, useEffect, useState } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const COMMENT_FEED_QUERY = gql`
   query CommentFeed(
@@ -33,8 +33,8 @@ interface Props {
 }
 
 const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [revenue, setRevenue] = useState<number>(0)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [revenue, setRevenue] = useState(0)
 
   let commentValue = 0
 
@@ -44,7 +44,7 @@ const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
         publicationId: pubId
       }
     },
-    onCompleted() {
+    onCompleted: () => {
       Logger.log('[Query]', `Fetched fundraise revenue details Fundraise:${pubId}`)
     }
   })
@@ -52,8 +52,8 @@ const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
   const { data, loading } = useQuery(COMMENT_FEED_QUERY, {
     variables: {
       request: { commentsOf: pubId },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache'
   })
@@ -78,7 +78,7 @@ const PublicationRevenue: FC<Props> = ({ pubId, callback }) => {
                     commentValue += Number(value)
                   }
                   setRevenue(revenue + commentValue)
-                  if (callback && index === length - 1) callback(revenue + commentValue)
+                  if (callback && index === length - 1) {callback(revenue + commentValue)}
                 }}
               />
             )

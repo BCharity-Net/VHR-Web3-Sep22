@@ -53,7 +53,7 @@ const NFTFeed: FC<Props> = ({ profile }) => {
       }
     },
     skip: !profile?.ownedBy,
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.nfts?.pageInfo)
       setNfts(data?.nfts?.items)
     }

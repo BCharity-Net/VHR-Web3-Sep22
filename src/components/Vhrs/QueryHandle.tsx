@@ -12,8 +12,8 @@ const QueryHandle: FC<Props> = ({ address, callback }) => {
     variables: {
       ownedBy: address
     },
-    onCompleted(data) {
-      if (!callback) return
+    onCompleted: (data) => {
+      if (!callback) {return}
       callback(data)
     }
   })

@@ -17,8 +17,8 @@ interface Props {
 const GifSelector: FC<Props> = ({ setShowModal, setGifAttachment }) => {
   const { t } = useTranslation('common')
   const [categories, setCategories] = useState<Array<ICategory>>([])
-  const [debouncedGifInput, setDebouncedGifInput] = useState<string>('')
-  const [searchText, setSearchText] = useState<string>('')
+  const [debouncedGifInput, setDebouncedGifInput] = useState('')
+  const [searchText, setSearchText] = useState('')
 
   const fetchGiphyCategories = async () => {
     const { data } = await giphyFetch.categories()

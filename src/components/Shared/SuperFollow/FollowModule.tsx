@@ -17,14 +17,7 @@ import splitSignature from '@lib/splitSignature'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  POLYGONSCAN_URL,
-  RELAY_ON
-} from 'src/constants'
+import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -95,14 +88,17 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [allowed, setAllowed] = useState<boolean>(true)
+  const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(PROFILE.SUPER_FOLLOW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(PROFILE.SUPER_FOLLOW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -118,10 +114,10 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
     contractInterface: LensHubProxy,
     functionName: 'followWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -142,14 +138,14 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
         referenceModules: []
       }
     },
-    skip: !followModule?.amount?.asset?.address || !currentUser,
-    onCompleted(data) {
+    skip: !followModule?.amount?.asset?.address || !currentProfile,
+    onCompleted: (data) => {
       setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
   })
 
   const { data: balanceData } = useBalance({
-    addressOrName: currentUser?.ownedBy,
+    addressOrName: currentProfile?.ownedBy,
     token: followModule?.amount?.asset?.address,
     formatUnits: followModule?.amount?.asset?.decimals,
     watch: true
@@ -164,21 +160,24 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
 
   const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(PROFILE.SUPER_FOLLOW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(PROFILE.SUPER_FOLLOW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createFollowTypedData
       }: {
         createFollowTypedData: CreateFollowBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createFollowTypedData
         const { deadline } = typedData?.value
 
@@ -204,20 +203,24 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
               errors
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createFollow = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
 
     createFollowTypedData({
       variables: {
@@ -239,7 +242,9 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
     })
   }
 
-  if (loading) return <Loader message="Loading super follow" />
+  if (loading) {
+    return <Loader message="Loading super follow" />
+  }
 
   return (
     <div className="p-5">
@@ -313,7 +318,7 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
           </li>
         </ul>
       </div>
-      {currentUser ? (
+      {currentProfile ? (
         allowanceLoading ? (
           <div className="mt-5 w-28 rounded-lg h-[34px] shimmer" />
         ) : allowed ? (

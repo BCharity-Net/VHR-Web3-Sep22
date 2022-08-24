@@ -12,6 +12,7 @@
   ],
   "extends": ["next", "next/core-web-vitals"],
   "rules": {
+    "curly": "warn",
     "prettier/prettier": "off",
     "react/prop-types": "off",
     "react/no-unescaped-entities": "off",
@@ -26,9 +27,9 @@
     "simple-import-sort/imports": "warn",
     "simple-import-sort/exports": "error",
     "jsx-a11y/role-supports-aria-props": "off",
-    "no-use-before-define" :"off",
+    "no-use-before-define" : "off",
     "no-unexpected-multiline": "error",
-    "react/self-closing-comp":"warn"
+    "react/self-closing-comp": "warn"
   },
   "ignorePatterns": ["/src/generated/types.ts"]
 }

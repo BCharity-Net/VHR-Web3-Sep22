@@ -56,12 +56,15 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(PROFILE.FOLLOW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(PROFILE.FOLLOW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
 
@@ -76,31 +79,34 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
     contractInterface: LensHubProxy,
     functionName: 'followWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(PROFILE.FOLLOW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(PROFILE.FOLLOW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createFollowTypedData
       }: {
         createFollowTypedData: CreateFollowBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createFollowTypedData
         const { deadline } = typedData?.value
 
@@ -125,20 +131,24 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createFollow = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     createFollowTypedData({
       variables: {
@@ -148,7 +158,7 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
             profile: profile?.id,
             followModule:
               profile?.followModule?.__typename === 'ProfileFollowModuleSettings'
-                ? { profileFollowModule: { profileId: currentUser?.id } }
+                ? { profileFollowModule: { profileId: currentProfile?.id } }
                 : null
           }
         }

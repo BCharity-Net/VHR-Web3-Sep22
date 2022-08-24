@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import { NotificationProfileAvatar, NotificationProfileName } from '../Profile'
 import { NotificationWalletProfileAvatar, NotificationWalletProfileName } from '../WalletProfile'
@@ -18,8 +18,8 @@ interface Props {
 
 const FollowerNotification: FC<Props> = ({ notification }) => {
   const { t } = useTranslation('common')
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const isSuperFollow = currentUser?.followModule?.__typename === 'FeeFollowModuleSettings'
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isSuperFollow = currentProfile?.followModule?.__typename === 'FeeFollowModuleSettings'
 
   return (
     <div className="flex justify-between items-start">

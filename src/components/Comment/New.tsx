@@ -1,5 +1,5 @@
 import { LensHubProxy } from '@abis/LensHubProxy'
-import { gql, useMutation } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import Attachments from '@components/Shared/Attachments'
 import Markup from '@components/Shared/Markup'
 import Preview from '@components/Shared/Preview'
@@ -13,6 +13,10 @@ import { BCharityAttachment, BCharityPublication } from '@generated/bcharitytype
 import { CreateCommentBroadcastItemResult } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import {
+  CREATE_COMMENT_TYPED_DATA_MUTATION,
+  CREATE_COMMENT_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreateComment'
 import { ChatAlt2Icon, PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import { Mixpanel } from '@lib/mixpanel'
@@ -45,42 +49,6 @@ const SelectReferenceModule = dynamic(() => import('../Shared/SelectReferenceMod
   loading: () => <div className="mb-1 w-5 h-5 rounded-lg shimmer" />
 })
 
-export const CREATE_COMMENT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCommentTypedData($options: TypedDataOptions, $request: CreatePublicCommentRequest!) {
-    createCommentTypedData(options: $options, request: $request) {
-      id
-      expiresAt
-      typedData {
-        types {
-          CommentWithSig {
-            name
-            type
-          }
-        }
-        domain {
-          name
-          chainId
-          version
-          verifyingContract
-        }
-        value {
-          nonce
-          deadline
-          profileId
-          profileIdPointed
-          pubIdPointed
-          contentURI
-          collectModule
-          collectModuleInitData
-          referenceModule
-          referenceModuleData
-          referenceModuleInitData
-        }
-      }
-    }
-  }
-`
-
 interface Props {
   setShowModal?: Dispatch<boolean>
   hideCard?: boolean
@@ -92,8 +60,8 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const currentUser = useAppPersistStore((state) => state.currentUser)
   const publicationContent = usePublicationStore((state) => state.publicationContent)
   const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
   const previewPublication = usePublicationStore((state) => state.previewPublication)
@@ -102,14 +70,17 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
   const feeData = useCollectModuleStore((state) => state.feeData)
   const setFeeData = useCollectModuleStore((state) => state.setFeeData)
-  const [commentContentError, setCommentContentError] = useState<string>('')
-  const [onlyFollowers, setOnlyFollowers] = useState<boolean>(false)
-  const [isUploading, setIsUploading] = useState<boolean>(false)
+  const [commentContentError, setCommentContentError] = useState('')
+  const [onlyFollowers, setOnlyFollowers] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [attachments, setAttachments] = useState<BCharityAttachment[]>([])
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
-      Mixpanel.track(COMMENT.NEW, { result: 'typed_data_error', error: error?.message })
+      Mixpanel.track(COMMENT.NEW, {
+        result: 'typed_data_error',
+        error: error?.message
+      })
     }
   })
   const onCompleted = () => {
@@ -130,31 +101,34 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
     contractInterface: LensHubProxy,
     functionName: 'commentWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
   const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
-    onError(error) {
+    onError: (error) => {
       if (error.message === ERRORS.notMined) {
         toast.error(error.message)
       }
-      Mixpanel.track(COMMENT.NEW, { result: 'broadcast_error', error: error?.message })
+      Mixpanel.track(COMMENT.NEW, {
+        result: 'broadcast_error',
+        error: error?.message
+      })
     }
   })
   const [createCommentTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COMMENT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCommentTypedData
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
-      }) {
+      }) => {
         const { id, typedData } = createCommentTypedData
         const {
           profileId,
@@ -195,20 +169,38 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
               data: { broadcast: result }
             } = await broadcast({ variables: { request: { id, signature } } })
 
-            if ('reason' in result) write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
+  const [createCommentViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
+    CREATE_COMMENT_VIA_DISPATHCER_MUTATION,
+    {
+      onCompleted,
+      onError: (error) => {
+        toast.error(error.message ?? ERROR_MESSAGE)
+        Mixpanel.track(COMMENT.NEW, {
+          result: 'dispatcher_error',
+          error: error?.message
+        })
+      }
+    }
+  )
+
   const createComment = async () => {
-    if (!isAuthenticated) return toast.error(SIGN_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(SIGN_WALLET)
+    }
     if (publicationContent.length === 0 && attachments.length === 0) {
       Mixpanel.track(COMMENT.NEW, { result: 'empty' })
       return setCommentContentError('Comment should not be empty!')
@@ -222,10 +214,10 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
       metadata_id: uuid(),
       description: trimify(publicationContent),
       content: trimify(publicationContent),
-      external_url: `https://bcharity.vercel.app/u/${currentUser?.handle}`,
+      external_url: `https://bcharity.vercel.app/u/${currentProfile?.handle}`,
       image: attachments.length > 0 ? attachments[0]?.item : null,
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
-      name: `Comment by @${currentUser?.handle}`,
+      name: `Comment by @${currentProfile?.handle}`,
       mainContentFocus:
         attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
       contentWarning: null, // TODO
@@ -241,24 +233,31 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
       createdOn: new Date(),
       appId: APP_NAME
     }).finally(() => setIsUploading(false))
-    createCommentTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: {
-          profileId: currentUser?.id,
-          publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id,
-          contentURI: `https://arweave.net/${id}`,
-          collectModule: feeData.recipient
-            ? {
-                [getModule(selectedModule.moduleName).config]: feeData
-              }
-            : getModule(selectedModule.moduleName).config,
-          referenceModule: {
-            followerOnlyReferenceModule: onlyFollowers ? true : false
+
+    const request = {
+      profileId: currentProfile?.id,
+      publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id,
+      contentURI: `https://arweave.net/${id}`,
+      collectModule: feeData.recipient
+        ? {
+            [getModule(selectedModule.moduleName).config]: feeData
           }
-        }
+        : getModule(selectedModule.moduleName).config,
+      referenceModule: {
+        followerOnlyReferenceModule: onlyFollowers ? true : false
       }
-    })
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createCommentViaDispatcher({ variables: { request } })
+    } else {
+      createCommentTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request
+        }
+      })
+    }
   }
 
   const setGifAttachment = (gif: IGif) => {
@@ -269,6 +268,9 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
     }
     setAttachments([...attachments, attachment])
   }
+
+  const isLoading =
+    isUploading || typedDataLoading || dispatcherLoading || signLoading || writeLoading || broadcastLoading
 
   return (
     <Card className={hideCard ? 'border-0 !shadow-none !bg-transparent' : ''}>
@@ -295,18 +297,24 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
               {publicationContent && <Preview />}
             </div>
             <div className="flex items-center pt-2 ml-auto space-x-2 sm:pt-0">
-              {data?.hash ?? broadcastData?.broadcast?.txHash ? (
+              {data?.hash ??
+              broadcastData?.broadcast?.txHash ??
+              dispatcherData?.createCommentViaDispatcher?.txHash ? (
                 <PubIndexStatus
                   setShowModal={setShowModal}
                   type={type === 'comment' ? 'Comment' : 'Post'}
-                  txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
+                  txHash={
+                    data?.hash ??
+                    broadcastData?.broadcast?.txHash ??
+                    dispatcherData?.createCommentViaDispatcher?.txHash
+                  }
                 />
               ) : null}
               <Button
                 className="ml-auto"
-                disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
+                disabled={isLoading}
                 icon={
-                  isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
+                  isLoading ? (
                     <Spinner size="xs" />
                   ) : type === 'group post' ? (
                     <PencilAltIcon className="w-4 h-4" />

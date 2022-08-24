@@ -1,7 +1,7 @@
 import { gql, useQuery } from '@apollo/client'
 import { CommentFields } from '@gql/CommentFields'
 import { FC } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 const COMMENT_FEED_QUERY = gql`
   query CommentFeed(
@@ -30,16 +30,16 @@ interface Props {
 }
 
 const VHRToken: FC<Props> = ({ pubId, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   useQuery(COMMENT_FEED_QUERY, {
     variables: {
       request: { commentsOf: pubId },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
-      if (!callback) return
+    onCompleted: (data) => {
+      if (!callback) {return}
       callback(data)
     }
   })

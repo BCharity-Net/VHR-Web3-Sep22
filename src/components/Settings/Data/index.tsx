@@ -7,14 +7,14 @@ import mixpanel from 'mixpanel-browser'
 import React, { FC, useEffect, useState } from 'react'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import Sidebar from '../Sidebar'
 
 const DataSettings: FC = () => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
-  const [disabled, setDisabled] = useState<boolean>(false)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const [disabled, setDisabled] = useState(false)
 
   useEffect(() => {
     Mixpanel.track(PAGEVIEW.SETTINGS.DATA)
@@ -26,7 +26,9 @@ const DataSettings: FC = () => {
     }
   }, [])
 
-  if (!currentUser) return <Custom404 />
+  if (!currentProfile) {
+    return <Custom404 />
+  }
 
   return (
     <GridLayout>

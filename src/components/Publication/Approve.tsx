@@ -12,21 +12,12 @@ import splitSignature from '@lib/splitSignature'
 import React, { FC } from 'react'
 import toast from 'react-hot-toast'
 import IndexStatus from 'src/components/Shared/IndexStatus'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
 const CREATE_COLLECT_TYPED_DATA_MUTATION = gql`
-  mutation CreateCollectTypedData(
-    $options: TypedDataOptions
-    $request: CreateCollectRequest!
-  ) {
+  mutation CreateCollectTypedData($options: TypedDataOptions, $request: CreateCollectRequest!) {
     createCollectTypedData(options: $options, request: $request) {
       id
       expiresAt
@@ -61,11 +52,13 @@ interface Props {
 
 const Approve: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
-  const { userSigNonce, setUserSigNonce } = useAppStore()
-  const { isAuthenticated, currentUser } = useAppPersistStore()
+  const userSigNonce = useAppStore((state) => state.userSigNonce)
+  const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
+  const currentProfile = useAppStore((state) => state.currentProfile)
+  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError(error) {
+    onError: (error) => {
       toast.error(error?.message)
     }
   })
@@ -83,36 +76,36 @@ const Approve: FC<Props> = ({ publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess() {
+    onSuccess: () => {
       onCompleted()
     },
-    onError(error: any) {
+    onError: (error: any) => {
       createCollect()
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
-  const [
-    collectBroadcast,
-    { data: collectBroadcastData, loading: collectBroadcastLoading }
-  ] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError(error) {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
+  const [collectBroadcast, { data: collectBroadcastData, loading: collectBroadcastLoading }] = useMutation(
+    BROADCAST_MUTATION,
+    {
+      onCompleted,
+      onError: (error) => {
+        if (error.message === ERRORS.notMined) {
+          toast.error(error.message)
+        }
+        Logger.error('[Relay Error]', error.message)
       }
-      Logger.error('[Relay Error]', error.message)
     }
-  })
+  )
 
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
-      async onCompleted({
+      onCompleted: async ({
         createCollectTypedData
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
-      }) {
+      }) => {
         Logger.log('[Mutation]', 'Generated createCollectTypedData')
         const { id, typedData } = createCollectTypedData
         const { deadline } = typedData?.value
@@ -141,52 +134,45 @@ const Approve: FC<Props> = ({ publication }) => {
               variables: { request: { id, signature } }
             })
 
-            if ('reason' in result)
-              collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            if ('reason' in result) {collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })}
           } else {
             collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch (error) {}
       },
-      onError(error) {
+      onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
       }
     }
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) return toast.error(CONNECT_WALLET)
+    if (!isAuthenticated) {
+      return toast.error(CONNECT_WALLET)
+    }
 
     createCollectTypedData({
       variables: {
         options: { overrideSigNonce: userSigNonce },
-        request: { publicationId: publication?.pubId ?? publication?.id }
+        request: { publicationId: publication?.id }
       }
     })
   }
 
   return (
     <div className="flex items-center mt-3 space-y-0 space-x-3 sm:block sm:mt-0 sm:space-y-2">
-      {publication?.commentOn?.profile.ownedBy === currentUser?.ownedBy &&
-        publication?.commentOn?.profile.handle === currentUser?.handle && (
+      {publication?.commentOn?.profile.ownedBy === currentProfile?.ownedBy &&
+        publication?.commentOn?.profile.handle === currentProfile?.handle && (
           <>
             <Button
               className="sm:mt-0 sm:ml-auto"
               onClick={() => {
                 createCollect()
               }}
-              disabled={
-                typedDataLoading ||
-                signLoading ||
-                collectWriteLoading ||
-                collectBroadcastLoading
-              }
+              disabled={typedDataLoading || signLoading || collectWriteLoading || collectBroadcastLoading}
               variant="success"
               icon={
-                typedDataLoading ||
-                signLoading ||
-                collectWriteLoading ||
-                collectBroadcastLoading ? (
+                typedDataLoading || signLoading || collectWriteLoading || collectBroadcastLoading ? (
                   <Spinner variant="success" size="xs" />
                 ) : (
                   <CheckCircleIcon className="w-4 h-4" />
@@ -195,14 +181,11 @@ const Approve: FC<Props> = ({ publication }) => {
             >
               Approve
             </Button>
-            {collectWriteData?.hash ??
-            collectBroadcastData?.broadcast?.txHash ? (
+            {collectWriteData?.hash ?? collectBroadcastData?.broadcast?.txHash ? (
               <div className="mt-2">
                 <IndexStatus
                   txHash={
-                    collectWriteData?.hash
-                      ? collectWriteData?.hash
-                      : collectBroadcastData?.broadcast?.txHash
+                    collectWriteData?.hash ? collectWriteData?.hash : collectBroadcastData?.broadcast?.txHash
                   }
                 />
               </div>

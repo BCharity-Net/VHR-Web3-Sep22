@@ -20,28 +20,27 @@ const PublicationType: FC<Props> = ({ publication, showType, showThread }) => {
   const publicationType = publication?.metadata?.attributes[0]?.value
   const isCollected = !!publication?.collectedBy
 
-  if (!showType) return null
+  if (!showType) {
+    return null
+  }
 
   return (
     <>
       {type === 'Mirror' && <Mirrored publication={publication} />}
-      {type === 'Comment' &&
-        pathname === '/posts/[id]' &&
-        publicationType !== 'group post' && (
-          <CommentedPublication publication={publication} />
-        )}
-      {type === 'Comment' &&
-        !showThread &&
-        !isCollected &&
-        publicationType !== 'group post' && <Commented publication={publication} />}
-      {publicationType === 'group post' &&
-        pathname !== '/groups/[id]' &&
-        type !== 'Mirror' && <GroupPublication publication={publication} />}
+      {type === 'Comment' && pathname === '/posts/[id]' && publicationType !== 'group post' && (
+        <CommentedPublication publication={publication} />
+      )}
+      {type === 'Comment' && !showThread && !isCollected && publicationType !== 'group post' && (
+        <Commented publication={publication} />
+      )}
+      {publicationType === 'group post' && pathname !== '/groups/[id]' && type !== 'Mirror' && (
+        <GroupPublication publication={publication} />
+      )}
       {isCollected && publicationType !== 'group' && publicationType !== 'fundraise' && (
-        <Collected publication={publication} type="Collected" />
+        <Collected publication={publication} type="collected" />
       )}
       {isCollected && publicationType === 'fundraise' && (
-        <Collected publication={publication} type="Funded" />
+        <Collected publication={publication} type="funded" />
       )}
     </>
   )

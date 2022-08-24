@@ -10,16 +10,10 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  usePrepareSendTransaction,
-  useSendTransaction,
-  useWaitForTransaction
-} from 'wagmi'
+import { usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
 
 const GENERATE_ALLOWANCE_QUERY = gql`
-  query GenerateModuleCurrencyApprovalData(
-    $request: GenerateModuleCurrencyApprovalDataRequest!
-  ) {
+  query GenerateModuleCurrencyApprovalData($request: GenerateModuleCurrencyApprovalDataRequest!) {
     generateModuleCurrencyApprovalData(request: $request) {
       to
       from
@@ -35,17 +29,10 @@ interface Props {
   setAllowed: Dispatch<boolean>
 }
 
-const AllowanceButton: FC<Props> = ({
-  title = 'Allow',
-  module,
-  allowed,
-  setAllowed
-}) => {
+const AllowanceButton: FC<Props> = ({ title = 'Allow', module, allowed, setAllowed }) => {
   const { t } = useTranslation('common')
-  const [showWarningModal, setShowWarninModal] = useState<boolean>(false)
-  const [generateAllowanceQuery, { loading: queryLoading }] = useLazyQuery(
-    GENERATE_ALLOWANCE_QUERY
-  )
+  const [showWarningModal, setShowWarninModal] = useState(false)
+  const [generateAllowanceQuery, { loading: queryLoading }] = useLazyQuery(GENERATE_ALLOWANCE_QUERY)
 
   const { config } = usePrepareSendTransaction({
     request: {}
@@ -58,13 +45,13 @@ const AllowanceButton: FC<Props> = ({
   } = useSendTransaction({
     ...config,
     mode: 'recklesslyUnprepared',
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
   const { isLoading: waitLoading } = useWaitForTransaction({
     hash: txData?.hash,
-    onSuccess() {
+    onSuccess: () => {
       toast.success(`Module ${allowed ? 'disabled' : 'enabled'} successfully!`)
       setShowWarninModal(false)
       setAllowed(!allowed)
@@ -72,16 +59,12 @@ const AllowanceButton: FC<Props> = ({
         result: 'success'
       })
     },
-    onError(error: any) {
+    onError: (error: any) => {
       toast.error(error?.data?.message ?? error?.message)
     }
   })
 
-  const handleAllowance = (
-    currencies: string,
-    value: string,
-    selectedModule: string
-  ) => {
+  const handleAllowance = (currencies: string, value: string, selectedModule: string) => {
     generateAllowanceQuery({
       variables: {
         request: {
@@ -137,8 +120,7 @@ const AllowanceButton: FC<Props> = ({
             message={
               <div className="leading-6">
                 {t('Care 1')}
-                <b>{t('Collect')}</b>,<b> {t('fund')}</b> {t('And')}{' '}
-                <b>{t('Super follow')}</b>.
+                <b>{t('Collect')}</b>,<b> {t('fund')}</b> {t('And')} <b>{t('Super follow')}</b>.
               </div>
             }
           />
@@ -152,11 +134,7 @@ const AllowanceButton: FC<Props> = ({
               )
             }
             onClick={() =>
-              handleAllowance(
-                module.currency,
-                Number.MAX_SAFE_INTEGER.toString(),
-                module.module
-              )
+              handleAllowance(module.currency, Number.MAX_SAFE_INTEGER.toString(), module.module)
             }
           >
             {title}

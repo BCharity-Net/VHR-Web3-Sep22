@@ -14,7 +14,7 @@ import { CollectionIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import React, { FC, useState } from 'react'
 import { useInView } from 'react-cool-inview'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
 const PROFILE_FEED_QUERY = gql`
@@ -52,18 +52,18 @@ interface Props {
 }
 
 const Feed: FC<Props> = ({ profile, type }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [publications, setPublications] = useState<BCharityPublication[]>([])
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(PROFILE_FEED_QUERY, {
     variables: {
       request: { publicationTypes: type, profileId: profile?.id, limit: 10 },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       setPageInfo(data?.publications?.pageInfo)
       setPublications(data?.publications?.items)
     }
@@ -79,8 +79,8 @@ const Feed: FC<Props> = ({ profile, type }) => {
             cursor: pageInfo?.next,
             limit: 10
           },
-          reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-          profileId: currentUser?.id ?? null
+          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+          profileId: currentProfile?.id ?? null
         }
       })
       setPageInfo(data?.publications?.pageInfo)
@@ -97,7 +97,7 @@ const Feed: FC<Props> = ({ profile, type }) => {
           message={
             <div>
               <span className="mr-1 font-bold">@{profile?.handle}</span>
-              <span>seems like not {type.toLowerCase()}ed yet!</span>
+              <span>doesn’t {type.toLowerCase()}ed yet!</span>
             </div>
           }
           icon={<CollectionIcon className="w-8 h-8 text-brand" />}

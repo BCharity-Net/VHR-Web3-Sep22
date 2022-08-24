@@ -1,6 +1,11 @@
 import Arweave from 'arweave'
 import { ARWEAVE_KEY } from 'src/constants'
 
+/**
+ *
+ * @param data - Data to upload to arweave
+ * @returns arweave transaction id
+ */
 const arweave = Arweave.init({
   host: 'arweave.net',
   port: 443,

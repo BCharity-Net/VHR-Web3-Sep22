@@ -6,7 +6,7 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import React, { FC, useState } from 'react'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import TotalDonors from '../FundraiseTable/TotalDonors'
 
@@ -54,10 +54,10 @@ export interface Data {
 }
 
 const OrgDonors: FC<Props> = ({ profile, callback }) => {
-  const currentUser = useAppPersistStore((state) => state.currentUser)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [onEnter, setOnEnter] = useState<boolean>(false)
+  const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
   const [pubIdData, setPubIdData] = useState<string[]>([])
   const [vhrTxnData, setVhrTxnData] = useState<string[]>([])
@@ -87,12 +87,12 @@ const OrgDonors: FC<Props> = ({ profile, callback }) => {
         profileId: profile?.id,
         limit: tableLimit
       },
-      reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-      profileId: currentUser?.id ?? null
+      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+      profileId: currentProfile?.id ?? null
     },
     skip: !profile?.id,
     fetchPolicy: 'no-cache',
-    onCompleted(data) {
+    onCompleted: (data) => {
       if (onEnter) {
         tableData.splice(0, tableData.length)
         setTableData(tableData)
@@ -114,8 +114,8 @@ const OrgDonors: FC<Props> = ({ profile, callback }) => {
                 limit: tableLimit,
                 cursor: pageInfo?.next
               },
-              reactionRequest: currentUser ? { profileId: currentUser?.id } : null,
-              profileId: currentUser?.id ?? null
+              reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+              profileId: currentProfile?.id ?? null
             }
           }).then((result: any) => {
             const results = data?.publications?.items.filter((i: any) => {
@@ -155,7 +155,7 @@ const OrgDonors: FC<Props> = ({ profile, callback }) => {
     <TotalDonors
       pubIdData={pubIdData}
       callback={(donors: number) => {
-        if (callback) callback(donors)
+        if (callback) {callback(donors)}
       }}
       from={true}
     />
