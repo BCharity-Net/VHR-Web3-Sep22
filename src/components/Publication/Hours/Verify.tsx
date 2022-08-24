@@ -19,9 +19,9 @@ import {
 } from '@gql/TypedAndDispatcherData/CreateComment'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, FEE_DATA_TYPE, getModule } from '@lib/getModule'
+import getSignature from '@lib/getSignature'
 import Logger from '@lib/logger'
 import { Mixpanel } from '@lib/mixpanel'
-import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import trimify from '@lib/trimify'
 import uploadToArweave from '@lib/uploadToArweave'
@@ -232,7 +232,9 @@ const Verify: FC<Props> = ({ publication }) => {
       setFeeData(defaultFeeData)
     },
     onError: (error: any) => {
-      if (txnData) {createComment(txnData)}
+      if (txnData) {
+        createComment(txnData)
+      }
       toast.error(error?.data?.message ?? error?.message)
     }
   })
@@ -252,27 +254,22 @@ const Verify: FC<Props> = ({ publication }) => {
       createCommentTypedData: CreateCommentBroadcastItemResult
     }) => {
       Logger.log('[Mutation]', 'Generated createCommentTypedData')
-      const { id, typedData } = createCommentTypedData
-      const {
-        profileId,
-        profileIdPointed,
-        pubIdPointed,
-        contentURI,
-        collectModule,
-        collectModuleInitData,
-        referenceModule,
-        referenceModuleData,
-        referenceModuleInitData,
-        deadline
-      } = typedData?.value
 
       try {
-        const signature = await signTypedDataAsync({
-          domain: omit(typedData?.domain, '__typename'),
-          types: omit(typedData?.types, '__typename'),
-          value: omit(typedData?.value, '__typename')
-        })
-        setUserSigNonce(userSigNonce + 1)
+        const { id, typedData } = createCommentTypedData
+        const {
+          profileId,
+          profileIdPointed,
+          pubIdPointed,
+          contentURI,
+          collectModule,
+          collectModuleInitData,
+          referenceModule,
+          referenceModuleData,
+          referenceModuleInitData,
+          deadline
+        } = typedData?.value
+        const signature = await signTypedDataAsync(getSignature(typedData))
         const { v, r, s } = splitSignature(signature)
         const sig = { v, r, s, deadline }
         const inputStruct = {
@@ -287,6 +284,8 @@ const Verify: FC<Props> = ({ publication }) => {
           referenceModuleInitData,
           sig
         }
+
+        setUserSigNonce(userSigNonce + 1)
         if (RELAY_ON) {
           const {
             data: { broadcast: result }
@@ -294,11 +293,13 @@ const Verify: FC<Props> = ({ publication }) => {
             variables: { request: { id, signature } }
           })
 
-          if ('reason' in result) {commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })}
+          if ('reason' in result) {
+            commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
         } else {
           commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
-      } catch (error) {}
+      } catch {}
     },
     onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
@@ -390,17 +391,11 @@ const Verify: FC<Props> = ({ publication }) => {
         createCollectTypedData: CreateCollectBroadcastItemResult
       }) => {
         Logger.log('[Mutation]', 'Generated createCollectTypedData')
-        const { id, typedData } = createCollectTypedData
-        const { deadline } = typedData?.value
 
         try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { profileId, pubId, data: collectData } = typedData?.value
+          const { id, typedData } = createCollectTypedData
+          const { profileId, pubId, data: collectData, deadline } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
           const inputStruct = {
@@ -410,6 +405,8 @@ const Verify: FC<Props> = ({ publication }) => {
             data: collectData,
             sig
           }
+
+          setUserSigNonce(userSigNonce + 1)
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
@@ -417,11 +414,13 @@ const Verify: FC<Props> = ({ publication }) => {
               variables: { request: { id, signature } }
             })
 
-            if ('reason' in result) {collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })}
+            if ('reason' in result) {
+              collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
           } else {
             collectWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } catch (error) {}
+        } catch {}
       },
       onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)

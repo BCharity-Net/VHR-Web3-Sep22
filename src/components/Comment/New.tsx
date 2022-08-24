@@ -19,6 +19,7 @@ import {
 } from '@gql/TypedAndDispatcherData/CreateComment'
 import { ChatAlt2Icon, PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
+import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
 import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
@@ -129,27 +130,21 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
       }) => {
-        const { id, typedData } = createCommentTypedData
-        const {
-          profileId,
-          profileIdPointed,
-          pubIdPointed,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleData,
-          referenceModuleInitData,
-          deadline
-        } = typedData?.value
-
         try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
+          const { id, typedData } = createCommentTypedData
+          const {
+            profileId,
+            profileIdPointed,
+            pubIdPointed,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleData,
+            referenceModuleInitData,
+            deadline
+          } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
           const inputStruct = {
@@ -164,6 +159,8 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
             referenceModuleInitData,
             sig
           }
+
+          setUserSigNonce(userSigNonce + 1)
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
@@ -175,7 +172,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } catch (error) {}
+        } catch {}
       },
       onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)

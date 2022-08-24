@@ -50,6 +50,9 @@ export const PROFILE_QUERY = gql`
         key
         value
       }
+      dispatcher {
+        canUseRelay
+      }
       onChainIdentity {
         ens {
           name

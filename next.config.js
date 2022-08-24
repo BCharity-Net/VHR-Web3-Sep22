@@ -19,6 +19,10 @@ module.exports = withTM(
           {
             source: '/sitemaps/:match*',
             destination: 'https://sitemap.bcharity.net/sitemaps/:match*'
+          },
+          {
+            source: '/collect/:match*',
+            destination: 'https://api-eu.mixpanel.com/:match*'
           }
         ]
       },

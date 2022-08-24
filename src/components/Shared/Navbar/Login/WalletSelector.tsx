@@ -1,6 +1,6 @@
 import { gql, useLazyQuery, useMutation } from '@apollo/client'
+import { CURRENT_PROFILE_QUERY } from '@components/Layout'
 import SwitchNetwork from '@components/Shared/SwitchNetwork'
-import { CURRENT_USER_QUERY } from '@components/SiteLayout'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { Profile } from '@generated/types'
@@ -63,7 +63,8 @@ const WalletSelector: FC<Props> = ({ setHasConnected, setHasProfile }) => {
   )
   const [authenticate, { error: errorAuthenticate, loading: authLoading }] =
     useMutation(AUTHENTICATE_MUTATION)
-  const [getProfiles, { error: errorProfiles, loading: profilesLoading }] = useLazyQuery(CURRENT_USER_QUERY)
+  const [getProfiles, { error: errorProfiles, loading: profilesLoading }] =
+    useLazyQuery(CURRENT_PROFILE_QUERY)
 
   useEffect(() => setMounted(true), [])
 
@@ -74,7 +75,7 @@ const WalletSelector: FC<Props> = ({ setHasConnected, setHasProfile }) => {
         setHasConnected(true)
       }
       Mixpanel.track(`Connect with ${connector.name.toLowerCase()}`)
-    } catch (error) {}
+    } catch {}
   }
 
   const handleSign = async () => {
@@ -104,7 +105,7 @@ const WalletSelector: FC<Props> = ({ setHasConnected, setHasProfile }) => {
       const { data: profilesData } = await getProfiles({
         variables: { ownedBy: address }
       })
-      setIsConnected(true)
+
       if (profilesData?.profiles?.items?.length === 0) {
         setHasProfile(false)
       } else {
@@ -112,11 +113,18 @@ const WalletSelector: FC<Props> = ({ setHasConnected, setHasProfile }) => {
           ?.slice()
           ?.sort((a: Profile, b: Profile) => Number(a.id) - Number(b.id))
           ?.sort((a: Profile, b: Profile) => (!(a.isDefault !== b.isDefault) ? 0 : a.isDefault ? -1 : 1))
+        const currentProfile = profiles[0]
         setIsAuthenticated(true)
         setProfiles(profiles)
-        setCurrentProfile(profiles[0])
-        setProfileId(profiles[0].id)
+        setCurrentProfile(currentProfile)
+        setProfileId(currentProfile.id)
+        Mixpanel.identify(currentProfile.id)
+        Mixpanel.people.set({
+          address: currentProfile?.ownedBy,
+          $name: currentProfile?.handle
+        })
       }
+      setIsConnected(true)
       Mixpanel.track(USER.SIWL, { result: 'success' })
     } catch (error) {
       console.log(error)

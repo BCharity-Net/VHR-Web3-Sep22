@@ -4,32 +4,34 @@ import { ProfileFields } from '@gql/ProfileFields'
 import { Mixpanel } from '@lib/mixpanel'
 import Cookies from 'js-cookie'
 import mixpanel from 'mixpanel-browser'
-import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useTheme } from 'next-themes'
-import { FC, ReactNode, Suspense, useEffect, useState } from 'react'
+import { FC, ReactNode, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { CHAIN_ID, MIXPANEL_API_HOST, MIXPANEL_TOKEN, STATIC_ASSETS } from 'src/constants'
+import { CHAIN_ID, MIXPANEL_API_HOST, MIXPANEL_TOKEN } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { useAccount, useDisconnect, useNetwork } from 'wagmi'
 
 import Loading from './Loading'
-
-const Navbar = dynamic(() => import('./Shared/Navbar'), { suspense: true })
+import Navbar from './Shared/Navbar'
 
 if (MIXPANEL_TOKEN) {
   mixpanel.init(MIXPANEL_TOKEN, {
     ignore_dnt: true,
-    api_host: MIXPANEL_API_HOST
+    api_host: MIXPANEL_API_HOST,
+    batch_requests: false
   })
 }
 
-export const CURRENT_USER_QUERY = gql`
-  query CurrentUser($ownedBy: [EthereumAddress!]) {
+export const CURRENT_PROFILE_QUERY = gql`
+  query CurrentProfile($ownedBy: [EthereumAddress!]) {
     profiles(request: { ownedBy: $ownedBy }) {
       items {
         ...ProfileFields
         isDefault
+        dispatcher {
+          canUseRelay
+        }
       }
     }
     userSigNonces {
@@ -43,7 +45,7 @@ interface Props {
   children: ReactNode
 }
 
-const SiteLayout: FC<Props> = ({ children }) => {
+const Layout: FC<Props> = ({ children }) => {
   const { resolvedTheme } = useTheme()
   const setProfiles = useAppStore((state) => state.setProfiles)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
@@ -60,7 +62,7 @@ const SiteLayout: FC<Props> = ({ children }) => {
   const { address, isDisconnected } = useAccount()
   const { chain } = useNetwork()
   const { disconnect } = useDisconnect()
-  const { loading } = useQuery(CURRENT_USER_QUERY, {
+  const { loading } = useQuery(CURRENT_PROFILE_QUERY, {
     variables: { ownedBy: address },
     skip: !isConnected,
     onCompleted: (data) => {
@@ -74,7 +76,9 @@ const SiteLayout: FC<Props> = ({ children }) => {
       if (profiles.length === 0) {
         setProfileId(null)
       } else {
+        const selectedUser = profiles.find((profile) => profile.id === profileId)
         setProfiles(profiles)
+        setCurrentProfile(selectedUser)
       }
     }
   })
@@ -82,27 +86,27 @@ const SiteLayout: FC<Props> = ({ children }) => {
   useEffect(() => {
     const accessToken = Cookies.get('accessToken')
     const refreshToken = Cookies.get('refreshToken')
+    const hasAuthTokens = accessToken !== 'undefined' && refreshToken !== 'undefined'
     const currentProfileAddress = currentProfile?.ownedBy
+    const hasSameAddress = currentProfileAddress !== undefined && currentProfileAddress !== address
+
+    // Set mounted state to true after the first render
     setMounted(true)
 
     // Set mixpanel user id
-    if (currentProfile?.id) {
-      Mixpanel.identify(currentProfile.id)
-      Mixpanel.people.set({
-        address: currentProfile?.ownedBy,
-        handle: currentProfile?.handle,
-        $name: currentProfile?.name ?? currentProfile?.handle,
-        $avatar: `https://avatar.tobi.sh/${currentProfile?.handle}.png`
-      })
-    } else {
+    if (!profileId) {
       Mixpanel.identify('0x00')
-      Mixpanel.people.set({
-        $name: 'Anonymous',
-        $avatar: `${STATIC_ASSETS}/anon.jpeg`
-      })
     }
 
-    const logout = () => {
+    if (
+      hasSameAddress || // If the current address is not the same as the profile address
+      chain?.id !== CHAIN_ID || // If the user is not on the correct chain
+      isDisconnected || // If the user is disconnected from the wallet
+      !profileId || // If the user has no profile
+      !hasAuthTokens // If the user has no auth tokens
+    ) {
+      setIsAuthenticated(true)
+      // Logout the user and profile
       setIsAuthenticated(false)
       setIsConnected(false)
       setCurrentProfile(undefined)
@@ -110,46 +114,10 @@ const SiteLayout: FC<Props> = ({ children }) => {
       Cookies.remove('accessToken')
       Cookies.remove('refreshToken')
       localStorage.removeItem('lenster.store')
-      if (disconnect) {
-        disconnect()
-      }
-    }
-
-    if (
-      refreshToken &&
-      accessToken &&
-      accessToken !== 'undefined' &&
-      refreshToken !== 'undefined' &&
-      currentProfile &&
-      chain?.id === CHAIN_ID
-    ) {
-      setIsAuthenticated(true)
-    } else {
-      if (isAuthenticated) {logout()}
-    }
-
-    if (isDisconnected) {
-      if (disconnect) {
-        disconnect()
-      }
-      setIsAuthenticated(false)
-      setIsConnected(false)
-    }
-
-    if (currentProfileAddress !== undefined && currentProfileAddress !== address) {
-      logout()
+      disconnect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isConnected,
-    isAuthenticated,
-    isDisconnected,
-    address,
-    chain,
-    currentProfile,
-    disconnect,
-    setCurrentProfile
-  ])
+  }, [isDisconnected, address, chain, currentProfile, disconnect, setCurrentProfile])
 
   const toastOptions = {
     style: {
@@ -183,14 +151,12 @@ const SiteLayout: FC<Props> = ({ children }) => {
         <meta name="theme-color" content={resolvedTheme === 'dark' ? '#1b1b1d' : '#ffffff'} />
       </Head>
       <Toaster position="bottom-right" toastOptions={toastOptions} />
-      <Suspense fallback={<Loading />}>
-        <div className="flex flex-col min-h-screen">
-          <Navbar />
-          {children}
-        </div>
-      </Suspense>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        {children}
+      </div>
     </>
   )
 }
 
-export default SiteLayout
+export default Layout

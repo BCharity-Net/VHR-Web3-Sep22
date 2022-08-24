@@ -68,7 +68,9 @@ const newHourSchema = object({
     .optional()
     .refine(
       (val) => {
-        if (val === '') {return false}
+        if (val === '') {
+          return false
+        }
         return true
       },
       { message: 'You should enter an end date' }
@@ -105,7 +107,9 @@ interface Props {
 
 const Media: FC<Props> = ({ media }) => {
   let attachments = []
-  if (media) {attachments = JSON.parse(media)}
+  if (media) {
+    attachments = JSON.parse(media)
+  }
   return (
     <div>
       {attachments &&
@@ -239,7 +243,7 @@ const NewHours: NextPage = () => {
         } else {
           write?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
-      } catch (error) {}
+      } catch {}
     },
     onError: (error) => {
       toast.error(error.message ?? ERROR_MESSAGE)
@@ -424,7 +428,9 @@ const NewHours: NextPage = () => {
                   }
                   const startDate = form.getValues('startDate')
                   const endDate = form.getValues('endDate')
-                  if (endDate === '') {form.setValue('endDate', startDate)}
+                  if (endDate === '') {
+                    form.setValue('endDate', startDate)
+                  }
                 }}
                 {...form.register('startDate')}
               />

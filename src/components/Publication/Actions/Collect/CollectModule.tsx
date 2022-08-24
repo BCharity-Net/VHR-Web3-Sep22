@@ -30,10 +30,10 @@ import {
   UsersIcon
 } from '@heroicons/react/outline'
 import formatAddress from '@lib/formatAddress'
+import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import humanize from '@lib/humanize'
 import { Mixpanel } from '@lib/mixpanel'
-import omit from '@lib/omit'
 import splitSignature from '@lib/splitSignature'
 import dayjs from 'dayjs'
 import React, { Dispatch, FC, useEffect, useState } from 'react'
@@ -238,17 +238,10 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
       }: {
         createCollectTypedData: CreateCollectBroadcastItemResult
       }) => {
-        const { id, typedData } = createCollectTypedData
-        const { deadline } = typedData?.value
-
         try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
-          const { profileId, pubId, data: collectData } = typedData?.value
+          const { id, typedData } = createCollectTypedData
+          const { profileId, pubId, data: collectData, deadline } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
           const inputStruct = {
@@ -258,6 +251,8 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
             data: collectData,
             sig
           }
+
+          setUserSigNonce(userSigNonce + 1)
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
@@ -269,7 +264,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
           } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } catch (error) {}
+        } catch {}
       },
       onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)

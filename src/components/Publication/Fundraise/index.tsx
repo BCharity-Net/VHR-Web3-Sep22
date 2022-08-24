@@ -19,9 +19,9 @@ import {
   CREATE_COMMENT_VIA_DISPATHCER_MUTATION
 } from '@gql/TypedAndDispatcherData/CreateComment'
 import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outline'
+import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
-import omit from '@lib/omit'
 import uploadToArweave from '@lib/uploadToArweave'
 import clsx from 'clsx'
 import { splitSignature } from 'ethers/lib/utils'
@@ -109,7 +109,9 @@ export const CommentValue: FC<CommentProps> = ({ id, callback }) => {
       }
     },
     onCompleted: (data) => {
-      if (callback) {callback(data)}
+      if (callback) {
+        callback(data)
+      }
     }
   })
   return <div />
@@ -185,27 +187,21 @@ const Fundraise: FC<Props> = ({ fund }) => {
       }: {
         createCommentTypedData: CreateCommentBroadcastItemResult
       }) => {
-        const { id, typedData } = createCommentTypedData
-        const {
-          profileId,
-          profileIdPointed,
-          pubIdPointed,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleData,
-          referenceModuleInitData,
-          deadline
-        } = typedData?.value
-
         try {
-          const signature = await signTypedDataAsync({
-            domain: omit(typedData?.domain, '__typename'),
-            types: omit(typedData?.types, '__typename'),
-            value: omit(typedData?.value, '__typename')
-          })
-          setUserSigNonce(userSigNonce + 1)
+          const { id, typedData } = createCommentTypedData
+          const {
+            profileId,
+            profileIdPointed,
+            pubIdPointed,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleData,
+            referenceModuleInitData,
+            deadline
+          } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
           const { v, r, s } = splitSignature(signature)
           const sig = { v, r, s, deadline }
           const inputStruct = {
@@ -220,6 +216,8 @@ const Fundraise: FC<Props> = ({ fund }) => {
             referenceModuleInitData,
             sig
           }
+
+          setUserSigNonce(userSigNonce + 1)
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
@@ -233,7 +231,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
           } else {
             commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } catch (error) {}
+        } catch {}
       },
       onError: (error) => {
         toast.error(error.message ?? ERROR_MESSAGE)
@@ -347,7 +345,9 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const goalAmount = fund?.metadata?.attributes[1]?.value
   const percentageReached = revenue ? (revenue / Number(goalAmount as string)) * 100 : 0
   const cover = fund?.metadata?.cover?.original?.url
-  if (loading) {return <FundraiseShimmer />}
+  if (loading) {
+    return <FundraiseShimmer />
+  }
 
   return (
     <Card forceRounded onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}>
@@ -507,7 +507,9 @@ const Fundraise: FC<Props> = ({ fund }) => {
                           id={i.id}
                           callback={(data: any) => {
                             const value = data?.publicationRevenue?.revenue.total.value
-                            if (value) {commentValue += Number(value)}
+                            if (value) {
+                              commentValue += Number(value)
+                            }
                             setRevenue(revenue + commentValue)
                           }}
                         />
