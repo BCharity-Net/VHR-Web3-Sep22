@@ -11,7 +11,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
 import { Toggle } from '@components/UI/Toggle'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
-import { CreateSetProfileMetadataUriBroadcastItemResult, MediaSet, Profile } from '@generated/types'
+import { CreateSetProfileMetadataUriBroadcastItemResult, MediaSet, Mutation, Profile } from '@generated/types'
 import {
   CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION,
   CREATE_SET_PROFILE_METADATA_VIA_DISPATHCER_MUTATION
@@ -32,7 +32,7 @@ import React, { ChangeEvent, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, LENS_PERIPHERY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -47,7 +47,6 @@ const Profile: FC<Props> = ({ profile }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [beta, setBeta] = useState(isBeta(profile))
   const [pride, setPride] = useState(hasPrideLogo(profile))
   const [cover, setCover] = useState('')
@@ -76,7 +75,7 @@ const Profile: FC<Props> = ({ profile }) => {
   })
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createSetProfileMetadataTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createSetProfileMetadataTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_SET_PROFILE_METADATA_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -160,22 +159,22 @@ const Profile: FC<Props> = ({ profile }) => {
   const form = useZodForm({
     schema: editProfileSchema,
     defaultValues: {
-      name: profile?.name as string,
-      location: getAttribute(profile?.attributes, 'location') as string,
-      website: getAttribute(profile?.attributes, 'website') as string,
-      twitter: getAttribute(profile?.attributes, 'twitter')?.replace('https://twitter.com/', '') as string,
-      bio: profile?.bio as string
+      name: profile?.name ?? '',
+      location: getAttribute(profile?.attributes, 'location'),
+      website: getAttribute(profile?.attributes, 'website'),
+      twitter: getAttribute(profile?.attributes, 'twitter')?.replace('https://twitter.com/', ''),
+      bio: profile?.bio ?? ''
     }
   })
 
   const editProfile = async (
     name: string,
     location: string | null,
-    website: string | null | undefined,
-    twitter: string | null,
-    bio: string | null
+    website?: string | null,
+    twitter?: string | null,
+    bio?: string | null
   ) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

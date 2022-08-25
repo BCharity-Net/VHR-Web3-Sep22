@@ -1,9 +1,5 @@
-import {
-  ChatAlt2Icon,
-  ClockIcon,
-  CollectionIcon,
-  SwitchHorizontalIcon
-} from '@heroicons/react/outline'
+import { PublicationSortCriteria } from '@generated/types'
+import { ChatAlt2Icon, ClockIcon, CollectionIcon, SwitchHorizontalIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
@@ -35,8 +31,7 @@ const FeedType: FC<Props> = ({ setFeedType, feedType }) => {
       }}
       className={clsx(
         {
-          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold':
-            feedType === type
+          'text-brand bg-brand-100 dark:bg-opacity-20 bg-opacity-100 font-bold': feedType === type
         },
         'flex items-center space-x-2 rounded-lg px-4 sm:px-3 py-2 sm:py-1 text-brand hover:bg-brand-100 dark:hover:bg-opacity-20 hover:bg-opacity-100'
       )}
@@ -52,23 +47,19 @@ const FeedType: FC<Props> = ({ setFeedType, feedType }) => {
       <FeedLink
         name={t('Top Commented')}
         icon={<ChatAlt2Icon className="w-4 h-4" />}
-        type="TOP_COMMENTED"
+        type={PublicationSortCriteria.TopCommented}
       />
       <FeedLink
         name={t('Top Collected')}
         icon={<CollectionIcon className="w-4 h-4" />}
-        type="TOP_COLLECTED"
+        type={PublicationSortCriteria.TopCollected}
       />
       <FeedLink
         name={t('Top Mirrored')}
         icon={<SwitchHorizontalIcon className="w-4 h-4" />}
-        type="TOP_MIRRORED"
+        type={PublicationSortCriteria.TopMirrored}
       />
-      <FeedLink
-        name={t('Latest')}
-        icon={<ClockIcon className="w-4 h-4" />}
-        type="LATEST"
-      />
+      <FeedLink name={t('Latest')} icon={<ClockIcon className="w-4 h-4" />} type="LATEST" />
     </div>
   )
 }

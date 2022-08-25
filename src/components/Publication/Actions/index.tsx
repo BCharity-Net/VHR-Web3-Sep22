@@ -1,5 +1,6 @@
 import { BCharityPublication } from '@generated/bcharitytypes'
-import React, { FC } from 'react'
+import clsx from 'clsx'
+import React, { FC, MouseEvent } from 'react'
 
 import Collect from './Collect'
 import Comment from './Comment'
@@ -9,23 +10,34 @@ import Mirror from './Mirror'
 
 interface Props {
   publication: BCharityPublication
+  isFullPublication?: boolean
 }
 
-const PublicationActions: FC<Props> = ({ publication }) => {
+const PublicationActions: FC<Props> = ({ publication, isFullPublication = false }) => {
   const publicationType = publication?.metadata?.attributes[0]?.value
+  const collectModuleType = publication?.collectModule?.__typename
 
-  return publicationType !== 'group' ? (
-    <div className="flex gap-8 items-center pt-3 -ml-2 text-gray-500">
-      <Comment publication={publication} />
-      <Mirror publication={publication} />
-      <Like publication={publication} />
-      {publication?.collectModule?.__typename !== 'RevertCollectModuleSettings' &&
+  return (
+    <div
+      className={clsx(
+        { 'justify-between': isFullPublication },
+        'flex gap-6 items-center pt-3 -ml-2 text-gray-500 sm:gap-8'
+      )}
+      onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
+    >
+      <Comment publication={publication} isFullPublication={isFullPublication} />
+      <Mirror publication={publication} isFullPublication={isFullPublication} />
+      <Like publication={publication} isFullPublication={isFullPublication} />
+      {collectModuleType !== 'RevertCollectModuleSettings' &&
+        collectModuleType !== 'UnknownCollectModuleSettings' && // TODO: remove this check when we have a better way to handle unknown collect modules
         publicationType !== 'fundraise' &&
         publicationType !== 'fundraise-comment' &&
-        publicationType !== 'hours' && <Collect publication={publication} />}
-      <PublicationMenu publication={publication} />
+        publicationType !== 'hours' && (
+          <Collect publication={publication} isFullPublication={isFullPublication} />
+        )}
+      <PublicationMenu publication={publication} isFullPublication={isFullPublication} />
     </div>
-  ) : null
+  )
 }
 
 export default PublicationActions

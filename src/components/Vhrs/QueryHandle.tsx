@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { CURRENT_PROFILE_QUERY } from '@components/Layout'
+import { USER_PROFILES_QUERY } from '@components/Layout'
 import { FC } from 'react'
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 }
 
 const QueryHandle: FC<Props> = ({ address, callback }) => {
-  useQuery(CURRENT_PROFILE_QUERY, {
+  useQuery(USER_PROFILES_QUERY, {
     variables: {
       ownedBy: address
     },

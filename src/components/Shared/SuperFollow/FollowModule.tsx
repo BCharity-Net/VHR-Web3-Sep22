@@ -7,7 +7,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { WarningMessage } from '@components/UI/WarningMessage'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityFollowModule } from '@generated/bcharitytypes'
-import { CreateFollowBroadcastItemResult, FeeFollowModuleSettings, Profile } from '@generated/types'
+import { CreateFollowBroadcastItemResult, FeeFollowModuleSettings, Mutation, Profile } from '@generated/types'
 import { StarIcon, UserIcon } from '@heroicons/react/outline'
 import formatAddress from '@lib/formatAddress'
 import getSignature from '@lib/getSignature'
@@ -19,7 +19,7 @@ import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -90,7 +90,6 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -148,7 +147,7 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
   }
 
   const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createFollowTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -188,7 +187,7 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
   )
 
   const createFollow = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

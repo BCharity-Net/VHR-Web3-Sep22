@@ -7,7 +7,7 @@ import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
-import { CreateSetFollowModuleBroadcastItemResult, Erc20 } from '@generated/types'
+import { CreateSetFollowModuleBroadcastItemResult, Erc20, Mutation } from '@generated/types'
 import { StarIcon, XIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
@@ -18,7 +18,7 @@ import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { ADDRESS_REGEX, DEFAULT_COLLECT_TOKEN, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 import { object, string } from 'zod'
@@ -76,7 +76,6 @@ const SuperFollow: FC = () => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { t } = useTranslation('common')
   const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
   const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState('WMATIC')
@@ -118,7 +117,7 @@ const SuperFollow: FC = () => {
   })
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createSetFollowModuleTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createSetFollowModuleTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -158,7 +157,7 @@ const SuperFollow: FC = () => {
   )
 
   const setSuperFollow = (amount: string | null, recipient: string | null) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

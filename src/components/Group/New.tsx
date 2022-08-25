@@ -12,7 +12,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import Seo from '@components/utils/Seo'
-import { CreatePostBroadcastItemResult } from '@generated/types'
+import { CreatePostBroadcastItemResult, Mutation } from '@generated/types'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
@@ -27,7 +27,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { GROUP, PAGEVIEW } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -38,7 +38,6 @@ const NewGroup: NextPage = () => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [avatar, setAvatar] = useState('')
   const [avatarType, setAvatarType] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -94,51 +93,57 @@ const NewGroup: NextPage = () => {
   }
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
-      try {
-        const { id, typedData } = createPostTypedData
-        const {
-          profileId,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleInitData,
-          deadline
-        } = typedData?.value
-        const signature = await signTypedDataAsync(getSignature(typedData))
-        const { v, r, s } = splitSignature(signature)
-        const sig = { v, r, s, deadline }
-        const inputStruct = {
-          profileId,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleInitData,
-          sig
-        }
-
-        setUserSigNonce(userSigNonce + 1)
-        if (RELAY_ON) {
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
+    CREATE_POST_TYPED_DATA_MUTATION,
+    {
+      onCompleted: async ({
+        createPostTypedData
+      }: {
+        createPostTypedData: CreatePostBroadcastItemResult
+      }) => {
+        try {
+          const { id, typedData } = createPostTypedData
           const {
-            data: { broadcast: result }
-          } = await broadcast({ request: { id, signature } })
+            profileId,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleInitData,
+            deadline
+          } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
+          const { v, r, s } = splitSignature(signature)
+          const sig = { v, r, s, deadline }
+          const inputStruct = {
+            profileId,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleInitData,
+            sig
+          }
 
-          if ('reason' in result) {
+          setUserSigNonce(userSigNonce + 1)
+          if (RELAY_ON) {
+            const {
+              data: { broadcast: result }
+            } = await broadcast({ request: { id, signature } })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
+          } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } else {
-          write?.({ recklesslySetUnpreparedArgs: inputStruct })
-        }
-      } catch {}
-    },
-    onError
-  })
+        } catch {}
+      },
+      onError
+    }
+  )
 
   const createGroup = async (name: string, description: string | null) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 
@@ -185,7 +190,7 @@ const NewGroup: NextPage = () => {
     })
   }
 
-  if (!isAuthenticated) {
+  if (!currentProfile) {
     return <Custom404 />
   }
 

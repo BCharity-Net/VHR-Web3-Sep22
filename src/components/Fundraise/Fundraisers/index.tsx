@@ -54,10 +54,11 @@ const EXPLORE_FEED_QUERY = gql`
 `
 
 interface Props {
-  // post: BCharityPublication
+  publication: BCharityPublication
+  isFullPublication?: boolean
 }
 
-const Fundraisers: FC<Props> = ({}) => {
+const Fundraisers: FC<Props> = ({ publication, isFullPublication = false }) => {
   const { t } = useTranslation('common')
   const feedType = 'LATEST'
   const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
@@ -205,7 +206,7 @@ const Fundraisers: FC<Props> = ({}) => {
                           </span>
                         </span>
                       )}
-                      <Like publication={publication} />
+                      <Like publication={publication} isFullPublication={isFullPublication} />
                       <Share publication={publication} />
 
                       <a

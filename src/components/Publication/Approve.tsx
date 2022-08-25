@@ -3,7 +3,7 @@ import { gql, useMutation } from '@apollo/client'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { CreateCollectBroadcastItemResult } from '@generated/types'
+import { CreateCollectBroadcastItemResult, Mutation } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
@@ -13,7 +13,7 @@ import React, { FC } from 'react'
 import toast from 'react-hot-toast'
 import IndexStatus from 'src/components/Shared/IndexStatus'
 import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
 const CREATE_COLLECT_TYPED_DATA_MUTATION = gql`
@@ -55,7 +55,6 @@ const Approve: FC<Props> = ({ publication }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
     onError: (error) => {
@@ -98,7 +97,7 @@ const Approve: FC<Props> = ({ publication }) => {
     }
   )
 
-  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -145,7 +144,7 @@ const Approve: FC<Props> = ({ publication }) => {
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 

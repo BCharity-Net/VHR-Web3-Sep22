@@ -11,7 +11,7 @@ import { MentionTextArea } from '@components/UI/MentionTextArea'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityAttachment, BCharityPublication } from '@generated/bcharitytypes'
-import { CreateCommentBroadcastItemResult } from '@generated/types'
+import { CreateCommentBroadcastItemResult, Mutation, PublicationMainFocus } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import {
   CREATE_COMMENT_TYPED_DATA_MUTATION,
@@ -30,7 +30,7 @@ import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { useCollectModuleStore } from 'src/store/collectmodule'
 import { usePublicationStore } from 'src/store/publication'
 import { COMMENT } from 'src/tracking'
@@ -62,7 +62,6 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const publicationContent = usePublicationStore((state) => state.publicationContent)
   const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
   const previewPublication = usePublicationStore((state) => state.previewPublication)
@@ -102,7 +101,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   })
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createCommentTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCommentTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COMMENT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -167,7 +166,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
   )
 
   const createComment = async () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
     if (publicationContent.length === 0 && attachments.length === 0) {
@@ -187,7 +186,11 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
       name: `Comment by @${currentProfile?.handle}`,
       mainContentFocus:
-        attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
+        attachments.length > 0
+          ? attachments[0]?.type === 'video/mp4'
+            ? PublicationMainFocus.Video
+            : PublicationMainFocus.Image
+          : PublicationMainFocus.TextOnly,
       contentWarning: null, // TODO
       attributes: [
         {

@@ -7,7 +7,7 @@ import omitDeep from 'omit-deep'
  * @param name - Name of property to remove
  * @returns object with property removed
  */
-const omit = (object: any, name: string) => {
+const omit = (object: { [key: string]: any }, name: string) => {
   return omitDeep(object, name)
 }
 

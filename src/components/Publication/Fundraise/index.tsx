@@ -11,7 +11,7 @@ import { Modal } from '@components/UI/Modal'
 import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { CreateCommentBroadcastItemResult } from '@generated/types'
+import { CreateCommentBroadcastItemResult, Mutation } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CommentFields } from '@gql/CommentFields'
 import {
@@ -38,7 +38,7 @@ import {
   RELAY_ON,
   STATIC_ASSETS
 } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -125,7 +125,6 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [isUploading, setIsUploading] = useState(false)
   const [newAmount, setNewAmount] = useState('')
   const { data, loading } = useQuery(COLLECT_QUERY, {
@@ -265,7 +264,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
     referralFee: string,
     description: string | null
   ) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 

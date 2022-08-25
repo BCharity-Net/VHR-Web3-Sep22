@@ -1,5 +1,6 @@
 import { gql, useMutation } from '@apollo/client'
 import { BCharityPublication } from '@generated/bcharitytypes'
+import { Mutation } from '@generated/types'
 import { Menu } from '@headlessui/react'
 import { TrashIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
@@ -22,7 +23,7 @@ interface Props {
 const Delete: FC<Props> = ({ publication }) => {
   const { t } = useTranslation('common')
   const { pathname, push } = useRouter()
-  const [hidePost] = useMutation(HIDE_POST_MUTATION, {
+  const [hidePost] = useMutation<Mutation>(HIDE_POST_MUTATION, {
     onCompleted: () => {
       Mixpanel.track(PUBLICATION.DELETE)
       pathname === '/posts/[id]' ? push('/') : location.reload()

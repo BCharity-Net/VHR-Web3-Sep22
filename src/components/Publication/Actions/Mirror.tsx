@@ -4,7 +4,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { CreateMirrorBroadcastItemResult } from '@generated/types'
+import { CreateMirrorBroadcastItemResult, Mutation } from '@generated/types'
 import {
   CREATE_MIRROR_TYPED_DATA_MUTATION,
   CREATE_MIRROR_VIA_DISPATHCER_MUTATION
@@ -21,19 +21,19 @@ import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
 interface Props {
   publication: BCharityPublication
+  isFullPublication: boolean
 }
 
-const Mirror: FC<Props> = ({ publication }) => {
+const Mirror: FC<Props> = ({ publication, isFullPublication }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [count, setCount] = useState(0)
   const [mirrored, setMirrored] = useState(
     publication?.mirrors?.length > 0 || publication?.mirrorOf?.mirrors?.length > 0
@@ -48,7 +48,7 @@ const Mirror: FC<Props> = ({ publication }) => {
       )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [publication])
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
@@ -69,7 +69,7 @@ const Mirror: FC<Props> = ({ publication }) => {
   })
 
   const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createMirrorTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createMirrorTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_MIRROR_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -125,7 +125,7 @@ const Mirror: FC<Props> = ({ publication }) => {
   )
 
   const createMirror = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 
@@ -150,6 +150,7 @@ const Mirror: FC<Props> = ({ publication }) => {
   }
 
   const isLoading = typedDataLoading || dispatcherLoading || signLoading || writeLoading || broadcastLoading
+  const iconClassName = isFullPublication ? 'w-[17px] sm:w-[20px]' : 'w-[15px] sm:w-[18px]'
 
   return (
     <motion.button whileTap={{ scale: 0.9 }} onClick={createMirror} disabled={isLoading} aria-label="Mirror">
@@ -164,11 +165,11 @@ const Mirror: FC<Props> = ({ publication }) => {
             <Spinner variant={mirrored ? 'success' : 'primary'} size="xs" />
           ) : (
             <Tooltip placement="top" content={count > 0 ? `${humanize(count)} Mirrors` : 'Mirror'} withDelay>
-              <SwitchHorizontalIcon className="w-[15px] sm:w-[18px]" />
+              <SwitchHorizontalIcon className={iconClassName} />
             </Tooltip>
           )}
         </div>
-        {count > 0 && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
+        {count > 0 && !isFullPublication && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
       </div>
     </motion.button>
   )

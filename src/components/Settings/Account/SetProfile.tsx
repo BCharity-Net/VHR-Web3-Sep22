@@ -7,7 +7,7 @@ import { Card, CardBody } from '@components/UI/Card'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
-import { Profile, SetDefaultProfileBroadcastItemResult } from '@generated/types'
+import { Mutation, Profile, SetDefaultProfileBroadcastItemResult } from '@generated/types'
 import { CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreateSetDefaultProfile'
 import { ExclamationIcon, PencilIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
@@ -19,16 +19,16 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
 const SetProfile: FC = () => {
   const { t } = useTranslation('common')
   const profiles = useAppStore((state) => state.profiles)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [selectedUser, setSelectedUser] = useState('')
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -63,7 +63,7 @@ const SetProfile: FC = () => {
   }, [])
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createSetDefaultProfileTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createSetDefaultProfileTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_SET_DEFAULT_PROFILE_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -103,7 +103,7 @@ const SetProfile: FC = () => {
   )
 
   const setDefaultProfile = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 
@@ -116,7 +116,7 @@ const SetProfile: FC = () => {
     })
   }
 
-  if (!isAuthenticated) {
+  if (!currentProfile) {
     return <Custom404 />
   }
 

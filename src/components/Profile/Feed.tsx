@@ -6,7 +6,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { Profile } from '@generated/types'
+import { Profile, PublicationMainFocus, PublicationTypes } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
@@ -48,14 +48,34 @@ const PROFILE_FEED_QUERY = gql`
 
 interface Props {
   profile: Profile
-  type: 'POST' | 'COMMENT' | 'MIRROR'
+  type: 'FEED' | 'REPLIES' | 'MEDIA'
 }
 
 const Feed: FC<Props> = ({ profile, type }) => {
   const currentProfile = useAppStore((state) => state.currentProfile)
+  const publicationTypes =
+    type === 'FEED'
+      ? [PublicationTypes.Post, PublicationTypes.Mirror]
+      : type === 'MEDIA'
+      ? [PublicationTypes.Post, PublicationTypes.Comment]
+      : [PublicationTypes.Comment]
   const { data, loading, error, fetchMore } = useQuery(PROFILE_FEED_QUERY, {
     variables: {
-      request: { publicationTypes: type, profileId: profile?.id, limit: 10 },
+      request: {
+        publicationTypes,
+        profileId: profile?.id,
+        metadata:
+          type === 'MEDIA'
+            ? {
+                mainContentFocus: [
+                  PublicationMainFocus.Video,
+                  PublicationMainFocus.Image,
+                  PublicationMainFocus.Audio
+                ]
+              }
+            : null,
+        limit: 10
+      },
       reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
       profileId: currentProfile?.id ?? null
     },
@@ -68,7 +88,7 @@ const Feed: FC<Props> = ({ profile, type }) => {
       fetchMore({
         variables: {
           request: {
-            publicationTypes: type,
+            publicationTypes,
             profileId: profile?.id,
             cursor: pageInfo?.next,
             limit: 10
@@ -100,7 +120,11 @@ const Feed: FC<Props> = ({ profile, type }) => {
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
             {data?.publications?.items?.map((post: BCharityPublication, index: number) => (
-              <SinglePublication key={`${post?.id}_${index}`} publication={post} />
+              <SinglePublication
+                key={`${post?.id}_${index}`}
+                publication={post}
+                showThread={type !== 'MEDIA'}
+              />
             ))}
           </Card>
           {pageInfo?.next && data?.publications?.items?.length !== pageInfo?.totalCount && (

@@ -53,7 +53,7 @@ export const SIGN_ERROR = 'Failed to sign data'
 
 // URLs
 export const STATIC_ASSETS = 'https://cdn.statically.io/gh/liraymond04/bcharity-assets/main/images'
-export const API_URL = IS_MAINNET ? 'https://api.lens.dev' : 'https://api-mumbai.lens.dev'
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.lens.dev'
 export const POLYGONSCAN_URL = IS_MAINNET ? 'https://polygonscan.com' : 'https://mumbai.polygonscan.com'
 export const VHR_TOP_HOLDERS_URL =
   'https://mumbai.polygonscan.com/token/tokenholderchart/0x28ee241ab245699968f2980d3d1b1d23120ab8be'

@@ -2,7 +2,7 @@ import { FollowNFT } from '@abis/FollowNFT'
 import { gql, useMutation } from '@apollo/client'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
-import { CreateUnfollowBroadcastItemResult, Profile } from '@generated/types'
+import { CreateUnfollowBroadcastItemResult, Mutation, Profile } from '@generated/types'
 import { UserRemoveIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
@@ -13,7 +13,7 @@ import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useSigner, useSignTypedData } from 'wagmi'
 
@@ -52,13 +52,13 @@ interface Props {
 }
 
 const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [writeLoading, setWriteLoading] = useState(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { data: signer } = useSigner()
   const { t } = useTranslation('common')
 
-  const [createUnfollowTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createUnfollowTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_UNFOLLOW_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -99,7 +99,7 @@ const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
   )
 
   const createUnfollow = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

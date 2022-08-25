@@ -1,16 +1,17 @@
 import { gql, useMutation } from '@apollo/client'
 import { Tooltip } from '@components/UI/Tooltip'
 import { BCharityPublication } from '@generated/bcharitytypes'
+import { Mutation } from '@generated/types'
 import { HeartIcon } from '@heroicons/react/outline'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/solid'
-import humanize from '@lib/humanize'
 import { Mixpanel } from '@lib/mixpanel'
+import nFormatter from '@lib/nFormatter'
 import onError from '@lib/onError'
 import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 
 const ADD_REACTION_MUTATION = gql`
@@ -27,10 +28,10 @@ const REMOVE_REACTION_MUTATION = gql`
 
 interface Props {
   publication: BCharityPublication
+  isFullPublication: boolean
 }
 
-const Like: FC<Props> = ({ publication }) => {
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+const Like: FC<Props> = ({ publication, isFullPublication }) => {
   const currentProfile = useAppStore((state) => state.currentProfile)
   const [liked, setLiked] = useState(false)
   const [count, setCount] = useState(0)
@@ -48,9 +49,9 @@ const Like: FC<Props> = ({ publication }) => {
       setLiked(reaction === 'UPVOTE')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [publication])
 
-  const [addReaction] = useMutation(ADD_REACTION_MUTATION, {
+  const [addReaction] = useMutation<Mutation>(ADD_REACTION_MUTATION, {
     onCompleted: () => {
       Mixpanel.track(PUBLICATION.LIKE)
     },
@@ -61,7 +62,7 @@ const Like: FC<Props> = ({ publication }) => {
     }
   })
 
-  const [removeReaction] = useMutation(REMOVE_REACTION_MUTATION, {
+  const [removeReaction] = useMutation<Mutation>(REMOVE_REACTION_MUTATION, {
     onCompleted: () => {
       Mixpanel.track(PUBLICATION.DISLIKE)
     },
@@ -73,7 +74,7 @@ const Like: FC<Props> = ({ publication }) => {
   })
 
   const createLike = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 
@@ -98,6 +99,8 @@ const Like: FC<Props> = ({ publication }) => {
     }
   }
 
+  const iconClassName = isFullPublication ? 'w-[17px] sm:w-[20px]' : 'w-[15px] sm:w-[18px]'
+
   return (
     <motion.button whileTap={{ scale: 0.9 }} onClick={createLike} aria-label="Like">
       <div className="flex items-center space-x-1 text-pink-500">
@@ -108,9 +111,10 @@ const Like: FC<Props> = ({ publication }) => {
             ) : (
               <HeartIcon className="w-[15px] sm:w-[18px]" />
             )}
+            {liked ? <HeartIconSolid className={iconClassName} /> : <HeartIcon className={iconClassName} />}
           </Tooltip>
         </div>
-        {count > 0 && <div className="text-[11px] sm:text-xs">{humanize(count)}</div>}
+        {count > 0 && !isFullPublication && <div className="text-[11px] sm:text-xs">{nFormatter(count)}</div>}
       </div>
     </motion.button>
   )

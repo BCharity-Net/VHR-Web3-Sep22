@@ -10,7 +10,7 @@ import { MentionTextArea } from '@components/UI/MentionTextArea'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityAttachment } from '@generated/bcharitytypes'
-import { CreatePostBroadcastItemResult } from '@generated/types'
+import { CreatePostBroadcastItemResult, Mutation, PublicationMainFocus } from '@generated/types'
 import { IGif } from '@giphy/js-types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import {
@@ -30,7 +30,7 @@ import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { useCollectModuleStore } from 'src/store/collectmodule'
 import { usePublicationStore } from 'src/store/publication'
 import { POST } from 'src/tracking'
@@ -61,7 +61,6 @@ interface Props {
 const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const publicationContent = usePublicationStore((state) => state.publicationContent)
@@ -101,48 +100,54 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   })
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
-    onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
-      try {
-        const { id, typedData } = createPostTypedData
-        const {
-          profileId,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleInitData,
-          deadline
-        } = typedData?.value
-        const signature = await signTypedDataAsync(getSignature(typedData))
-        const { v, r, s } = splitSignature(signature)
-        const sig = { v, r, s, deadline }
-        const inputStruct = {
-          profileId,
-          contentURI,
-          collectModule,
-          collectModuleInitData,
-          referenceModule,
-          referenceModuleInitData,
-          sig
-        }
-
-        setUserSigNonce(userSigNonce + 1)
-        if (RELAY_ON) {
+  const [createPostTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
+    CREATE_POST_TYPED_DATA_MUTATION,
+    {
+      onCompleted: async ({
+        createPostTypedData
+      }: {
+        createPostTypedData: CreatePostBroadcastItemResult
+      }) => {
+        try {
+          const { id, typedData } = createPostTypedData
           const {
-            data: { broadcast: result }
-          } = await broadcast({ request: { id, signature } })
+            profileId,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleInitData,
+            deadline
+          } = typedData?.value
+          const signature = await signTypedDataAsync(getSignature(typedData))
+          const { v, r, s } = splitSignature(signature)
+          const sig = { v, r, s, deadline }
+          const inputStruct = {
+            profileId,
+            contentURI,
+            collectModule,
+            collectModuleInitData,
+            referenceModule,
+            referenceModuleInitData,
+            sig
+          }
 
-          if ('reason' in result) {
+          setUserSigNonce(userSigNonce + 1)
+          if (RELAY_ON) {
+            const {
+              data: { broadcast: result }
+            } = await broadcast({ request: { id, signature } })
+            if ('reason' in result) {
+              write?.({ recklesslySetUnpreparedArgs: inputStruct })
+            }
+          } else {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
-        } else {
-          write?.({ recklesslySetUnpreparedArgs: inputStruct })
-        }
-      } catch {}
-    },
-    onError
-  })
+        } catch {}
+      },
+      onError
+    }
+  )
 
   const [createPostViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
     CREATE_POST_VIA_DISPATHCER_MUTATION,
@@ -150,7 +155,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   )
 
   const createPost = async () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
     if (publicationContent.length === 0 && attachments.length === 0) {
@@ -170,7 +175,11 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
       imageMimeType: attachments.length > 0 ? attachments[0]?.type : null,
       name: `Post by @${currentProfile?.handle}`,
       mainContentFocus:
-        attachments.length > 0 ? (attachments[0]?.type === 'video/mp4' ? 'VIDEO' : 'IMAGE') : 'TEXT_ONLY',
+        attachments.length > 0
+          ? attachments[0]?.type === 'video/mp4'
+            ? PublicationMainFocus.Video
+            : PublicationMainFocus.Image
+          : PublicationMainFocus.TextOnly,
       contentWarning: null, // TODO
       attributes: [
         {

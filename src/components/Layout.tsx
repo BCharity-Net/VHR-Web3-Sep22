@@ -1,6 +1,8 @@
 import { gql, useQuery } from '@apollo/client'
 import { Profile } from '@generated/types'
 import { ProfileFields } from '@gql/ProfileFields'
+import clearAuthData from '@lib/clearAuthData'
+import getToastOptions from '@lib/getToastOptions'
 import Cookies from 'js-cookie'
 import mixpanel from 'mixpanel-browser'
 import Head from 'next/head'
@@ -22,7 +24,7 @@ if (MIXPANEL_TOKEN) {
   })
 }
 
-export const CURRENT_PROFILE_QUERY = gql`
+export const USER_PROFILES_QUERY = gql`
   query CurrentProfile($ownedBy: [EthereumAddress!]) {
     profiles(request: { ownedBy: $ownedBy }) {
       items {
@@ -46,14 +48,13 @@ interface Props {
 
 const Layout: FC<Props> = ({ children }) => {
   const { resolvedTheme } = useTheme()
+  const [loading, setLoading] = useState(true)
   const setProfiles = useAppStore((state) => state.setProfiles)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
   const isConnected = useAppPersistStore((state) => state.isConnected)
   const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const profileId = useAppPersistStore((state) => state.profileId)
   const setProfileId = useAppPersistStore((state) => state.setProfileId)
 
@@ -61,17 +62,19 @@ const Layout: FC<Props> = ({ children }) => {
   const { address, isDisconnected } = useAccount()
   const { chain } = useNetwork()
   const { disconnect } = useDisconnect()
-  const { loading } = useQuery(CURRENT_PROFILE_QUERY, {
+
+  // Fetch current profiles and sig nonce owned by the wallet address
+  useQuery(USER_PROFILES_QUERY, {
     variables: { ownedBy: address },
-    skip: !mounted || !isConnected || !isAuthenticated,
+    skip: !isConnected,
     onCompleted: (data) => {
+      console.log('USER_PROFILES_QUERY', data)
       const profiles: Profile[] = data?.profiles?.items
         ?.slice()
         ?.sort((a: Profile, b: Profile) => Number(a.id) - Number(b.id))
         ?.sort((a: Profile, b: Profile) => (!(a.isDefault !== b.isDefault) ? 0 : a.isDefault ? -1 : 1))
 
       setUserSigNonce(data?.userSigNonces?.lensHubOnChainSigNonce)
-
       if (profiles.length === 0) {
         setProfileId(null)
       } else {
@@ -79,6 +82,10 @@ const Layout: FC<Props> = ({ children }) => {
         setProfiles(profiles)
         setCurrentProfile(selectedUser as Profile)
       }
+      setLoading(false)
+    },
+    onError: () => {
+      setIsConnected(false)
     }
   })
 
@@ -89,52 +96,28 @@ const Layout: FC<Props> = ({ children }) => {
     const currentProfileAddress = currentProfile?.ownedBy
     const hasSameAddress = currentProfileAddress !== undefined && currentProfileAddress !== address
 
-    // Set mounted state to true after the first render
-    setMounted(true)
-
     if (
       (hasSameAddress || // If the current address is not the same as the profile address
         chain?.id !== CHAIN_ID || // If the user is not on the correct chain
         isDisconnected || // If the user is disconnected from the wallet
         !profileId || // If the user has no profile
         !hasAuthTokens) && // If the user has no auth tokens
-      isAuthenticated // If the user is authenticated
+      currentProfile // If the user is authenticated
     ) {
-      setIsAuthenticated(false)
       setIsConnected(false)
       setCurrentProfile(null)
       setProfileId(null)
-      Cookies.remove('accessToken')
-      Cookies.remove('refreshToken')
-      localStorage.removeItem('lenster.store')
+      clearAuthData()
       disconnect()
     }
+    // Set mounted state to true after the first render
+    setMounted(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDisconnected, address, chain, currentProfile, disconnect, setCurrentProfile])
+  }, [isDisconnected, address, chain, currentProfile, disconnect])
 
-  const toastOptions = {
-    style: {
-      background: resolvedTheme === 'dark' ? '#18181B' : '',
-      color: resolvedTheme === 'dark' ? '#fff' : ''
-    },
-    success: {
-      className: 'border border-green-500',
-      iconTheme: {
-        primary: '#10B981',
-        secondary: 'white'
-      }
-    },
-    error: {
-      className: 'border border-red-500',
-      iconTheme: {
-        primary: '#EF4444',
-        secondary: 'white'
-      }
-    },
-    loading: { className: 'border border-gray-300' }
-  }
+  const userNotMounted = isConnected ? loading : false
 
-  if (loading || !mounted) {
+  if (!mounted || userNotMounted) {
     return <Loading />
   }
 
@@ -143,7 +126,7 @@ const Layout: FC<Props> = ({ children }) => {
       <Head>
         <meta name="theme-color" content={resolvedTheme === 'dark' ? '#1b1b1d' : '#ffffff'} />
       </Head>
-      <Toaster position="bottom-right" toastOptions={toastOptions} />
+      <Toaster position="bottom-right" toastOptions={getToastOptions(resolvedTheme)} />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         {children}

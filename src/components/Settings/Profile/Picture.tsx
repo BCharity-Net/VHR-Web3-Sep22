@@ -6,7 +6,13 @@ import { Button } from '@components/UI/Button'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
-import { CreateSetProfileImageUriBroadcastItemResult, MediaSet, NftImage, Profile } from '@generated/types'
+import {
+  CreateSetProfileImageUriBroadcastItemResult,
+  MediaSet,
+  Mutation,
+  NftImage,
+  Profile
+} from '@generated/types'
 import {
   CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
   CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION
@@ -23,7 +29,7 @@ import React, { ChangeEvent, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -36,7 +42,6 @@ const Picture: FC<Props> = ({ profile }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [avatar, setAvatar] = useState('')
   const [uploading, setUploading] = useState(false)
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -68,7 +73,7 @@ const Picture: FC<Props> = ({ profile }) => {
   }, [])
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation(
+  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -122,8 +127,8 @@ const Picture: FC<Props> = ({ profile }) => {
     }
   }
 
-  const editPicture = (avatar: string | undefined) => {
-    if (!isAuthenticated) {
+  const editPicture = (avatar?: string) => {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
     if (!avatar) {

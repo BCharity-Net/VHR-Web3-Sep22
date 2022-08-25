@@ -98,12 +98,9 @@ const ViewProfile: NextPage = () => {
   } = useRouter()
   const currentProfile = useAppStore((state) => state.currentProfile)
   const [feedType, setFeedType] = useState(
-    type &&
-      ['post', 'comment', 'mirror', 'nft', 'vhr', 'org', 'opp', 'org-opp', 'funds', 'funds-org'].includes(
-        type as string
-      )
+    type && ['feed', 'replies', 'media', 'nft'].includes(type as string)
       ? type.toString().toUpperCase()
-      : 'POST'
+      : 'FEED'
   )
 
   useEffect(() => {
@@ -174,7 +171,7 @@ const ViewProfile: NextPage = () => {
                 feedType={feedType}
                 profile={profile}
               />
-              {(feedType === 'POST' || feedType === 'COMMENT' || feedType === 'MIRROR') && (
+              {(feedType === 'FEED' || feedType === 'REPLIES' || feedType === 'MEDIA') && (
                 <Feed profile={profile} type={feedType} />
               )}
               {feedType === 'NFT' && <NFTFeed profile={profile} />}

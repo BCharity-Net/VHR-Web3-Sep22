@@ -6,6 +6,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
+import { PublicationSortCriteria } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
@@ -50,7 +51,7 @@ interface Props {
   feedType?: string
 }
 
-const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
+const Feed: FC<Props> = ({ feedType = PublicationSortCriteria.TopCommented }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {

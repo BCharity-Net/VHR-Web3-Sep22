@@ -7,7 +7,7 @@ import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
-import { CreateSetProfileImageUriBroadcastItemResult, NftImage, Profile } from '@generated/types'
+import { CreateSetProfileImageUriBroadcastItemResult, Mutation, NftImage, Profile } from '@generated/types'
 import {
   CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
   CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION
@@ -22,7 +22,7 @@ import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { ADDRESS_REGEX, IS_MAINNET, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { chain, useContractWrite, useSignMessage, useSignTypedData } from 'wagmi'
 import { object, string } from 'zod'
@@ -52,7 +52,6 @@ const NFTPicture: FC<Props> = ({ profile }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [chainId, setChainId] = useState(IS_MAINNET ? chain.mainnet.id : chain.kovan.id)
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -88,7 +87,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
   const [loadChallenge, { loading: challengeLoading }] = useLazyQuery(CHALLENGE_QUERY)
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
 
-  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation(
+  const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -130,7 +129,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
     useMutation(CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION, { onCompleted, onError })
 
   const setAvatar = async (contractAddress: string, tokenId: string) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

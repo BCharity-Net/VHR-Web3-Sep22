@@ -13,7 +13,7 @@ type Query = 'isBeta' | 'hasPrideLogo' | 'app' | 'twitter' | 'location' | 'websi
  * @param query - Query to search for
  * @returns attribute if found, otherwise undefined
  */
-const getAttribute = (attributes: Maybe<Attribute[]> | undefined, query: Query): string | undefined => {
+const getAttribute = (attributes?: Maybe<Attribute[]>, query?: Query): string | undefined => {
   return attributes?.find((o) => o.key === query)?.value
 }
 

@@ -1,11 +1,12 @@
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from '@apollo/client'
 import result from '@generated/types'
-import { cursorBasedPagination } from '@lib/cursorBasedPagination'
 import axios from 'axios'
 import Cookies, { CookieAttributes } from 'js-cookie'
 import jwtDecode from 'jwt-decode'
 
-import { API_URL, ERROR_MESSAGE } from './constants'
+import { API_URL, ERROR_MESSAGE } from '../constants'
+import { cursorBasedPagination } from './lib/cursorBasedPagination'
+import { publicationKeyFields } from './lib/keyFields'
 
 export const COOKIE_CONFIG: CookieAttributes = {
   sameSite: 'None',
@@ -70,15 +71,16 @@ const authLink = new ApolloLink((operation, forward) => {
       })
       .catch(() => console.log(ERROR_MESSAGE))
   }
+
   return forward(operation)
 })
 
 const cache = new InMemoryCache({
   possibleTypes: result.possibleTypes,
   typePolicies: {
-    Post: { keyFields: false },
-    Comment: { keyFields: false },
-    Mirror: { keyFields: false },
+    Post: { keyFields: publicationKeyFields },
+    Comment: { keyFields: publicationKeyFields },
+    Mirror: { keyFields: publicationKeyFields },
     Query: {
       fields: {
         timeline: cursorBasedPagination(['request', ['profileId']]),
@@ -89,7 +91,13 @@ const cache = new InMemoryCache({
         followers: cursorBasedPagination(['request', ['profileId']]),
         following: cursorBasedPagination(['request', ['address']]),
         search: cursorBasedPagination(['request', ['query', 'type']]),
-        whoCollectedPublication: cursorBasedPagination(['request', ['publicationId']])
+        profiles: cursorBasedPagination([
+          'request',
+          ['profileIds', 'ownedBy', 'handles', 'whoMirroredPublicationId']
+        ]),
+        whoCollectedPublication: cursorBasedPagination(['request', ['publicationId']]),
+        whoReactedPublication: cursorBasedPagination(['request', ['publicationId']]),
+        mutualFollowersProfiles: cursorBasedPagination(['request', ['viewingProfileId', 'yourProfileId']])
       }
     }
   }

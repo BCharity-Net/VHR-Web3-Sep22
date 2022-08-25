@@ -7,8 +7,7 @@ import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityCollectModule, BCharityPublication } from '@generated/bcharitytypes'
-import { CreateCollectBroadcastItemResult } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
+import { CreateCollectBroadcastItemResult, Mutation } from '@generated/types'
 import { CashIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
@@ -18,7 +17,7 @@ import React, { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { CONNECT_WALLET, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { FUNDRAISE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -65,7 +64,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -92,7 +91,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
         referenceModules: []
       }
     },
-    skip: !collectModule?.amount?.asset?.address || !isAuthenticated,
+    skip: !collectModule?.amount?.asset?.address || !currentProfile,
     onCompleted: (data) => {
       setAllowed(data?.approvedModuleAllowanceAmount[0]?.allowance !== '0x00')
     }
@@ -118,7 +117,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   })
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -159,7 +158,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 

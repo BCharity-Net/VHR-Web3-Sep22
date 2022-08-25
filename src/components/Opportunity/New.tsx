@@ -30,7 +30,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, CATEGORIES, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { OPPOS } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -134,7 +134,6 @@ const Opportunity: NextPage = () => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [media, setMedia] = useState('')
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
@@ -232,7 +231,7 @@ const Opportunity: NextPage = () => {
     description: string,
     currentProfile: Profile | null
   ) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
     setIsUploading(true)
@@ -321,7 +320,7 @@ const Opportunity: NextPage = () => {
       }
     })
   }
-  if (!isAuthenticated) {
+  if (!currentProfile) {
     return <Custom404 />
   }
 

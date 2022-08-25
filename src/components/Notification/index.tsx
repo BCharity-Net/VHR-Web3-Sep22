@@ -5,20 +5,20 @@ import { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
-import { useAppPersistStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import List from './List'
 
 const Notification: FC = () => {
   const { t } = useTranslation('common')
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentProfile = useAppStore((state) => state.currentProfile)
 
   useEffect(() => {
     Mixpanel.track(PAGEVIEW.NOTIFICATION)
   }, [])
 
-  if (!isAuthenticated) {
+  if (!currentProfile) {
     return <Custom404 />
   }
 

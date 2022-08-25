@@ -28,7 +28,6 @@ const PING_QUERY = gql`
 const Navbar: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const staffMode = useAppPersistStore((state) => state.staffMode)
   const { data: pingData } = useQuery(PING_QUERY, {
     pollInterval: 3000,
@@ -119,8 +118,8 @@ const Navbar: FC = () => {
                 </div>
               </div>
               <div className="flex gap-8 items-center">
-                {isAuthenticated && currentProfile && <NewPostModal />}
-                {isAuthenticated && currentProfile && <NotificationIcon />}
+                {currentProfile && <NewPostModal />}
+                {currentProfile && <NotificationIcon />}
                 <TranslateButton />
                 <MenuItems pingData={pingData} />
               </div>

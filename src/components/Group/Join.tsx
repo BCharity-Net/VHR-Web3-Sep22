@@ -4,7 +4,7 @@ import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { Group } from '@generated/bcharitytypes'
-import { CreateCollectBroadcastItemResult } from '@generated/types'
+import { CreateCollectBroadcastItemResult, Mutation } from '@generated/types'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
@@ -13,7 +13,7 @@ import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC } from 'react'
 import toast from 'react-hot-toast'
 import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { GROUP } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -56,7 +56,7 @@ interface Props {
 const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
+  const currentProfile = useAppStore((state) => state.currentProfile)
   const { address } = useAccount()
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
@@ -76,7 +76,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   })
 
   const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -117,7 +117,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(SIGN_WALLET)
     }
 

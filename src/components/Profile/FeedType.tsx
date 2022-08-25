@@ -4,9 +4,9 @@ import {
   ChatAlt2Icon,
   ClipboardListIcon,
   ClockIcon,
+  FilmIcon,
   PencilAltIcon,
-  PhotographIcon,
-  SwitchHorizontalIcon
+  PhotographIcon
 } from '@heroicons/react/outline'
 import isVerified from '@lib/isVerified'
 import { Mixpanel } from '@lib/mixpanel'
@@ -125,21 +125,16 @@ const FeedType: FC<Props> = ({ stats, address, id, setFeedType, feedType, profil
         <FeedLink
           name={t('Posts')}
           icon={<PencilAltIcon className="w-4 h-4" />}
-          type="POST"
-          count={stats?.totalPosts}
+          type="FEED"
+          count={stats?.totalPosts + stats?.totalMirrors}
         />
         <FeedLink
           name={t('Comments')}
           icon={<ChatAlt2Icon className="w-4 h-4" />}
-          type="COMMENT"
+          type="REPLIES"
           count={stats?.totalComments}
         />
-        <FeedLink
-          name={t('Mirrors')}
-          icon={<SwitchHorizontalIcon className="w-4 h-4" />}
-          type="MIRROR"
-          count={stats?.totalMirrors}
-        />
+        <FeedLink name="Media" icon={<FilmIcon className="w-4 h-4" />} type="MEDIA" />
         <FeedLink name="NFTs" icon={<PhotographIcon className="w-4 h-4" />} type="NFT" />
       </div>
       <div className="w-[800px] flex flex-wrap gap-3 px-5 pb-2 mt-3 sm:px-0 sm:mt-0 md:pb-0">

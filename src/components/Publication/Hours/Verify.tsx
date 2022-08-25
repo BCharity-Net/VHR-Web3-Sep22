@@ -9,7 +9,8 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import {
   CreateCollectBroadcastItemResult,
   CreateCommentBroadcastItemResult,
-  EnabledModule
+  EnabledModule,
+  Mutation
 } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CommentFields } from '@gql/CommentFields'
@@ -41,7 +42,7 @@ import {
   VHR_TO_DAI_PRICE,
   VHR_TOKEN
 } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { v4 as uuid } from 'uuid'
 import { useAccount, useBalance, useContractRead, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -107,7 +108,6 @@ const Verify: FC<Props> = ({ publication }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
   const [selectedModule, setSelectedModule] = useState<EnabledModule>(defaultModuleData)
   const [feeData, setFeeData] = useState<FEE_DATA_TYPE>(defaultFeeData)
@@ -247,7 +247,7 @@ const Verify: FC<Props> = ({ publication }) => {
       Logger.error('[Relay Error]', error.message)
     }
   })
-  const [createCommentTypedData] = useMutation(CREATE_COMMENT_TYPED_DATA_MUTATION, {
+  const [createCommentTypedData] = useMutation<Mutation>(CREATE_COMMENT_TYPED_DATA_MUTATION, {
     onCompleted: async ({
       createCommentTypedData
     }: {
@@ -307,7 +307,7 @@ const Verify: FC<Props> = ({ publication }) => {
   })
 
   const createComment = async (hash: string) => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 
@@ -382,7 +382,7 @@ const Verify: FC<Props> = ({ publication }) => {
       }
     }
   )
-  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -429,7 +429,7 @@ const Verify: FC<Props> = ({ publication }) => {
   )
 
   const createCollect = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 

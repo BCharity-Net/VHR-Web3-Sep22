@@ -17,7 +17,7 @@ import { Tooltip } from '@components/UI/Tooltip'
 import { WarningMessage } from '@components/UI/WarningMessage'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { CreateCollectBroadcastItemResult } from '@generated/types'
+import { CreateCollectBroadcastItemResult, Mutation } from '@generated/types'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { PROXY_ACTION_MUTATION } from '@gql/ProxyAction'
 import {
@@ -30,6 +30,7 @@ import {
   UserIcon,
   UsersIcon
 } from '@heroicons/react/outline'
+import { CheckCircleIcon } from '@heroicons/react/solid'
 import formatAddress from '@lib/formatAddress'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
@@ -42,7 +43,7 @@ import React, { Dispatch, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { CONNECT_WALLET, LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -112,9 +113,9 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const [revenue, setRevenue] = useState(0)
+  const [hasCollectedByMe, setHasCollectedByMe] = useState(publication?.hasCollectedByMe)
   const [showCollectorsModal, setShowCollectorsModal] = useState(false)
   const [allowed, setAllowed] = useState(true)
   const [hoursAddressDisable, setHoursAddressDisable] = useState(false)
@@ -125,6 +126,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const onCompleted = () => {
     setRevenue(revenue + parseFloat(collectModule?.amount?.value))
     setCount(count + 1)
+    setHasCollectedByMe(true)
     toast.success('Transaction submitted successfully!')
     Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT)
   }
@@ -200,7 +202,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   }
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
+  const [createCollectTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -246,7 +248,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   })
 
   const createCollect = () => {
-    if (!isAuthenticated) {
+    if (!currentProfile) {
       return toast.error(CONNECT_WALLET)
     }
 
@@ -345,7 +347,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                 {humanize(count)} {t('Collectors')}
               </button>
               <Modal
-                title="Collectors"
+                title="Collected by"
                 icon={<CollectionIcon className="w-5 h-5 text-brand" />}
                 show={showCollectorsModal}
                 onClose={() => setShowCollectorsModal(false)}
@@ -442,7 +444,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
             <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
           </div>
         ) : null}
-        {currentProfile ? (
+        {currentProfile && !hasCollectedByMe ? (
           allowanceLoading || balanceLoading ? (
             <div className="mt-5 w-28 rounded-lg h-[34px] shimmer" />
           ) : allowed || collectModule.type === 'FreeCollectModule' ? (
@@ -469,6 +471,12 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
             </div>
           )
         ) : null}
+        {publication?.hasCollectedByMe && (
+          <div className="mt-3 font-bold text-green-500 flex items-center space-x-1.5">
+            <CheckCircleIcon className="h-5 w-5" />
+            <div>You already collected this</div>
+          </div>
+        )}
       </div>
     </>
   )
