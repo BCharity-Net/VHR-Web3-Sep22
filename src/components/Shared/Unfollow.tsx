@@ -6,12 +6,13 @@ import { CreateUnfollowBroadcastItemResult, Profile } from '@generated/types'
 import { UserRemoveIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import { Contract, Signer } from 'ethers'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { ERROR_MESSAGE, SIGN_WALLET } from 'src/constants'
+import { SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useSigner, useSignTypedData } from 'wagmi'
@@ -53,15 +54,7 @@ interface Props {
 const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [writeLoading, setWriteLoading] = useState(false)
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(PROFILE.UNFOLLOW, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { data: signer } = useSigner()
   const { t } = useTranslation('common')
 
@@ -93,7 +86,7 @@ const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
               setFollowing(false)
             }
             toast.success('Unfollowed successfully!')
-            Mixpanel.track(PROFILE.UNFOLLOW, { result: 'success' })
+            Mixpanel.track(PROFILE.UNFOLLOW)
           } catch {
             toast.error('User rejected request')
           } finally {
@@ -101,9 +94,7 @@ const Unfollow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 

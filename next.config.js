@@ -9,6 +9,7 @@ module.exports = withTM(
     {
       reactStrictMode: false,
       trailingSlash: false,
+      swcMinify: true,
       maximumFileSizeToCacheInBytes: 8000000,
       async rewrites() {
         return [

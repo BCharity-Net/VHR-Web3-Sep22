@@ -2,9 +2,9 @@ import { LensHubProxy } from '@abis/LensHubProxy'
 import { useMutation } from '@apollo/client'
 import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CreateMirrorBroadcastItemResult } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import {
   CREATE_MIRROR_TYPED_DATA_MUTATION,
   CREATE_MIRROR_VIA_DISPATHCER_MUTATION
@@ -14,12 +14,13 @@ import getSignature from '@lib/getSignature'
 import humanize from '@lib/humanize'
 import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import clsx from 'clsx'
 import { motion } from 'framer-motion'
 import { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
+import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -49,21 +50,13 @@ const Mirror: FC<Props> = ({ publication }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(PUBLICATION.MIRROR, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     setCount(count + 1)
     setMirrored(true)
     toast.success('Post has been mirrored!')
-    Mixpanel.track(PUBLICATION.MIRROR, { result: 'success' })
+    Mixpanel.track(PUBLICATION.MIRROR)
   }
 
   const { isLoading: writeLoading, write } = useContractWrite({
@@ -71,27 +64,11 @@ const Mirror: FC<Props> = ({ publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'mirrorWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(PUBLICATION.MIRROR, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
-
+  const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createMirrorTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_MIRROR_TYPED_DATA_MUTATION,
     {
@@ -128,7 +105,7 @@ const Mirror: FC<Props> = ({ publication }) => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -138,24 +115,13 @@ const Mirror: FC<Props> = ({ publication }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 
   const [createMirrorViaDispatcher, { loading: dispatcherLoading }] = useMutation(
     CREATE_MIRROR_VIA_DISPATHCER_MUTATION,
-    {
-      onCompleted,
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-        Mixpanel.track(PUBLICATION.MIRROR, {
-          result: 'dispatcher_error',
-          error: error?.message
-        })
-      }
-    }
+    { onCompleted, onError }
   )
 
   const createMirror = () => {

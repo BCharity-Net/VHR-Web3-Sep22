@@ -2,16 +2,17 @@ import { LensHubProxy } from '@abis/LensHubProxy'
 import { gql, useMutation } from '@apollo/client'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { Group } from '@generated/bcharitytypes'
 import { CreateCollectBroadcastItemResult } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC } from 'react'
 import toast from 'react-hot-toast'
-import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
+import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { GROUP } from 'src/tracking'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
@@ -57,16 +58,12 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const { address } = useAccount()
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     setJoined(true)
     toast.success('Joined successfully!')
-    Mixpanel.track(GROUP.JOIN, { result: 'success' })
+    Mixpanel.track(GROUP.JOIN)
   }
 
   const { isLoading: writeLoading, write } = useContractWrite({
@@ -74,30 +71,11 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-      Mixpanel.track(GROUP.JOIN, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(GROUP.JOIN, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -124,7 +102,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -134,9 +112,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 

@@ -6,24 +6,18 @@ import { Card } from '@components/UI/Card'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { CreateSetFollowModuleBroadcastItemResult, Erc20 } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { StarIcon, XIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  DEFAULT_COLLECT_TOKEN,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON,
-  SIGN_WALLET
-} from 'src/constants'
+import { ADDRESS_REGEX, DEFAULT_COLLECT_TOKEN, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -86,21 +80,14 @@ const SuperFollow: FC = () => {
   const { t } = useTranslation('common')
   const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
   const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState('WMATIC')
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, { result: 'typed_data_error', error: error?.message })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY, {
     variables: { request: { profileId: currentProfile?.id } },
     skip: !currentProfile?.id
   })
 
   const onCompleted = () => {
-    Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, {
-      result: 'success'
-    })
+    Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW)
   }
 
   const {
@@ -112,19 +99,15 @@ const SuperFollow: FC = () => {
     contractInterface: LensHubProxy,
     functionName: 'setFollowModuleWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
   const newFundraiseSchema = object({
     amount: string().min(1, { message: 'Invalid amount' }),
     recipient: string()
       .max(42, { message: 'Ethereum address should be within 42 characters' })
-      .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' })
+      .regex(ADDRESS_REGEX, { message: 'Invalid Ethereum address' })
   })
 
   const form = useZodForm({
@@ -134,18 +117,7 @@ const SuperFollow: FC = () => {
     }
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(SETTINGS.ACCOUNT.SET_SUPER_FOLLOW, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createSetFollowModuleTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_FOLLOW_MODULE_TYPED_DATA_MUTATION,
     {
@@ -171,7 +143,7 @@ const SuperFollow: FC = () => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -181,9 +153,7 @@ const SuperFollow: FC = () => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 

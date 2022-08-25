@@ -6,13 +6,12 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { PaginatedResultInfo } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
-import React, { FC, useState } from 'react'
+import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from 'src/store/app'
@@ -54,8 +53,6 @@ interface Props {
 const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const [publications, setPublications] = useState<BCharityPublication[]>([])
-  const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
     variables: {
       request: {
@@ -65,16 +62,13 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
       },
       reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
       profileId: currentProfile?.id ?? null
-    },
-    onCompleted: (data) => {
-      setPageInfo(data?.explorePublications?.pageInfo)
-      setPublications(data?.explorePublications?.items)
     }
   })
 
+  const pageInfo = data?.explorePublications?.pageInfo
   const { observe } = useInView({
     onEnter: async () => {
-      const { data } = await fetchMore({
+      fetchMore({
         variables: {
           request: {
             sortCriteria: feedType,
@@ -86,9 +80,7 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
           profileId: currentProfile?.id ?? null
         }
       })
-      setPageInfo(data?.explorePublications?.pageInfo)
-      setPublications([...publications, ...data?.explorePublications?.items])
-      Mixpanel.track(PAGINATION.EXPLORE_FEED, { feedType, pageInfo })
+      Mixpanel.track(PAGINATION.EXPLORE_FEED)
     }
   })
 
@@ -106,11 +98,11 @@ const Feed: FC<Props> = ({ feedType = 'TOP_COMMENTED' }) => {
       {!error && !loading && data?.explorePublications?.items?.length !== 0 && (
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
-            {publications?.map((post: BCharityPublication, index: number) => (
+            {data?.explorePublications?.items?.map((post: BCharityPublication, index: number) => (
               <SinglePublication key={`${post?.id}_${index}`} publication={post} />
             ))}
           </Card>
-          {pageInfo?.next && publications.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && data?.explorePublications?.items.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

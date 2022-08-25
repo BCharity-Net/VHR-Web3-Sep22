@@ -1,15 +1,13 @@
 {
   "parser": "@typescript-eslint/parser",
+  "env": {
+    "es2022": true
+  },
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "plugins": [
-    "@typescript-eslint",
-    "unused-imports",
-    "simple-import-sort",
-    "prettier"
-  ],
+  "plugins": ["@typescript-eslint", "unused-imports", "simple-import-sort", "prettier", "unicorn"],
   "extends": ["next", "next/core-web-vitals"],
   "rules": {
     "curly": "warn",
@@ -29,7 +27,14 @@
     "jsx-a11y/role-supports-aria-props": "off",
     "no-use-before-define" : "off",
     "no-unexpected-multiline": "error",
-    "react/self-closing-comp": "warn"
+    "react/self-closing-comp": "warn",
+    "unicorn/better-regex": "warn",
+    "unicorn/catch-error-name": "error",
+    "unicorn/no-array-for-each": "warn",
+    "unicorn/no-for-loop": "warn",
+    "unicorn/no-lonely-if": "warn",
+    "unicorn/no-useless-undefined": "error",
+    "unicorn/prefer-array-find": "error"
   },
   "ignorePatterns": ["/src/generated/types.ts"]
 }

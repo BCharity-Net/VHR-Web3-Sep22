@@ -75,6 +75,16 @@ export const FUNDRAISE = {
   OPEN_FUNDERS: 'Open funders list'
 }
 
+export const HOURS = {
+  NEW: 'New hours',
+  APPROVE: 'Approve hours'
+}
+
+export const OPPOS = {
+  NEW: 'New opportunity',
+  APPLY: 'Apply an opportunity'
+}
+
 export const NOTIFICATION = {
   OPEN: 'Open notifications'
 }
@@ -82,7 +92,7 @@ export const NOTIFICATION = {
 export const PAGINATION = {
   HOME_FEED: 'Paginate home feed',
   COMMENT_FEED: 'Paginate comment feed',
-  COMMUNITY_FEED: 'Paginate community feed',
+  GROUP_FEED: 'Paginate group feed',
   EXPLORE_FEED: 'Paginate explore feed',
   PROFILE_FEED: 'Paginate profile feed',
   NOTIFICATION_FEED: 'Paginate notification feed',

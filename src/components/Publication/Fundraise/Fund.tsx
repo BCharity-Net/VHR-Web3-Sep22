@@ -5,18 +5,19 @@ import AllowanceButton from '@components/Settings/Allowance/Button'
 import Uniswap from '@components/Shared/Uniswap'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityCollectModule, BCharityPublication } from '@generated/bcharitytypes'
 import { CreateCollectBroadcastItemResult } from '@generated/types'
 import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CashIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
-import omit from '@lib/omit'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { CONNECT_WALLET, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { FUNDRAISE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -67,15 +68,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(FUNDRAISE.FUND, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     addressOrName: address,
     token: collectModule?.amount?.asset?.address,
@@ -108,7 +101,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
   const onCompleted = () => {
     setRevenue(revenue + parseFloat(collectModule?.amount?.value))
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track(FUNDRAISE.FUND, { result: 'success' })
+    Mixpanel.track(FUNDRAISE.FUND)
   }
 
   const {
@@ -120,26 +113,11 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(FUNDRAISE.FUND, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -166,7 +144,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -176,9 +154,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 

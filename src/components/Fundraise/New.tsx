@@ -12,16 +12,18 @@ import { Input } from '@components/UI/Input'
 import { PageLoading } from '@components/UI/PageLoading'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Erc20 } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
 import isVerified from '@lib/isVerified'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
@@ -34,8 +36,6 @@ import {
   APP_NAME,
   CATEGORIES,
   DEFAULT_COLLECT_TOKEN,
-  ERROR_MESSAGE,
-  ERRORS,
   LENSHUB_PROXY,
   RELAY_ON,
   SIGN_WALLET
@@ -70,15 +70,7 @@ const NewFundraise: NextPage = () => {
   const [uploading, setUploading] = useState(false)
   const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_COLLECT_TOKEN)
   const [selectedCurrencySymobol, setSelectedCurrencySymobol] = useState('WMATIC')
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(FUNDRAISE.NEW, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { data: currencyData, loading } = useQuery(MODULES_CURRENCY_QUERY)
 
   const newFundraiseSchema = object({
@@ -92,7 +84,7 @@ const NewFundraise: NextPage = () => {
     goal: string(),
     recipient: string()
       .max(42, { message: 'Ethereum address should be within 42 characters' })
-      .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
+      .regex(/^0x[\dA-Fa-f]{40}$/, { message: 'Invalid Ethereum address' }),
     description: string().max(1000, {
       message: 'Description should not exceed 1000 characters'
     })
@@ -103,7 +95,7 @@ const NewFundraise: NextPage = () => {
   }, [])
 
   const onCompleted = () => {
-    Mixpanel.track(FUNDRAISE.NEW, { result: 'success' })
+    Mixpanel.track(FUNDRAISE.NEW)
   }
 
   const {
@@ -115,12 +107,8 @@ const NewFundraise: NextPage = () => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
   const form = useZodForm({
@@ -144,18 +132,7 @@ const NewFundraise: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(FUNDRAISE.NEW, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
     onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       try {
@@ -186,7 +163,7 @@ const NewFundraise: NextPage = () => {
         if (RELAY_ON) {
           const {
             data: { broadcast: result }
-          } = await broadcast({ variables: { request: { id, signature } } })
+          } = await broadcast({ request: { id, signature } })
 
           if ('reason' in result) {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -196,9 +173,7 @@ const NewFundraise: NextPage = () => {
         }
       } catch {}
     },
-    onError: (error) => {
-      toast.error(error.message ?? ERROR_MESSAGE)
-    }
+    onError
   })
 
   const createFundraise = async (
@@ -407,7 +382,7 @@ const NewFundraise: NextPage = () => {
                     <img
                       className="object-cover w-full h-60 rounded-lg"
                       height={240}
-                      src={imagekitURL(cover, 'attachment')}
+                      src={imagekitURL(getIPFSLink(cover), 'attachment')}
                       alt={cover}
                     />
                   )}

@@ -351,7 +351,7 @@ const Verify: FC<Props> = ({ publication }) => {
 
   const onCompleted = () => {
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track('hours.collect', { result: 'success' })
+    Mixpanel.track('hours.collect')
   }
   const {
     data: collectWriteData,

@@ -15,10 +15,11 @@ import { Modal } from '@components/UI/Modal'
 import { Spinner } from '@components/UI/Spinner'
 import { Tooltip } from '@components/UI/Tooltip'
 import { WarningMessage } from '@components/UI/WarningMessage'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CreateCollectBroadcastItemResult } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
+import { PROXY_ACTION_MUTATION } from '@gql/ProxyAction'
 import {
   CashIcon,
   ClockIcon,
@@ -34,19 +35,13 @@ import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import humanize from '@lib/humanize'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import dayjs from 'dayjs'
 import React, { Dispatch, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  CONNECT_WALLET,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  POLYGONSCAN_URL,
-  RELAY_ON
-} from 'src/constants'
+import { CONNECT_WALLET, LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -125,23 +120,13 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const [hoursAddressDisable, setHoursAddressDisable] = useState(false)
 
   const { address } = useAccount()
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     setRevenue(revenue + parseFloat(collectModule?.amount?.value))
     setCount(count + 1)
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
-      result: 'success'
-    })
+    Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT)
   }
 
   const {
@@ -153,12 +138,8 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
     contractInterface: LensHubProxy,
     functionName: 'collectWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
   const { data, loading } = useQuery(COLLECT_QUERY, {
@@ -218,18 +199,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
     hasAmount = true
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(PUBLICATION.COLLECT_MODULE.COLLECT, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createCollectTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_COLLECT_TYPED_DATA_MUTATION,
     {
@@ -256,7 +226,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -266,28 +236,41 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
+
+  const [createCollectProxyAction, { loading: proxyActionLoading }] = useMutation(PROXY_ACTION_MUTATION, {
+    onCompleted,
+    onError
+  })
 
   const createCollect = () => {
     if (!isAuthenticated) {
       return toast.error(CONNECT_WALLET)
     }
 
-    createCollectTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: { publicationId: publication?.id }
-      }
-    })
+    if (collectModule?.type === 'FreeCollectModule') {
+      createCollectProxyAction({
+        variables: {
+          request: { collect: { freeCollect: { publicationId: publication?.id } } }
+        }
+      })
+    } else {
+      createCollectTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request: { publicationId: publication?.id }
+        }
+      })
+    }
   }
 
   if (loading || revenueLoading) {
     return <Loader message="Loading collect" />
   }
+
+  const isLoading = typedDataLoading || proxyActionLoading || signLoading || writeLoading || broadcastLoading
 
   return (
     <>
@@ -467,16 +450,8 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
               <Button
                 className="mt-5"
                 onClick={createCollect}
-                disabled={
-                  typedDataLoading || signLoading || writeLoading || broadcastLoading || hoursAddressDisable
-                }
-                icon={
-                  typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
-                    <Spinner size="xs" />
-                  ) : (
-                    <CollectionIcon className="w-4 h-4" />
-                  )
-                }
+                disabled={isLoading}
+                icon={isLoading ? <Spinner size="xs" /> : <CollectionIcon className="w-4 h-4" />}
               >
                 {t('Collect now')}
               </Button>

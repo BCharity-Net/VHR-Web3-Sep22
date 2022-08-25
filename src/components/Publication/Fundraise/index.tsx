@@ -19,6 +19,7 @@ import {
   CREATE_COMMENT_VIA_DISPATHCER_MUTATION
 } from '@gql/TypedAndDispatcherData/CreateComment'
 import { CashIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
@@ -355,7 +356,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
         className="h-40 rounded-t-xl border-b sm:h-52 dark:border-b-gray-700/80"
         style={{
           backgroundImage: `url(${
-            cover ? imagekitURL(cover, 'attachment') : `${STATIC_ASSETS}/patterns/2.svg`
+            cover ? imagekitURL(getIPFSLink(cover), 'attachment') : `${STATIC_ASSETS}/patterns/2.svg`
           })`,
           backgroundColor: '#8b5cf6',
           backgroundSize: cover ? 'cover' : '30%',

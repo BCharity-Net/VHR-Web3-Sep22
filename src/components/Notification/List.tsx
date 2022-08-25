@@ -3,13 +3,13 @@ import { Card } from '@components/UI/Card'
 import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
-import { Notification, PaginatedResultInfo } from '@generated/types'
+import { Notification } from '@generated/types'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { MetadataFields } from '@gql/MetadataFields'
 import { ProfileFields } from '@gql/ProfileFields'
 import { MailIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
-import { FC, useState } from 'react'
+import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from 'src/store/app'
@@ -157,22 +157,16 @@ const NOTIFICATIONS_QUERY = gql`
 const List: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [pageInfo, setPageInfo] = useState<PaginatedResultInfo>()
   const { data, loading, error, fetchMore } = useQuery(NOTIFICATIONS_QUERY, {
     variables: {
       request: { profileId: currentProfile?.id, limit: 10 }
-    },
-    fetchPolicy: 'no-cache',
-    onCompleted: (data) => {
-      setPageInfo(data?.notifications?.pageInfo)
-      setNotifications(data?.notifications?.items)
     }
   })
 
+  const pageInfo = data?.notifications?.pageInfo
   const { observe } = useInView({
-    onEnter: async () => {
-      const { data } = await fetchMore({
+    onEnter: () => {
+      fetchMore({
         variables: {
           request: {
             profileId: currentProfile?.id,
@@ -181,9 +175,7 @@ const List: FC = () => {
           }
         }
       })
-      setPageInfo(data?.notifications?.pageInfo)
-      setNotifications([...notifications, ...data?.notifications?.items])
-      Mixpanel.track(PAGINATION.NOTIFICATION_FEED, { pageInfo })
+      Mixpanel.track(PAGINATION.NOTIFICATION_FEED)
     }
   })
 
@@ -218,7 +210,7 @@ const List: FC = () => {
 
   return (
     <Card className="divide-y dark:divide-gray-700">
-      {notifications?.map((notification: Notification) => (
+      {data?.notifications?.items?.map((notification: Notification) => (
         <div key={notification?.notificationId} className="p-5">
           {notification?.__typename === 'NewFollowerNotification' && (
             <FollowerNotification notification={notification as any} />

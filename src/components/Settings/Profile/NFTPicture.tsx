@@ -6,8 +6,8 @@ import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Form, useZodForm } from '@components/UI/Form'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { CreateSetProfileImageUriBroadcastItemResult, NftImage, Profile } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import {
   CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
   CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION
@@ -15,12 +15,13 @@ import {
 import { PencilIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import gql from 'graphql-tag'
 import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { ERROR_MESSAGE, ERRORS, IS_MAINNET, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
+import { ADDRESS_REGEX, IS_MAINNET, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { SETTINGS } from 'src/tracking'
 import { chain, useContractWrite, useSignMessage, useSignTypedData } from 'wagmi'
@@ -29,7 +30,7 @@ import { object, string } from 'zod'
 const editNftPictureSchema = object({
   contractAddress: string()
     .max(42, { message: 'Contract address should be within 42 characters' })
-    .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Contract address' }),
+    .regex(ADDRESS_REGEX, { message: 'Invalid Contract address' }),
   tokenId: string()
 })
 
@@ -54,22 +55,12 @@ const NFTPicture: FC<Props> = ({ profile }) => {
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [chainId, setChainId] = useState(IS_MAINNET ? chain.mainnet.id : chain.kovan.id)
 
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
   const { signMessageAsync } = useSignMessage()
 
   const onCompleted = () => {
     toast.success('Avatar updated successfully!')
-    Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
-      result: 'success'
-    })
+    Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE)
   }
 
   const form = useZodForm({
@@ -90,27 +81,12 @@ const NFTPicture: FC<Props> = ({ profile }) => {
     contractInterface: LensHubProxy,
     functionName: 'setProfileImageURIWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
   const [loadChallenge, { loading: challengeLoading }] = useLazyQuery(CHALLENGE_QUERY)
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
 
   const [createSetProfileImageURITypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_SET_PROFILE_IMAGE_URI_TYPED_DATA_MUTATION,
@@ -136,7 +112,7 @@ const NFTPicture: FC<Props> = ({ profile }) => {
           if (RELAY_ON) {
             const {
               data: { broadcast: result }
-            } = await broadcast({ variables: { request: { id, signature } } })
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -146,23 +122,12 @@ const NFTPicture: FC<Props> = ({ profile }) => {
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 
   const [createSetProfileImageURIViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] =
-    useMutation(CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION, {
-      onCompleted,
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-        Mixpanel.track(SETTINGS.PROFILE.SET_NFT_PICTURE, {
-          result: 'dispatcher_error',
-          error: error?.message
-        })
-      }
-    })
+    useMutation(CREATE_SET_PROFILE_IMAGE_URI_VIA_DISPATHCER_MUTATION, { onCompleted, onError })
 
   const setAvatar = async (contractAddress: string, tokenId: string) => {
     if (!isAuthenticated) {

@@ -19,7 +19,7 @@ interface Props {
   onCompleted?: () => void
 }
 
-const useBroadcast = ({ onCompleted }: Props) => {
+export const useBroadcast = ({ onCompleted }: Props) => {
   const [broadcast, { data, loading }] = useMutation(BROADCAST_MUTATION, {
     onCompleted,
     onError: (error) => {

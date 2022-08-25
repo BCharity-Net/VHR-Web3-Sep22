@@ -314,7 +314,7 @@ const Apply: FC<Props> = ({ publication }) => {
 
   const onCompleted = () => {
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track('oppos.collect', { result: 'success' })
+    Mixpanel.track('oppos.collect')
   }
   const {
     data: collectWriteData,

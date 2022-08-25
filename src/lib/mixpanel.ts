@@ -7,21 +7,9 @@ const enabled = MIXPANEL_TOKEN && IS_PRODUCTION
  * Mixpanel analytics
  */
 export const Mixpanel = {
-  identify: (id: string) => {
-    if (enabled) {
-      mixpanel.identify(id)
-    }
-  },
-  track: (name: string, props?: Dict & { action?: string; restult?: string }) => {
+  track: (name: string, props?: Dict) => {
     if (enabled) {
       mixpanel.track(name, props)
-    }
-  },
-  people: {
-    set: (props: Dict) => {
-      if (enabled) {
-        mixpanel.people.set(props)
-      }
     }
   }
 }

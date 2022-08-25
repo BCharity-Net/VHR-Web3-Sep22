@@ -12,14 +12,15 @@ import { Input } from '@components/UI/Input'
 import { OrganizationNameInput } from '@components/UI/OrganizationNameInput'
 import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
+import getSignature from '@lib/getSignature'
 import imagekitURL from '@lib/imagekitURL'
-import Logger from '@lib/logger'
-import omit from '@lib/omit'
+import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import uploadToArweave from '@lib/uploadToArweave'
@@ -28,17 +29,10 @@ import React, { ChangeEvent, FC, useState } from 'react'
 import { Controller } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import {
-  APP_NAME,
-  CATEGORIES,
-  ERROR_MESSAGE,
-  ERRORS,
-  LENSHUB_PROXY,
-  RELAY_ON,
-  SIGN_WALLET
-} from 'src/constants'
+import { APP_NAME, CATEGORIES, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { HOURS } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 import { object, string } from 'zod'
@@ -58,7 +52,7 @@ const newHourSchema = object({
     .max(100, { message: 'Name should not exceed 100 characters' }),
   orgWalletAddress: string()
     .max(42, { message: 'Ethereum address should be within 42 characters' })
-    .regex(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' }),
+    .regex(/^0x[\dA-Fa-f]{40}$/, { message: 'Invalid Ethereum address' }),
 
   startDate: string().max(10, { message: 'Invalid date' }).min(10, { message: 'Invalid date' }),
 
@@ -77,10 +71,10 @@ const newHourSchema = object({
     ),
 
   totalHours: string()
-    .regex(/^(0*[1-9][0-9]*(\.[0-9]+)?|0+\.[0-9]*[1-9][0-9]*)$/, {
+    .regex(/^(0*[1-9]\d*(\.\d+)?|0+\.\d*[1-9]\d*)$/, {
       message: 'Total hours should be larger than zero'
     })
-    .regex(/^\d+(?:\.\d{1})?$/, {
+    .regex(/^\d+(?:\.\d)?$/, {
       message: 'Total hours should be a whole number or to one decimal place'
     }),
 
@@ -138,17 +132,9 @@ const NewHours: NextPage = () => {
   const currentProfile = useAppStore((state) => state.currentProfile)
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [media, setMedia] = useState('')
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
-  const [getWalletAddress] = useLazyQuery(PROFILE_QUERY, {
-    onCompleted: (data) => {
-      Logger.log('Lazy Query =>', `Fetched ${data?.id} profile result`)
-    }
-  })
+  const [getWalletAddress] = useLazyQuery(PROFILE_QUERY)
   const fetchWalletAddress = (username: string) =>
     getWalletAddress({
       variables: {
@@ -157,6 +143,10 @@ const NewHours: NextPage = () => {
     }).then(({ data }) => {
       return data.profile.ownedBy
     })
+
+  const onCompleted = () => {
+    Mixpanel.track(HOURS.NEW)
+  }
 
   const {
     data,
@@ -192,35 +182,21 @@ const NewHours: NextPage = () => {
     }
   }
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Logger.error('Relay Error =>', error.message)
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
     onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
-      Logger.log('Mutation =>', 'Generated createPostTypedData')
-      const { id, typedData } = createPostTypedData
-      const {
-        profileId,
-        contentURI,
-        collectModule,
-        collectModuleInitData,
-        referenceModule,
-        referenceModuleInitData,
-        deadline
-      } = typedData?.value
-
       try {
-        const signature = await signTypedDataAsync({
-          domain: omit(typedData?.domain, '__typename'),
-          types: omit(typedData?.types, '__typename'),
-          value: omit(typedData?.value, '__typename')
-        })
-        setUserSigNonce(userSigNonce + 1)
+        const { id, typedData } = createPostTypedData
+        const {
+          profileId,
+          contentURI,
+          collectModule,
+          collectModuleInitData,
+          referenceModule,
+          referenceModuleInitData,
+          deadline
+        } = typedData?.value
+        const signature = await signTypedDataAsync(getSignature(typedData))
         const { v, r, s } = splitSignature(signature)
         const sig = { v, r, s, deadline }
         const inputStruct = {
@@ -232,10 +208,12 @@ const NewHours: NextPage = () => {
           referenceModuleInitData,
           sig
         }
+
+        setUserSigNonce(userSigNonce + 1)
         if (RELAY_ON) {
           const {
             data: { broadcast: result }
-          } = await broadcast({ variables: { request: { id, signature } } })
+          } = await broadcast({ request: { id, signature } })
 
           if ('reason' in result) {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -245,9 +223,7 @@ const NewHours: NextPage = () => {
         }
       } catch {}
     },
-    onError: (error) => {
-      toast.error(error.message ?? ERROR_MESSAGE)
-    }
+    onError
   })
 
   const createHours = async (

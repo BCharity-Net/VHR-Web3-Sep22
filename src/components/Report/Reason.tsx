@@ -24,6 +24,7 @@ const Reason: FC<Props> = ({ setType, setSubReason, type }) => {
             <option value="illegalReason">{t('Illegal')}</option>
             <option value="fraudReason">{t('Fraud')}</option>
             <option value="sensitiveReason">{t('Sensitive')}</option>
+            <option value="spamReason">Spam</option>
           </select>
         </div>
       </div>
@@ -54,6 +55,17 @@ const Reason: FC<Props> = ({ setType, setSubReason, type }) => {
                 <>
                   <option value="NSFW">{t('NSFW')}</option>
                   <option value="OFFENSIVE">{t('Offensive')}</option>
+                </>
+              )}
+              {type === 'spamReason' && (
+                <>
+                  <option value="FAKE_ENGAGEMENT">Fake engagement</option>
+                  <option value="MANIPULATION_ALGO">Algorithm manipulation</option>
+                  <option value="MISLEADING">Misleading</option>
+                  <option value="MISUSE_HASHTAGS">Misuse hashtags</option>
+                  <option value="REPETITIVE">Repetitive</option>
+                  <option value="SOMETHING_ELSE">Something else</option>
+                  <option value="UNRELATED">Unrelated</option>
                 </>
               )}
             </select>

@@ -8,6 +8,7 @@ import { Card } from '@components/UI/Card'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { MentionTextArea } from '@components/UI/MentionTextArea'
 import { Spinner } from '@components/UI/Spinner'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityAttachment } from '@generated/bcharitytypes'
 import { CreatePostBroadcastItemResult } from '@generated/types'
 import { IGif } from '@giphy/js-types'
@@ -20,6 +21,7 @@ import { PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import trimify from '@lib/trimify'
 import uploadToArweave from '@lib/uploadToArweave'
@@ -27,7 +29,7 @@ import dynamic from 'next/dynamic'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { APP_NAME, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
+import { APP_NAME, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { useCollectModuleStore } from 'src/store/collectmodule'
 import { usePublicationStore } from 'src/store/publication'
@@ -74,15 +76,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const [onlyFollowers, setOnlyFollowers] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [attachments, setAttachments] = useState<BCharityAttachment[]>([])
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(POST.NEW, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     setPreviewPublication(false)
@@ -90,7 +84,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     setAttachments([])
     setSelectedModule(defaultModuleData)
     setFeeData(defaultFeeData)
-    Mixpanel.track(POST.NEW, { result: 'success' })
+    Mixpanel.track(POST.NEW)
   }
   const {
     data,
@@ -102,26 +96,11 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
-  const [broadcast, { data: broadcastData, loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(POST.NEW, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation(CREATE_POST_TYPED_DATA_MUTATION, {
     onCompleted: async ({ createPostTypedData }: { createPostTypedData: CreatePostBroadcastItemResult }) => {
       try {
@@ -152,7 +131,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
         if (RELAY_ON) {
           const {
             data: { broadcast: result }
-          } = await broadcast({ variables: { request: { id, signature } } })
+          } = await broadcast({ request: { id, signature } })
 
           if ('reason' in result) {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -162,23 +141,12 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
         }
       } catch {}
     },
-    onError: (error) => {
-      toast.error(error.message ?? ERROR_MESSAGE)
-    }
+    onError
   })
 
   const [createPostViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
     CREATE_POST_VIA_DISPATHCER_MUTATION,
-    {
-      onCompleted,
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-        Mixpanel.track(POST.NEW, {
-          result: 'dispatcher_error',
-          error: error?.message
-        })
-      }
-    }
+    { onCompleted, onError }
   )
 
   const createPost = async () => {
@@ -186,7 +154,6 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
       return toast.error(SIGN_WALLET)
     }
     if (publicationContent.length === 0 && attachments.length === 0) {
-      Mixpanel.track(POST.NEW, { result: 'empty' })
       return setPostContentError('Post should not be empty!')
     }
 

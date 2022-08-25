@@ -5,19 +5,20 @@ import AllowanceButton from '@components/Settings/Allowance/Button'
 import { Button } from '@components/UI/Button'
 import { Spinner } from '@components/UI/Spinner'
 import { WarningMessage } from '@components/UI/WarningMessage'
+import useBroadcast from '@components/utils/hooks/useBroadcast'
 import { BCharityFollowModule } from '@generated/bcharitytypes'
 import { CreateFollowBroadcastItemResult, FeeFollowModuleSettings, Profile } from '@generated/types'
-import { BROADCAST_MUTATION } from '@gql/BroadcastMutation'
 import { StarIcon, UserIcon } from '@heroicons/react/outline'
 import formatAddress from '@lib/formatAddress'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import { Mixpanel } from '@lib/mixpanel'
+import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON, SIGN_WALLET } from 'src/constants'
+import { LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 import { PROFILE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -92,21 +93,13 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
   const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
   const [allowed, setAllowed] = useState(true)
   const { address } = useAccount()
-  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({
-    onError: (error) => {
-      toast.error(error?.message)
-      Mixpanel.track(PROFILE.SUPER_FOLLOW, {
-        result: 'typed_data_error',
-        error: error?.message
-      })
-    }
-  })
+  const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
     setFollowing(true)
     setShowFollowModal(false)
     toast.success('Followed successfully!')
-    Mixpanel.track(PROFILE.SUPER_FOLLOW, { result: 'success' })
+    Mixpanel.track(PROFILE.SUPER_FOLLOW)
   }
 
   const { isLoading: writeLoading, write } = useContractWrite({
@@ -114,12 +107,8 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
     contractInterface: LensHubProxy,
     functionName: 'followWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: () => {
-      onCompleted()
-    },
-    onError: (error: any) => {
-      toast.error(error?.data?.message ?? error?.message)
-    }
+    onSuccess: onCompleted,
+    onError
   })
 
   const { data, loading } = useQuery(SUPER_FOLLOW_QUERY, {
@@ -158,18 +147,7 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
     hasAmount = true
   }
 
-  const [broadcast, { loading: broadcastLoading }] = useMutation(BROADCAST_MUTATION, {
-    onCompleted,
-    onError: (error) => {
-      if (error.message === ERRORS.notMined) {
-        toast.error(error.message)
-      }
-      Mixpanel.track(PROFILE.SUPER_FOLLOW, {
-        result: 'broadcast_error',
-        error: error?.message
-      })
-    }
-  })
+  const { broadcast, loading: broadcastLoading } = useBroadcast({ onCompleted })
   const [createFollowTypedData, { loading: typedDataLoading }] = useMutation(
     CREATE_FOLLOW_TYPED_DATA_MUTATION,
     {
@@ -194,9 +172,8 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
           setUserSigNonce(userSigNonce + 1)
           if (RELAY_ON) {
             const {
-              data: { broadcast: result },
-              errors
-            } = await broadcast({ variables: { request: { id, signature } } })
+              data: { broadcast: result }
+            } = await broadcast({ request: { id, signature } })
 
             if ('reason' in result) {
               write?.({ recklesslySetUnpreparedArgs: inputStruct })
@@ -206,9 +183,7 @@ const FollowModule: FC<Props> = ({ profile, setFollowing, setShowFollowModal, ag
           }
         } catch {}
       },
-      onError: (error) => {
-        toast.error(error.message ?? ERROR_MESSAGE)
-      }
+      onError
     }
   )
 
