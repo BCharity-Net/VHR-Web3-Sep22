@@ -12,11 +12,11 @@ import {
   SwitchHorizontalIcon,
   UserIcon
 } from '@heroicons/react/outline'
-import clearAuthData from '@lib/clearAuthData'
 import getAvatar from '@lib/getAvatar'
 import isBeta from '@lib/isBeta'
 import isStaff from '@lib/isStaff'
 import { Mixpanel } from '@lib/mixpanel'
+import resetAuthData from '@lib/resetAuthData'
 import clsx from 'clsx'
 import { useTheme } from 'next-themes'
 import { FC, Fragment } from 'react'
@@ -40,7 +40,7 @@ const SignedUser: FC<Props> = ({ pingData }) => {
   const profiles = useAppStore((state) => state.profiles)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
-  const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
+  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const setProfileId = useAppPersistStore((state) => state.setProfileId)
   const staffMode = useAppPersistStore((state) => state.staffMode)
   const setStaffMode = useAppPersistStore((state) => state.setStaffMode)
@@ -118,10 +118,10 @@ const SignedUser: FC<Props> = ({ pingData }) => {
                 href="/"
                 onClick={() => {
                   Mixpanel.track(PROFILE.LOGOUT)
-                  setIsConnected(false)
+                  setIsAuthenticated(false)
                   setCurrentProfile(null)
                   setProfileId(null)
-                  clearAuthData()
+                  resetAuthData()
                   disconnect()
                 }}
                 className={({ active }: { active: boolean }) =>

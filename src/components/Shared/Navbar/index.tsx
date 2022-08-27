@@ -4,20 +4,18 @@ import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
 import isStaff from '@lib/isStaff'
 import clsx from 'clsx'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppPersistStore, useAppStore } from 'src/store/app'
 
+import NewPostModal from '../../Publication/New/NewPostModal'
 import TranslateButton from '../TranslateButton'
 import MenuItems from './MenuItems'
 import MoreNavItems from './MoreNavItems'
 import Search from './Search'
-
-const StaffBar = dynamic(() => import('./StaffBar'))
-const NewPostModal = dynamic(() => import('../../Publication/New/NewPostModal'))
+import StaffBar from './StaffBar'
 
 const PING_QUERY = gql`
   query Ping {
@@ -42,21 +40,19 @@ const Navbar: FC = () => {
 
   const NavItem = ({ url, name, current }: NavItemProps) => {
     return (
-      <Link href={url}>
-        <a href={url} aria-current={current ? 'page' : undefined}>
-          <Disclosure.Button
-            className={clsx(
-              'w-full text-left px-2 md:px-3 py-1 rounded-md font-black cursor-pointer text-sm tracking-wide',
-              {
-                'text-black dark:text-white bg-gray-200 dark:bg-gray-800': current,
-                'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800':
-                  !current
-              }
-            )}
-          >
-            {name}
-          </Disclosure.Button>
-        </a>
+      <Link href={url} aria-current={current ? 'page' : undefined}>
+        <Disclosure.Button
+          className={clsx(
+            'w-full text-left px-2 md:px-3 py-1 rounded-md font-black cursor-pointer text-sm tracking-wide',
+            {
+              'text-black dark:text-white bg-gray-200 dark:bg-gray-800': current,
+              'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800':
+                !current
+            }
+          )}
+        >
+          {name}
+        </Disclosure.Button>
       </Link>
     )
   }
@@ -81,7 +77,7 @@ const Navbar: FC = () => {
 
   return (
     <Disclosure
-      as="nav"
+      as="header"
       className="sticky top-0 z-10 w-full bg-white border-b dark:bg-gray-900 dark:border-b-gray-700/80"
     >
       {({ open }) => (
@@ -100,11 +96,9 @@ const Navbar: FC = () => {
                 </Disclosure.Button>
                 <Link href="/">
                   <div className="inline-flex flex-grow justify-between items-center font-bold text-blue-900">
-                    <a href="/">
-                      <div className="text-3xl font-black">
-                        <img className="w-8 h-8" src="/logo.jpg" alt="Logo" />
-                      </div>
-                    </a>
+                    <div className="text-3xl font-black">
+                      <img className="w-8 h-8" src="/logo.jpg" alt="Logo" />
+                    </div>
                     <span className="flex fle-grow ml-3 mr-3">BCharity</span>
                   </div>
                 </Link>

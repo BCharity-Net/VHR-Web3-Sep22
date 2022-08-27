@@ -56,7 +56,7 @@ const RecommendedProfiles: FC = () => {
     return (
       <>
         <Title />
-        <Card>
+        <Card as="aside">
           <CardBody className="space-y-4">
             <UserProfileShimmer showFollow />
             <UserProfileShimmer showFollow />

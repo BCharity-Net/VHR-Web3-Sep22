@@ -42,7 +42,7 @@ import dayjs from 'dayjs'
 import React, { Dispatch, FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { CONNECT_WALLET, LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON } from 'src/constants'
+import { LENSHUB_PROXY, POLYGONSCAN_URL, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { PUBLICATION } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -249,7 +249,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
 
   const createCollect = () => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     if (collectModule?.type === 'FreeCollectModule') {

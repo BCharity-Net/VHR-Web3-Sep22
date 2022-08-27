@@ -26,38 +26,27 @@ const MirrorNotification: FC<Props> = ({ notification }) => {
         </div>
         <div className="ml-9">
           <NotificationProfileName profile={notification?.profile} />{' '}
-          <span className="pl-0.5 text-gray-600 dark:text-gray-400">
-            mirrored your{' '}
-          </span>
-          <Link href={`/posts/${notification?.publication?.id}`}>
-            <a
-              href={`/posts/${notification?.publication?.id}`}
-              className="font-bold"
-            >
-              {notification?.publication?.__typename === 'Post'
-                ? publicationType === 'fundraise'
-                  ? 'fundraise'
-                  : notification?.publication?.__typename?.toLowerCase()
-                : notification?.publication?.__typename?.toLowerCase()}
-            </a>
+          <span className="pl-0.5 text-gray-600 dark:text-gray-400">mirrored your </span>
+          <Link href={`/posts/${notification?.publication?.id}`} className="font-bold">
+            {notification?.publication?.__typename === 'Post'
+              ? publicationType === 'fundraise'
+                ? 'fundraise'
+                : notification?.publication?.__typename?.toLowerCase()
+              : notification?.publication?.__typename?.toLowerCase()}
           </Link>
-          <Link href={`/posts/${notification?.publication?.id}`}>
-            <a
-              href={`/posts/${notification?.publication?.id}`}
-              className="text-gray-500 line-clamp-2 linkify mt-2"
-            >
-              {publicationType === 'fundraise' ? (
-                notification?.publication?.metadata?.name
-              ) : (
-                <Markup>{notification?.publication?.metadata?.content}</Markup>
-              )}
-            </a>
+          <Link
+            href={`/posts/${notification?.publication?.id}`}
+            className="text-gray-500 line-clamp-2 linkify mt-2"
+          >
+            {publicationType === 'crowdfund' ? (
+              notification?.publication?.metadata?.name
+            ) : (
+              <Markup>{notification?.publication?.metadata?.content}</Markup>
+            )}
           </Link>
         </div>
       </div>
-      <div className="text-gray-400 text-[12px]">
-        {dayjs(new Date(notification?.createdAt)).fromNow()}
-      </div>
+      <div className="text-gray-400 text-[12px]">{dayjs(new Date(notification?.createdAt)).fromNow()}</div>
     </div>
   )
 }

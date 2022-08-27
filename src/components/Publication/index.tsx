@@ -1,9 +1,9 @@
 import { gql, useQuery } from '@apollo/client'
+import Feed from '@components/Comment/Feed'
 import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import Footer from '@components/Shared/Footer'
-import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import UserProfile from '@components/Shared/UserProfile'
-import PublicationStaffTool from '@components/StaffTools/Publication'
+import PublicationStaffTool from '@components/StaffTools/Panels/Publication'
 import { Card, CardBody } from '@components/UI/Card'
 import Seo from '@components/utils/Seo'
 import { BCharityPublication } from '@generated/bcharitytypes'
@@ -26,10 +26,6 @@ import FullPublication from './FullPublication'
 import OnchainMeta from './OnchainMeta'
 import RelevantPeople from './RelevantPeople'
 import PublicationPageShimmer from './Shimmer'
-
-const Feed = dynamic(() => import('@components/Comment/Feed'), {
-  loading: () => <PublicationsShimmer />
-})
 
 export const PUBLICATION_QUERY = gql`
   query Publication(
@@ -130,7 +126,7 @@ const ViewPublication: NextPage = () => {
         }
       />
       <GridItemEight className="space-y-5">
-        <Card>
+        <Card as="aside">
           <FullPublication publication={publication} />
         </Card>
         <Feed

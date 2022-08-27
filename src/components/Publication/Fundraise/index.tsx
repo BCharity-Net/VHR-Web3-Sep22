@@ -26,16 +26,16 @@ import imagekitURL from '@lib/imagekitURL'
 import uploadToArweave from '@lib/uploadToArweave'
 import clsx from 'clsx'
 import { splitSignature } from 'ethers/lib/utils'
-import React, { FC, MouseEvent, ReactNode, useEffect, useState } from 'react'
+import React, { FC, ReactNode, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import {
   APP_NAME,
-  CONNECT_WALLET,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
   RELAY_ON,
+  SIGN_WALLET,
   STATIC_ASSETS
 } from 'src/constants'
 import { useAppStore } from 'src/store/app'
@@ -265,7 +265,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
     description: string | null
   ) => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     setIsUploading(true)
@@ -350,7 +350,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   }
 
   return (
-    <Card forceRounded onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}>
+    <Card forceRounded>
       <div
         className="h-40 rounded-t-xl border-b sm:h-52 dark:border-b-gray-700/80"
         style={{

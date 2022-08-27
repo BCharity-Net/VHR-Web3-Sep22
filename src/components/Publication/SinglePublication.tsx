@@ -8,7 +8,7 @@ import React, { FC } from 'react'
 import { PUBLICATION } from 'src/tracking'
 
 import PublicationActions from './Actions'
-import HiddenPost from './HiddenPublication'
+import HiddenPublication from './HiddenPublication'
 import PublicationBody from './PublicationBody'
 import PublicationType from './Type'
 
@@ -33,38 +33,38 @@ const SinglePublication: FC<Props> = ({
   const timestamp = isMirror ? publication?.mirrorOf?.createdAt : publication?.createdAt
 
   return (
-    <Link href={`/posts/${publication?.id}`} passHref>
-      <article
-        className="cursor-pointer first:rounded-t-xl last:rounded-b-xl hover:bg-gray-100/70 hover:dark:bg-gray-800/70 p-5"
-        onClick={() => {
-          Mixpanel.track(PUBLICATION.OPEN)
-        }}
-      >
-        <PublicationType publication={publication} showType={showType} showThread={showThread} />
-        <div>
-          <div className="flex justify-between pb-4 space-x-1.5">
-            <UserProfile
-              profile={
-                publicationType === 'community' && !!publication?.collectedBy?.defaultProfile
-                  ? publication?.collectedBy?.defaultProfile
-                  : profile
-              }
-            />
-            <span className="text-sm text-gray-500">{dayjs(new Date(timestamp)).fromNow()}</span>
-          </div>
-          <div className="ml-[53px]">
-            {publication?.hidden ? (
-              <HiddenPost type={publication?.__typename} />
-            ) : (
-              <>
-                <PublicationBody publication={publication} />
-                {showActions && <PublicationActions publication={publication} />}
-              </>
-            )}
-          </div>
+    <article
+      className="first:rounded-t-xl last:rounded-b-xl p-5"
+      onClick={() => {
+        Mixpanel.track(PUBLICATION.OPEN)
+      }}
+    >
+      <PublicationType publication={publication} showType={showType} showThread={showThread} />
+      <div>
+        <div className="flex justify-between pb-4 space-x-1.5">
+          <UserProfile
+            profile={
+              publicationType === 'group' && !!publication?.collectedBy?.defaultProfile
+                ? publication?.collectedBy?.defaultProfile
+                : profile
+            }
+          />
+          <Link href={`/posts/${publication?.id}`} className="text-sm text-gray-500">
+            <span>{dayjs(new Date(timestamp)).fromNow()}</span>
+          </Link>
         </div>
-      </article>
-    </Link>
+        <div className="ml-[53px]">
+          {publication?.hidden ? (
+            <HiddenPublication type={publication?.__typename} />
+          ) : (
+            <>
+              <PublicationBody publication={publication} />
+              {showActions && <PublicationActions publication={publication} />}
+            </>
+          )}
+        </div>
+      </div>
+    </article>
   )
 }
 

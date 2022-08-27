@@ -3,7 +3,7 @@ import Markup from '@components/Shared/Markup'
 import Slug from '@components/Shared/Slug'
 import SuperFollow from '@components/Shared/SuperFollow'
 import Unfollow from '@components/Shared/Unfollow'
-import ProfileStaffTool from '@components/StaffTools/Profile'
+import ProfileStaffTool from '@components/StaffTools/Panels/Profile'
 import { Button } from '@components/UI/Button'
 import { Tooltip } from '@components/UI/Tooltip'
 import { Profile } from '@generated/types'
@@ -104,9 +104,7 @@ const Details: FC<Props> = ({ profile }) => {
           ) : null}
           {currentProfile?.id === profile?.id && (
             <Link href="/settings">
-              <a href="/settings">
-                <Button variant="secondary" className="!py-1.5" icon={<CogIcon className="w-5 h-5" />} />
-              </a>
+              <Button variant="secondary" className="!py-1.5" icon={<CogIcon className="w-5 h-5" />} />
             </Link>
           )}
         </div>

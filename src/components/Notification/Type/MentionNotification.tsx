@@ -26,32 +26,19 @@ const MentionNotification: FC<Props> = ({ notification }) => {
         </div>
         <div className="ml-9">
           <NotificationProfileName profile={profile} />{' '}
-          <span className="text-gray-600 dark:text-gray-400">
-            mentioned you in a{' '}
-          </span>
-          <Link href={`/posts/${notification?.mentionPublication?.id}`}>
-            <a
-              href={`/posts/${notification?.mentionPublication?.id}`}
-              className="font-bold"
-            >
-              {notification?.mentionPublication?.__typename?.toLowerCase()}
-            </a>
+          <span className="text-gray-600 dark:text-gray-400">mentioned you in a </span>
+          <Link href={`/posts/${notification?.mentionPublication?.id}`} className="font-bold">
+            {notification?.mentionPublication?.__typename?.toLowerCase()}
           </Link>
-          <Link href={`/posts/${notification?.mentionPublication.id}`}>
-            <a
-              href={`/posts/${notification?.mentionPublication.id}`}
-              className="text-gray-500 line-clamp-2 linkify mt-2"
-            >
-              <Markup>
-                {notification?.mentionPublication?.metadata?.content}
-              </Markup>
-            </a>
+          <Link
+            href={`/posts/${notification?.mentionPublication.id}`}
+            className="text-gray-500 line-clamp-2 linkify mt-2"
+          >
+            <Markup>{notification?.mentionPublication?.metadata?.content}</Markup>
           </Link>
         </div>
       </div>
-      <div className="text-gray-400 text-[12px]">
-        {dayjs(new Date(notification?.createdAt)).fromNow()}
-      </div>
+      <div className="text-gray-400 text-[12px]">{dayjs(new Date(notification?.createdAt)).fromNow()}</div>
     </div>
   )
 }

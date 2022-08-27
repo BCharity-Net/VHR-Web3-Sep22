@@ -16,7 +16,7 @@ import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { CONNECT_WALLET, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { FUNDRAISE } from 'src/tracking'
 import { useAccount, useBalance, useContractWrite, useSignTypedData } from 'wagmi'
@@ -159,7 +159,7 @@ const Fund: FC<Props> = ({ fund, collectModule, setRevenue, revenue }) => {
 
   const createCollect = () => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     createCollectTypedData({

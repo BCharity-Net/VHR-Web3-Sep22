@@ -1,8 +1,6 @@
 // import { Profile } from '@generated/types'
 import { gql, useQuery } from '@apollo/client'
 import { GridItemEight, GridItemFour, GridItemTwelve, GridLayout } from '@components/GridLayout'
-import NFTShimmer from '@components/Shared/Shimmer/NFTShimmer'
-import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import Seo from '@components/utils/Seo'
 import isVerified from '@lib/isVerified'
 import { Mixpanel } from '@lib/mixpanel'
@@ -18,21 +16,16 @@ import { PAGEVIEW } from 'src/tracking'
 
 import Cover from './Cover'
 import Details from './Details'
+import Feed from './Feed'
 import FeedType from './FeedType'
 import FundraiseFeed from './FundraiseFeed'
 import FundraiseOrgFeed from './FundraiseOrgFeed'
 import HourFeed from './HourFeed'
+import NFTFeed from './NFTFeed'
 import OpportunitiesFeed from './OpportunitiesFeed'
 import OpportunitiesOrgFeed from './OpportunitiesOrgFeed'
 import OrganizationFeed from './OrganizationFeed'
 import ProfilePageShimmer from './Shimmer'
-
-const Feed = dynamic(() => import('./Feed'), {
-  loading: () => <PublicationsShimmer />
-})
-const NFTFeed = dynamic(() => import('./NFTFeed'), {
-  loading: () => <NFTShimmer />
-})
 
 export const PROFILE_QUERY = gql`
   query Profile($request: SingleProfileQueryRequest!, $who: ProfileId) {

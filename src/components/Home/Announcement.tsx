@@ -7,7 +7,7 @@ import { IS_MAINNET } from 'src/constants'
 const Announcement: FC = () => {
   const { t } = useTranslation('common')
   return (
-    <Card className="mb-4 bg-yellow-50 dark:bg-yellow-900 !border-yellow-600">
+    <Card as="aside" className="mb-4 bg-yellow-50 dark:bg-yellow-900 !border-yellow-600">
       <CardBody className="space-y-2.5 text-yellow-600">
         <div className="flex items-center space-x-2 font-bold">
           <BeakerIcon className="w-5 h-5" />
@@ -17,11 +17,7 @@ const Announcement: FC = () => {
         {!IS_MAINNET && (
           <div className="flex items-center space-x-1.5 text-sm font-bold">
             <CurrencyDollarIcon className="w-4 h-4" />
-            <a
-              href="https://faucet.polygon.technology/"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
+            <a href="https://faucet.polygon.technology/" target="_blank" rel="noreferrer noopener">
               {t('Get Testnet')}
             </a>
           </div>

@@ -1,9 +1,8 @@
-import { PencilAltIcon, UsersIcon } from '@heroicons/react/outline'
+import { AdjustmentsIcon, ChartPieIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { FC, ReactNode } from 'react'
-import { useTranslation } from 'react-i18next'
 
 interface MenuProps {
   children: ReactNode
@@ -24,18 +23,17 @@ const Menu: FC<MenuProps> = ({ children, current, url }) => (
 )
 
 const Sidebar: FC = () => {
-  const { t } = useTranslation('common')
-  const { query } = useRouter()
+  const { pathname } = useRouter()
 
   return (
-    <div className="sticky px-3 mb-4 space-y-1.5 sm:px-0 top-[128px]">
-      <Menu current={query.type == 'pubs'} url={`/search?q=${query.q}&type=pubs`}>
-        <PencilAltIcon className="w-4 h-4" />
-        <div>{t('Publications')}</div>
+    <div className="px-3 mb-4 space-y-1.5 sm:px-0">
+      <Menu current={pathname == '/stafftools'} url="/stafftools">
+        <ChartPieIcon className="w-4 h-4" />
+        <div>Stats</div>
       </Menu>
-      <Menu current={query.type == 'profiles'} url={`/search?q=${query.q}&type=profiles`}>
-        <UsersIcon className="w-4 h-4" />
-        <div>{t('Profiles')}</div>
+      <Menu current={pathname == '/stafftools/flags'} url="/stafftools/flags">
+        <AdjustmentsIcon className="w-4 h-4" />
+        <div>Flags</div>
       </Menu>
     </div>
   )

@@ -1,14 +1,15 @@
-import { gql, useMutation } from '@apollo/client'
+import { ApolloCache, gql, useMutation } from '@apollo/client'
 import { Tooltip } from '@components/UI/Tooltip'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { Mutation } from '@generated/types'
+import { Mutation, ReactionTypes } from '@generated/types'
 import { HeartIcon } from '@heroicons/react/outline'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/solid'
+import { publicationKeyFields } from '@lib/keyFields'
 import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
 import onError from '@lib/onError'
 import { motion } from 'framer-motion'
-import { FC, useEffect, useState } from 'react'
+import { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { SIGN_WALLET } from 'src/constants'
 import { useAppStore } from 'src/store/app'
@@ -32,24 +33,26 @@ interface Props {
 }
 
 const Like: FC<Props> = ({ publication, isFullPublication }) => {
+  const isMirror = publication.__typename === 'Mirror'
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const [liked, setLiked] = useState(false)
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (publication?.mirrorOf?.stats?.totalUpvotes || publication?.stats?.totalUpvotes) {
-      const reactionCount =
-        publication.__typename === 'Mirror'
-          ? publication?.mirrorOf?.stats?.totalUpvotes
-          : publication?.stats?.totalUpvotes
-      const reaction =
-        publication.__typename === 'Mirror' ? publication?.mirrorOf?.reaction : publication?.reaction
-
-      setCount(reactionCount)
-      setLiked(reaction === 'UPVOTE')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publication])
+  const [liked, setLiked] = useState(
+    (isMirror ? publication?.mirrorOf?.reaction : publication?.reaction) === 'UPVOTE'
+  )
+  const [count, setCount] = useState(
+    isMirror ? publication?.mirrorOf?.stats?.totalUpvotes : publication?.stats?.totalUpvotes
+  )
+  const updateCache = (cache: ApolloCache<any>, type: ReactionTypes.Upvote | ReactionTypes.Downvote) => {
+    cache.modify({
+      id: publicationKeyFields(isMirror ? publication?.mirrorOf : publication),
+      fields: {
+        reaction: () => type,
+        stats: (stats) => ({
+          ...stats,
+          totalUpvotes: type === ReactionTypes.Upvote ? stats.totalUpvotes + 1 : stats.totalUpvotes - 1
+        })
+      }
+    })
+  }
 
   const [addReaction] = useMutation<Mutation>(ADD_REACTION_MUTATION, {
     onCompleted: () => {
@@ -59,7 +62,8 @@ const Like: FC<Props> = ({ publication, isFullPublication }) => {
       setLiked(!liked)
       setCount(count - 1)
       onError(error)
-    }
+    },
+    update: (cache) => updateCache(cache, ReactionTypes.Upvote)
   })
 
   const [removeReaction] = useMutation<Mutation>(REMOVE_REACTION_MUTATION, {
@@ -70,7 +74,8 @@ const Like: FC<Props> = ({ publication, isFullPublication }) => {
       setLiked(!liked)
       setCount(count + 1)
       onError(error)
-    }
+    },
+    update: (cache) => updateCache(cache, ReactionTypes.Downvote)
   })
 
   const createLike = () => {

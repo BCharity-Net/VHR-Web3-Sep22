@@ -12,7 +12,7 @@ import splitSignature from '@lib/splitSignature'
 import React, { FC } from 'react'
 import toast from 'react-hot-toast'
 import IndexStatus from 'src/components/Shared/IndexStatus'
-import { CONNECT_WALLET, ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON } from 'src/constants'
+import { ERROR_MESSAGE, ERRORS, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -145,7 +145,7 @@ const Approve: FC<Props> = ({ publication }) => {
 
   const createCollect = () => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     createCollectTypedData({

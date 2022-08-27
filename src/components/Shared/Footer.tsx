@@ -38,15 +38,9 @@ const Footer: FC = () => {
       <a href="https://github.com/BCharity-Net/SocialFi" target="_blank" rel="noreferrer noopener">
         GitHub
       </a>
-      <Link href="/thanks">
-        <a href="/thanks">{t('Thanks')}</a>
-      </Link>
-      <Link href="/privacy">
-        <a href="/privacy">{t('Privacy')}</a>
-      </Link>
-      <Link href="/terms">
-        <a href="/terms">{t('Terms')}</a>
-      </Link>
+      <Link href="/thanks">{t('Thanks')}</Link>
+      <Link href="/privacy">{t('Privacy')}</Link>
+      <Link href="/terms">{t('Terms')}</Link>
       <span className="font-bold text-gray-600 dark:text-gray-600">
         <a href="https://ecssen.ca/" target="_blank" rel="noreferrer noopener">
           {t('Copyright')}

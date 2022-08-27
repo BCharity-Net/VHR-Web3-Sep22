@@ -10,6 +10,9 @@ module.exports = withTM(
       reactStrictMode: false,
       trailingSlash: false,
       swcMinify: true,
+      experimental: {
+        newNextLinkBehavior: true
+      },
       maximumFileSizeToCacheInBytes: 8000000,
       async rewrites() {
         return [

@@ -21,11 +21,9 @@ export default function Custom404() {
         <h1 className="mb-4 text-3xl font-bold">{t('Lost')}</h1>
         <div className="mb-4">{t('Lost Description')}</div>
         <Link href="/">
-          <a href="/">
-            <Button className="flex mx-auto item-center" size="lg" icon={<HomeIcon className="w-4 h-4" />}>
-              <div>{t('Go Home')}</div>
-            </Button>
-          </a>
+          <Button className="flex mx-auto item-center" size="lg" icon={<HomeIcon className="w-4 h-4" />}>
+            <div>{t('Go Home')}</div>
+          </Button>
         </Link>
       </div>
     </div>

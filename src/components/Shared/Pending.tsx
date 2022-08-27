@@ -46,14 +46,9 @@ const Pending: FC<Props> = ({ txHash, indexing, indexed, type, urlPrefix }) => {
           <div>{indexed}</div>
           <div className="pt-3">
             <Link href={`/${urlPrefix}/${data?.publication?.id}`}>
-              <a href={`/${urlPrefix}/${data?.publication?.id}`}>
-                <Button
-                  className="mx-auto"
-                  icon={<ArrowRightIcon className="mr-1 w-4 h-4" />}
-                >
-                  {t('Go to')} {type}
-                </Button>
-              </a>
+              <Button className="mx-auto" icon={<ArrowRightIcon className="mr-1 w-4 h-4" />}>
+                {t('Go to')} {type}
+              </Button>
             </Link>
           </div>
         </div>

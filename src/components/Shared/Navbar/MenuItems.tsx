@@ -5,16 +5,15 @@ import { Mixpanel } from '@lib/mixpanel'
 import Link from 'next/link'
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { USER } from 'src/tracking'
 
 import Login from './Login'
 import SignedUser from './SignedUser'
-import UnsignedUser from './UnsignedUser'
 
 export const NextLink = ({ href, children, ...rest }: Record<string, any>) => (
-  <Link href={href}>
-    <a {...rest}>{children}</a>
+  <Link href={href} {...rest}>
+    {children}
   </Link>
 )
 
@@ -27,38 +26,32 @@ interface Props {
 const MenuItems: FC<Props> = ({ pingData }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const isConnected = useAppPersistStore((state) => state.isConnected)
   const [showLoginModal, setShowLoginModal] = useState(false)
 
-  if (isConnected && currentProfile) {
-    return <SignedUser pingData={pingData} />
+  if (!currentProfile) {
+    return (
+      <>
+        <Modal
+          title="Login"
+          icon={<ArrowCircleRightIcon className="w-5 h-5 text-brand" />}
+          show={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+        >
+          <Login />
+        </Modal>
+        <Button
+          icon={<img className="mr-0.5 w-4 h-4" height={16} width={16} src="/lens.png" alt="Lens Logo" />}
+          onClick={() => {
+            setShowLoginModal(!showLoginModal)
+            Mixpanel.track(USER.LOGIN)
+          }}
+        >
+          {t('Login')}
+        </Button>
+      </>
+    )
   }
-
-  if (isConnected && !currentProfile) {
-    return <UnsignedUser />
-  }
-
-  return (
-    <>
-      <Modal
-        title="Login"
-        icon={<ArrowCircleRightIcon className="w-5 h-5 text-brand" />}
-        show={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-      >
-        <Login />
-      </Modal>
-      <Button
-        icon={<img className="mr-0.5 w-4 h-4" height={16} width={16} src="/lens.png" alt="Lens Logo" />}
-        onClick={() => {
-          setShowLoginModal(!showLoginModal)
-          Mixpanel.track(USER.LOGIN)
-        }}
-      >
-        {t('Login')}
-      </Button>
-    </>
-  )
+  return <SignedUser pingData={pingData} />
 }
 
 export default MenuItems

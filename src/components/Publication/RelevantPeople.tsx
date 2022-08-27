@@ -49,7 +49,7 @@ const RelevantPeople: FC<Props> = ({ publication }) => {
 
   if (loading) {
     return (
-      <Card>
+      <Card as="aside">
         <CardBody className="space-y-4">
           <UserProfileShimmer showFollow />
           <UserProfileShimmer showFollow />
@@ -66,7 +66,7 @@ const RelevantPeople: FC<Props> = ({ publication }) => {
   }
 
   return (
-    <Card>
+    <Card as="aside">
       <CardBody className="space-y-4">
         <ErrorMessage title="Failed to load relevant people" error={error} />
         {data?.profiles?.items?.map((profile: Profile) => (

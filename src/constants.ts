@@ -15,11 +15,7 @@ export const GIT_COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.sli
 
 // Misc
 export const CONTACT_EMAIL = 'admin@bcharity.net'
-export const PUBLIC_URL = process.env.NEXT_PUBLIC_URL
-export const RELAY_ON =
-  PUBLIC_URL === 'https://bcharity.net' || PUBLIC_URL === 'http://localhost:4783'
-    ? process.env.NEXT_PUBLIC_RELAY_ON === 'true'
-    : false
+export const RELAY_ON = process.env.NEXT_PUBLIC_RELAY_ON === 'true'
 export const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? ''
 export const MIXPANEL_API_HOST = '/collect'
 export const CATEGORIES = [
@@ -44,7 +40,6 @@ export const CATEGORIES = [
 
 // Messages
 export const ERROR_MESSAGE = 'Something went wrong!'
-export const CONNECT_WALLET = 'Please connect your wallet.'
 export const SIGN_WALLET = 'Please sign in your wallet.'
 export const WRONG_NETWORK = IS_MAINNET
   ? 'Please change network to Polygon mainnet.'

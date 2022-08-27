@@ -29,13 +29,12 @@ import React, { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   APP_NAME,
-  CONNECT_WALLET,
   ERROR_MESSAGE,
   ERRORS,
   LENSHUB_PROXY,
   RELAY_ON,
-  VHR_TOKEN
-} from 'src/constants'
+  SIGN_WALLET,
+  VHR_TOKEN} from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { v4 as uuid } from 'uuid'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
@@ -271,7 +270,7 @@ const Apply: FC<Props> = ({ publication }) => {
 
   const createComment = async (hash: string) => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     // TODO: Add animated_url support
@@ -393,7 +392,7 @@ const Apply: FC<Props> = ({ publication }) => {
 
   const createCollect = () => {
     if (!currentProfile) {
-      return toast.error(CONNECT_WALLET)
+      return toast.error(SIGN_WALLET)
     }
 
     createCollectTypedData({

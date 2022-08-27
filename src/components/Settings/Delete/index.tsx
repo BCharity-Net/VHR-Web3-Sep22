@@ -10,10 +10,10 @@ import { WarningMessage } from '@components/UI/WarningMessage'
 import Seo from '@components/utils/Seo'
 import { CreateBurnProfileBroadcastItemResult, Mutation } from '@generated/types'
 import { ExclamationIcon, TrashIcon } from '@heroicons/react/outline'
-import clearAuthData from '@lib/clearAuthData'
 import getSignature from '@lib/getSignature'
 import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
+import resetAuthData from '@lib/resetAuthData'
 import splitSignature from '@lib/splitSignature'
 import React, { FC, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -63,7 +63,7 @@ const DeleteSettings: FC = () => {
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
-  const setIsConnected = useAppPersistStore((state) => state.setIsConnected)
+  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const setProfileId = useAppPersistStore((state) => state.setProfileId)
 
   const { disconnect } = useDisconnect()
@@ -71,10 +71,10 @@ const DeleteSettings: FC = () => {
 
   const onCompleted = () => {
     Mixpanel.track(SETTINGS.DELETE)
-    setIsConnected(false)
+    setIsAuthenticated(false)
     setCurrentProfile(null)
     setProfileId(null)
-    clearAuthData()
+    resetAuthData()
     disconnect()
     location.href = '/'
   }

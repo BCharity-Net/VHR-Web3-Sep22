@@ -17,8 +17,8 @@ const CrossPost: FC = () => {
         </div>
         <div className="pb-3">{t('Twitter cross post description')}</div>
         <a
-          className="flex items-center space-x-1.5"
           href="https://reflect.withlens.app/"
+          className="flex items-center space-x-1.5"
           onClick={() => {
             Mixpanel.track(SETTINGS.ACCOUNT.OPEN_REFLECT)
           }}

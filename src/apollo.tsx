@@ -1,12 +1,13 @@
-import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from '@apollo/client'
+import { ApolloClient, ApolloLink, from, HttpLink, InMemoryCache } from '@apollo/client'
+import { RetryLink } from '@apollo/client/link/retry'
 import result from '@generated/types'
+import { cursorBasedPagination } from '@lib/cursorBasedPagination'
+import { publicationKeyFields } from '@lib/keyFields'
+import parseJwt from '@lib/parseJwt'
 import axios from 'axios'
 import Cookies, { CookieAttributes } from 'js-cookie'
-import jwtDecode from 'jwt-decode'
 
-import { API_URL, ERROR_MESSAGE } from '../constants'
-import { cursorBasedPagination } from './lib/cursorBasedPagination'
-import { publicationKeyFields } from './lib/keyFields'
+import { API_URL, ERROR_MESSAGE } from './constants'
 
 export const COOKIE_CONFIG: CookieAttributes = {
   sameSite: 'None',
@@ -29,6 +30,11 @@ const httpLink = new HttpLink({
   fetch
 })
 
+// RetryLink is a link that retries requests based on the status code returned.
+const retryLink = new RetryLink({
+  attempts: { max: 3 }
+})
+
 const authLink = new ApolloLink((operation, forward) => {
   const accessToken = Cookies.get('accessToken')
 
@@ -45,7 +51,7 @@ const authLink = new ApolloLink((operation, forward) => {
     }
   })
 
-  const { exp }: { exp: number } = jwtDecode(accessToken)
+  const { exp }: { exp: number } = parseJwt(accessToken)
 
   if (Date.now() >= exp * 1000) {
     axios(API_URL, {
@@ -104,12 +110,7 @@ const cache = new InMemoryCache({
 })
 
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
-  cache
-})
-
-export const nodeClient = new ApolloClient({
-  link: httpLink,
+  link: from([retryLink, authLink, httpLink]),
   cache
 })
 
