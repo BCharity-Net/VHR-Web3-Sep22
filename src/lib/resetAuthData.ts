@@ -1,8 +1,8 @@
 import Cookies from 'js-cookie'
 
 const resetAuthData = () => {
-  Cookies.remove('accessToken')
-  Cookies.remove('refreshToken')
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
   localStorage.removeItem('lenster.store')
   localStorage.removeItem('streak')
 }

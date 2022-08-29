@@ -2,8 +2,12 @@ import { chain } from 'wagmi'
 
 // Environments
 export const IS_PRODUCTION = process.env.NODE_ENV === 'production'
-export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
-export const IS_MAINNET = process.env.NEXT_PUBLIC_IS_MAINNET === 'true'
+
+// Blockchain Network
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.lens.dev'
+export const IS_MAINNET = API_URL === 'https://api.lens.dev'
+
+// Application
 
 export const APP_NAME = 'BCharity'
 export const DESCRIPTION =
@@ -48,7 +52,6 @@ export const SIGN_ERROR = 'Failed to sign data'
 
 // URLs
 export const STATIC_ASSETS = 'https://cdn.statically.io/gh/liraymond04/bcharity-assets/main/images'
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.lens.dev'
 export const POLYGONSCAN_URL = IS_MAINNET ? 'https://polygonscan.com' : 'https://mumbai.polygonscan.com'
 export const VHR_TOP_HOLDERS_URL =
   'https://mumbai.polygonscan.com/token/tokenholderchart/0x28ee241ab245699968f2980d3d1b1d23120ab8be'
@@ -117,7 +120,7 @@ export const DAI_CHECK_FOR_CONVERSION = '0x001B3B4d0F3714Ca98ba10F6042DaEbF0B1B7
 
 // Regex
 export const URL_REGEX =
-  /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[\da-z]+([.\-][\da-z]+)*\.[a-z]{2,5}(:\d{1,5})?(\/.*)?$/
+  /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[\da-z]+([.\-][\da-z]+)*\.[a-z]{2,63}(:\d{1,5})?(\/.*)?$/
 export const ADDRESS_REGEX = /^(0x)?[\da-f]{40}$/i
 export const HANDLE_REGEX = /^[\da-z]+$/
 export const ALL_HANDLES_REGEX = /([\s+])@(\S+)/g

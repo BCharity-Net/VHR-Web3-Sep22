@@ -1,9 +1,9 @@
 import { gql, useLazyQuery } from '@apollo/client'
 import { Profile } from '@generated/types'
 import { ProfileFields } from '@gql/ProfileFields'
+import getIsAuthTokensAvailable from '@lib/getIsAuthTokensAvailable'
 import getToastOptions from '@lib/getToastOptions'
 import resetAuthData from '@lib/resetAuthData'
-import Cookies from 'js-cookie'
 import mixpanel from 'mixpanel-browser'
 import Head from 'next/head'
 import { useTheme } from 'next-themes'
@@ -25,7 +25,7 @@ if (MIXPANEL_TOKEN) {
 }
 
 export const USER_PROFILES_QUERY = gql`
-  query CurrentProfile($ownedBy: [EthereumAddress!]) {
+  query UserProfiles($ownedBy: [EthereumAddress!]) {
     profiles(request: { ownedBy: $ownedBy }) {
       items {
         ...ProfileFields
@@ -52,8 +52,6 @@ const Layout: FC<Props> = ({ children }) => {
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
-  const isAuthenticated = useAppPersistStore((state) => state.isAuthenticated)
-  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const profileId = useAppPersistStore((state) => state.profileId)
   const setProfileId = useAppPersistStore((state) => state.setProfileId)
 
@@ -65,60 +63,61 @@ const Layout: FC<Props> = ({ children }) => {
   const resetAuthState = () => {
     setProfileId(null)
     setCurrentProfile(null)
-    setIsAuthenticated(false)
+    setLoading(false)
   }
 
   // Fetch current profiles and sig nonce owned by the wallet address
   const [loadProfiles] = useLazyQuery(USER_PROFILES_QUERY, {
     variables: { ownedBy: address },
     onCompleted: (data) => {
-      console.log('USER_PROFILES_QUERY', data)
       const profiles: Profile[] = data?.profiles?.items
         ?.slice()
         ?.sort((a: Profile, b: Profile) => Number(a.id) - Number(b.id))
         ?.sort((a: Profile, b: Profile) => (!(a.isDefault !== b.isDefault) ? 0 : a.isDefault ? -1 : 1))
 
-      setUserSigNonce(data?.userSigNonces?.lensHubOnChainSigNonce)
-      if (profiles.length) {
-        const selectedUser = profiles.find((profile) => profile.id === profileId)
-        setProfiles(profiles)
-        setCurrentProfile(selectedUser as Profile)
-      } else {
-        resetAuthState()
+      if (!profiles.length) {
+        return resetAuthState()
       }
+
+      const selectedUser = profiles.find((profile) => profile.id === profileId)
+      setProfiles(profiles)
+      setCurrentProfile(selectedUser as Profile)
+      setUserSigNonce(data?.userSigNonces?.lensHubOnChainSigNonce)
+      setLoading(false)
+    },
+    onError: () => {
+      setLoading(false)
     }
   })
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadProfiles().finally(() => setLoading(false))
-    } else {
-      setLoading(false)
+  const validateAuthentication = () => {
+    const currentProfileAddress = currentProfile?.ownedBy
+    const isSwitchedAccount = currentProfileAddress !== undefined && currentProfileAddress !== address
+    const isWrongNetworkChain = chain?.id !== CHAIN_ID
+    const shouldLogout =
+      !getIsAuthTokensAvailable() || isWrongNetworkChain || isDisconnected || isSwitchedAccount
+
+    // If there are no auth data, clear and logout
+    if (shouldLogout && profileId) {
+      resetAuthState()
+      resetAuthData()
+      disconnect?.()
     }
+  }
+
+  useEffect(() => {
+    if (!profileId || !getIsAuthTokensAvailable()) {
+      return setLoading(false)
+    }
+
+    loadProfiles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    const accessToken = Cookies.get('accessToken')
-    const refreshToken = Cookies.get('refreshToken')
-    const hasAuthTokens = accessToken !== 'undefined' && refreshToken !== 'undefined'
-    const currentProfileAddress = currentProfile?.ownedBy
-    const hasSameAddress = currentProfileAddress !== undefined && currentProfileAddress !== address
-
-    if (
-      (hasSameAddress || // If the current address is not the same as the profile address
-        chain?.id !== CHAIN_ID || // If the user is not on the correct chain
-        isDisconnected || // If the user is disconnected from the wallet
-        !profileId || // If the user has no profile
-        !hasAuthTokens) && // If the user has no auth tokens
-      isAuthenticated // If the user is authenticated
-    ) {
-      resetAuthState()
-      resetAuthData()
-      disconnect()
-    }
+    validateAuthentication()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDisconnected, address, chain, currentProfile, disconnect])
+  }, [isDisconnected, address, chain, disconnect])
 
   if (loading) {
     return <Loading />

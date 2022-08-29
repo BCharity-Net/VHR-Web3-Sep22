@@ -40,7 +40,6 @@ const SignedUser: FC<Props> = ({ pingData }) => {
   const profiles = useAppStore((state) => state.profiles)
   const currentProfile = useAppStore((state) => state.currentProfile)
   const setCurrentProfile = useAppStore((state) => state.setCurrentProfile)
-  const setIsAuthenticated = useAppPersistStore((state) => state.setIsAuthenticated)
   const setProfileId = useAppPersistStore((state) => state.setProfileId)
   const staffMode = useAppPersistStore((state) => state.staffMode)
   const setStaffMode = useAppPersistStore((state) => state.setStaffMode)
@@ -114,15 +113,13 @@ const SignedUser: FC<Props> = ({ pingData }) => {
                 </div>
               </Menu.Item>
               <Menu.Item
-                as={NextLink}
-                href="/"
+                as="a"
                 onClick={() => {
                   Mixpanel.track(PROFILE.LOGOUT)
-                  setIsAuthenticated(false)
                   setCurrentProfile(null)
                   setProfileId(null)
                   resetAuthData()
-                  disconnect()
+                  disconnect?.()
                 }}
                 className={({ active }: { active: boolean }) =>
                   clsx({ 'dropdown-active': active }, 'menu-item')
