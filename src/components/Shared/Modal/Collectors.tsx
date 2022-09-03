@@ -13,7 +13,7 @@ import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { PAGINATION } from 'src/tracking'
 
-import Loader from './Loader'
+import Loader from '../Loader'
 
 const COLLECTORS_QUERY = gql`
   query Collectors($request: WhoCollectedPublicationRequest!) {

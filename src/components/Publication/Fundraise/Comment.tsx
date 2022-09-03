@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import Collectors from '@components/Shared/Collectors'
+import Collectors from '@components/Shared/Modal/Collectors'
 import ReferralAlert from '@components/Shared/ReferralAlert'
 import { Card } from '@components/UI/Card'
 import { Modal } from '@components/UI/Modal'

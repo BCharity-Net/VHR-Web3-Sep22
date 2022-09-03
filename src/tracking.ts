@@ -31,6 +31,8 @@ export const PUBLICATION = {
   DELETE: 'Delete publication',
   REPORT: 'Report publication',
   OEMBED_CLICK: 'Click publication oemebed',
+  MENTION_CLICK: 'Click publication mention',
+  HASHTAG_CLICK: 'Click publication hashtag',
   STATS: {
     MIRRORED_BY: 'Open mirrored by list',
     LIKED_BY: 'Open liked by list',
@@ -131,11 +133,12 @@ export const SETTINGS = {
   DELETE: 'Delete profile'
 }
 
-export const STAFF = {
+export const STAFFTOOLS = {
   TOGGLE_MODE: 'Toggle staff mode'
 }
 
 export const SEARCH = {
+  FOCUS: 'Focus search input',
   CLEAR: 'Clear search text'
 }
 
@@ -170,5 +173,25 @@ export const PAGEVIEW = {
     ALLOWANCE: 'Allowance settings page',
     DATA: 'Data settings page',
     DELETE: 'Delete settings page'
+  },
+  STAFFTOOLS: {
+    STATS: 'Staff stats page'
   }
+}
+
+export const MISCELLANEOUS = {
+  NAVIGATE_UPDATE_PROFILE: 'Navigate to update profile from onboarding'
+}
+
+export const FOOTER = {
+  ABOUT: 'About us',
+  DISCORD: 'Open discord',
+  TWITTER: 'Open Twitter',
+  TELEGRAM: 'Open Telegram',
+  DONATE: 'Open donate',
+  STATUS: 'Open status',
+  VOTE: 'Open vote',
+  FEEDBACK: 'Open feedback',
+  GITHUB: 'Open GitHub',
+  VERCEL: 'Open Vercel'
 }

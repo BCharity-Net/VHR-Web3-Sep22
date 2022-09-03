@@ -5,21 +5,20 @@ import Footer from '@components/Shared/Footer'
 import UserProfile from '@components/Shared/UserProfile'
 import PublicationStaffTool from '@components/StaffTools/Panels/Publication'
 import { Card, CardBody } from '@components/UI/Card'
+import useStaffMode from '@components/utils/hooks/useStaffMode'
 import Seo from '@components/utils/Seo'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
-import isStaff from '@lib/isStaff'
 import { Mixpanel } from '@lib/mixpanel'
 import { NextPage } from 'next'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import React, { useEffect } from 'react'
 import { APP_NAME } from 'src/constants'
 import Custom404 from 'src/pages/404'
 import Custom500 from 'src/pages/500'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 import { PAGEVIEW } from 'src/tracking'
 
 import FullPublication from './FullPublication'
@@ -77,7 +76,7 @@ export const PUBLICATION_QUERY = gql`
 const ViewPublication: NextPage = () => {
   const { push } = useRouter()
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const staffMode = useAppPersistStore((state) => state.staffMode)
+  const { allowed: staffMode } = useStaffMode()
 
   useEffect(() => {
     Mixpanel.track(PAGEVIEW.PUBLICATION)
@@ -148,7 +147,7 @@ const ViewPublication: NextPage = () => {
         </Card>
         <RelevantPeople publication={publication} />
         <OnchainMeta publication={publication} />
-        {isStaff(currentProfile?.id) && staffMode && <PublicationStaffTool publication={publication} />}
+        {staffMode && <PublicationStaffTool publication={publication} />}
         <Footer />
       </GridItemFour>
     </GridLayout>

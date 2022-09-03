@@ -1,4 +1,4 @@
-import Collectors from '@components/Shared/Collectors'
+import Collectors from '@components/Shared/Modal/Collectors'
 import { Button } from '@components/UI/Button'
 import { Card } from '@components/UI/Card'
 import { Modal } from '@components/UI/Modal'
@@ -21,7 +21,9 @@ interface MediaProps {
 const Media: FC<MediaProps> = ({ media }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   let attachments: any[] = []
-  if (media) {attachments = JSON.parse(media)}
+  if (media) {
+    attachments = JSON.parse(media)
+  }
   return (
     <div>
       {attachments && (
@@ -70,7 +72,9 @@ const Hours: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
-  if (publication.metadata.attributes.length < 9) {return <div />}
+  if (publication.metadata.attributes.length < 9) {
+    return <div />
+  }
   return (
     <Card forceRounded>
       <div className="p-5">

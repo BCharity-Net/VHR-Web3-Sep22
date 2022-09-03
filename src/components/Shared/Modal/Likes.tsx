@@ -11,7 +11,7 @@ import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { PAGINATION } from 'src/tracking'
 
-import Loader from './Loader'
+import Loader from '../Loader'
 
 const LIKES_QUERY = gql`
   query Likes($request: WhoReactedPublicationRequest!) {

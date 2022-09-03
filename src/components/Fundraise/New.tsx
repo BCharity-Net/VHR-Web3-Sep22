@@ -14,8 +14,11 @@ import { Spinner } from '@components/UI/Spinner'
 import { TextArea } from '@components/UI/TextArea'
 import useBroadcast from '@components/utils/hooks/useBroadcast'
 import Seo from '@components/utils/Seo'
-import { CreatePostBroadcastItemResult, Erc20, Mutation } from '@generated/types'
-import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
+import { CreatePostBroadcastItemResult, Erc20, Mutation, PublicationMainFocus } from '@generated/types'
+import {
+  CREATE_POST_TYPED_DATA_MUTATION,
+  CREATE_POST_VIA_DISPATHCER_MUTATION
+} from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
@@ -132,7 +135,7 @@ const NewFundraise: NextPage = () => {
   }
 
   const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
-  const [createPostTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
+  const [createFundraiseTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_POST_TYPED_DATA_MUTATION,
     {
       onCompleted: async ({
@@ -181,6 +184,11 @@ const NewFundraise: NextPage = () => {
     }
   )
 
+  const [createFundraiseViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
+    CREATE_POST_VIA_DISPATHCER_MUTATION,
+    { onCompleted, onError }
+  )
+
   const createFundraise = async (
     title: string,
     category: string,
@@ -197,13 +205,14 @@ const NewFundraise: NextPage = () => {
     const id = await uploadToArweave({
       version: '2.0.0',
       metadata_id: uuid(),
-      description: description,
-      content: description,
-      external_url: null,
+      description: description ? description : title,
+      content: description ? description : title,
+      external_url: `https://bcharity-test.vercel.app/u/${currentProfile?.handle}`,
       image: cover ? cover : `https://avatar.tobi.sh/${uuid()}.png`,
       imageMimeType: coverType,
       name: title,
-      contentWarning: null, // TODO
+      mainContentFocus: PublicationMainFocus.Article,
+      contentWarning: null,
       attributes: [
         {
           traitType: 'string',
@@ -237,29 +246,35 @@ const NewFundraise: NextPage = () => {
       appId: `${APP_NAME} Fundraise`
     }).finally(() => setIsUploading(false))
 
-    createPostTypedData({
-      variables: {
-        options: { overrideSigNonce: userSigNonce },
-        request: {
-          profileId: currentProfile?.id,
-          contentURI: `https://arweave.net/${id}`,
-          collectModule: {
-            feeCollectModule: {
-              amount: {
-                currency: selectedCurrency,
-                value: amount
-              },
-              recipient,
-              referralFee: 0,
-              followerOnly: false
-            }
+    const request = {
+      profileId: currentProfile?.id,
+      contentURI: `https://arweave.net/${id}`,
+      collectModule: {
+        feeCollectModule: {
+          amount: {
+            currency: selectedCurrency,
+            value: amount
           },
-          referenceModule: {
-            followerOnlyReferenceModule: false
-          }
+          recipient,
+          referralFee: 0, // parseInt(referralFee),
+          followerOnly: false
         }
+      },
+      referenceModule: {
+        followerOnlyReferenceModule: false
       }
-    })
+    }
+
+    if (currentProfile?.dispatcher?.canUseRelay) {
+      createFundraiseViaDispatcher({ variables: { request } })
+    } else {
+      createFundraiseTypedData({
+        variables: {
+          options: { overrideSigNonce: userSigNonce },
+          request
+        }
+      })
+    }
   }
 
   if (loading) {
@@ -269,6 +284,9 @@ const NewFundraise: NextPage = () => {
     return <Custom404 />
   }
 
+  const isLoading =
+    typedDataLoading || dispatcherLoading || isUploading || signLoading || writeLoading || broadcastLoading
+
   return (
     <GridLayout>
       <Seo title={`Create Fundraise • ${APP_NAME}`} />
@@ -277,9 +295,15 @@ const NewFundraise: NextPage = () => {
       </GridItemFour>
       <GridItemEight>
         <Card>
-          {data?.hash ?? broadcastData?.broadcast?.txHash ? (
+          {data?.hash ??
+          broadcastData?.broadcast?.txHash ??
+          dispatcherData?.createPostViaDispatcher?.txHash ? (
             <Pending
-              txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
+              txHash={
+                data?.hash ??
+                broadcastData?.broadcast?.txHash ??
+                dispatcherData?.createPostViaDispatcher?.txHash
+              }
               indexing={t('Fundraise creation')}
               indexed={t('Fundraise created successfully')}
               type="fundraise"
@@ -406,21 +430,8 @@ const NewFundraise: NextPage = () => {
               <Button
                 className="ml-auto"
                 type="submit"
-                disabled={
-                  !isVerified(currentProfile?.id) ||
-                  typedDataLoading ||
-                  isUploading ||
-                  signLoading ||
-                  writeLoading ||
-                  broadcastLoading
-                }
-                icon={
-                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
-                    <Spinner size="xs" />
-                  ) : (
-                    <PlusIcon className="w-4 h-4" />
-                  )
-                }
+                disabled={isLoading}
+                icon={isLoading ? <Spinner size="xs" /> : <PlusIcon className="w-4 h-4" />}
               >
                 {t('Create')}
               </Button>

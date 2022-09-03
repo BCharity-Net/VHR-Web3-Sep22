@@ -1,7 +1,7 @@
 import Attachments from '@components/Shared/Attachments'
-import Collectors from '@components/Shared/Collectors'
 import IFramely from '@components/Shared/IFramely'
 import Markup from '@components/Shared/Markup'
+import Collectors from '@components/Shared/Modal/Collectors'
 import FundraiseShimmer from '@components/Shared/Shimmer/FundraiseShimmer'
 import { Button } from '@components/UI/Button'
 import { Modal } from '@components/UI/Modal'

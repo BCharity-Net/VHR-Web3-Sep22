@@ -16,7 +16,7 @@ import Hero from './Hero'
 import RecommendedProfiles from './RecommendedProfiles'
 import SetDefaultProfile from './SetDefaultProfile'
 import SetProfile from './SetProfile'
-import Streak from './Streak'
+import Trending from './Trending'
 
 const Home: NextPage = () => {
   useEffect(() => {
@@ -43,14 +43,14 @@ const Home: NextPage = () => {
         <GridItemFour>
           {currentProfile ? <EnableDispatcher /> : null}
           <Announcement />
+          <Trending />
           {currentProfile ? (
             <>
               <SetDefaultProfile />
               <SetProfile />
-              <Streak />
+              <RecommendedProfiles />
             </>
           ) : null}
-          <RecommendedProfiles />
           <Footer />
         </GridItemFour>
       </GridLayout>

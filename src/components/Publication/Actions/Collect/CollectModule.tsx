@@ -3,10 +3,10 @@ import { gql, useMutation, useQuery } from '@apollo/client'
 import { PUBLICATION_REVENUE_QUERY } from '@components/Publication/Fundraise'
 import { ALLOWANCE_SETTINGS_QUERY } from '@components/Settings/Allowance'
 import AllowanceButton from '@components/Settings/Allowance/Button'
-import Collectors from '@components/Shared/Collectors'
 import IndexStatus from '@components/Shared/IndexStatus'
 import Loader from '@components/Shared/Loader'
 import Markup from '@components/Shared/Markup'
+import Collectors from '@components/Shared/Modal/Collectors'
 import ReferenceAlert from '@components/Shared/ReferenceAlert'
 import ReferralAlert from '@components/Shared/ReferralAlert'
 import Uniswap from '@components/Shared/Uniswap'
@@ -441,7 +441,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
         </div>
         {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
           <div className="mt-5">
-            <IndexStatus txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash} />
+            <IndexStatus txHash={writeData?.hash ?? broadcastData?.broadcast?.txHash} />
           </div>
         ) : null}
         {currentProfile && !hasCollectedByMe ? (

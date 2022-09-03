@@ -1,9 +1,10 @@
 import UserProfile from '@components/Shared/UserProfile'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { Mixpanel } from '@lib/mixpanel'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
 import React, { FC } from 'react'
 import { PUBLICATION } from 'src/tracking'
 
@@ -27,31 +28,40 @@ const SinglePublication: FC<Props> = ({
   showActions = true,
   showThread = true
 }) => {
+  const { push } = useRouter()
   const publicationType = publication?.metadata?.attributes[0]?.value
   const isMirror = publication?.__typename === 'Mirror'
+  const isFundraise = publication?.metadata?.attributes[0]?.value === 'fundraise'
   const profile = isMirror ? publication?.mirrorOf?.profile : publication?.profile
   const timestamp = isMirror ? publication?.mirrorOf?.createdAt : publication?.createdAt
 
   return (
     <article
-      className="first:rounded-t-xl last:rounded-b-xl p-5"
-      onClick={() => {
-        Mixpanel.track(PUBLICATION.OPEN)
-      }}
+      className={clsx(
+        { 'hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer': !isFundraise },
+        'first:rounded-t-xl last:rounded-b-xl p-5'
+      )}
     >
       <PublicationType publication={publication} showType={showType} showThread={showThread} />
-      <div>
+      <div
+        onClick={() => {
+          if (!isFundraise) {
+            push(`/posts/${publication?.id}`)
+            Mixpanel.track(PUBLICATION.OPEN)
+          }
+        }}
+      >
         <div className="flex justify-between pb-4 space-x-1.5">
-          <UserProfile
-            profile={
-              publicationType === 'group' && !!publication?.collectedBy?.defaultProfile
-                ? publication?.collectedBy?.defaultProfile
-                : profile
-            }
-          />
-          <Link href={`/posts/${publication?.id}`} className="text-sm text-gray-500">
-            <span>{dayjs(new Date(timestamp)).fromNow()}</span>
-          </Link>
+          <span onClick={(event) => event.stopPropagation()}>
+            <UserProfile
+              profile={
+                publicationType === 'group' && !!publication?.collectedBy?.defaultProfile
+                  ? publication?.collectedBy?.defaultProfile
+                  : profile
+              }
+            />
+          </span>
+          <span className="text-xs text-gray-500">{dayjs(new Date(timestamp)).fromNow()}</span>
         </div>
         <div className="ml-[53px]">
           {publication?.hidden ? (

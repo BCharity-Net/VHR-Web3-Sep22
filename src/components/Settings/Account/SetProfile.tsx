@@ -168,10 +168,7 @@ const SetProfile: FC = () => {
             {t('Save')}
           </Button>
           {writeData?.hash ?? broadcastData?.broadcast?.txHash ? (
-            <IndexStatus
-              txHash={writeData?.hash ? writeData?.hash : broadcastData?.broadcast?.txHash}
-              reload
-            />
+            <IndexStatus txHash={writeData?.hash ?? broadcastData?.broadcast?.txHash} reload />
           ) : null}
         </div>
       </CardBody>

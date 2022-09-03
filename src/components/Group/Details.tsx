@@ -1,5 +1,5 @@
-import Collectors from '@components/Shared/Collectors'
 import Markup from '@components/Shared/Markup'
+import Collectors from '@components/Shared/Modal/Collectors'
 import { Button } from '@components/UI/Button'
 import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'

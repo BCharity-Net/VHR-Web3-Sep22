@@ -1,14 +1,13 @@
-import { gql, useQuery } from '@apollo/client'
 import NotificationIcon from '@components/Notification/Icon'
+import useStaffMode from '@components/utils/hooks/useStaffMode'
 import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
-import isStaff from '@lib/isStaff'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import NewPostModal from '../../Publication/New/NewPostModal'
 import TranslateButton from '../TranslateButton'
@@ -17,20 +16,10 @@ import MoreNavItems from './MoreNavItems'
 import Search from './Search'
 import StaffBar from './StaffBar'
 
-const PING_QUERY = gql`
-  query Ping {
-    ping
-  }
-`
-
 const Navbar: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const staffMode = useAppPersistStore((state) => state.staffMode)
-  const { data: pingData } = useQuery(PING_QUERY, {
-    pollInterval: 3000,
-    skip: !currentProfile
-  })
+  const { allowed: staffMode } = useStaffMode()
 
   interface NavItemProps {
     url: string
@@ -82,7 +71,7 @@ const Navbar: FC = () => {
     >
       {({ open }) => (
         <>
-          {isStaff(currentProfile?.id) && staffMode && <StaffBar />}
+          {staffMode && <StaffBar />}
           <div className="container px-5 mx-auto max-w-screen-xl">
             <div className="flex relative justify-between items-center h-14 sm:h-16">
               <div className="flex justify-start items-center">
@@ -112,10 +101,14 @@ const Navbar: FC = () => {
                 </div>
               </div>
               <div className="flex gap-8 items-center">
-                {currentProfile && <NewPostModal />}
-                {currentProfile && <NotificationIcon />}
+                {currentProfile ? (
+                  <>
+                    <NewPostModal />
+                    <NotificationIcon />
+                  </>
+                ) : null}
                 <TranslateButton />
-                <MenuItems pingData={pingData} />
+                <MenuItems />
               </div>
             </div>
           </div>

@@ -6,9 +6,10 @@ import Unfollow from '@components/Shared/Unfollow'
 import ProfileStaffTool from '@components/StaffTools/Panels/Profile'
 import { Button } from '@components/UI/Button'
 import { Tooltip } from '@components/UI/Tooltip'
+import useStaffMode from '@components/utils/hooks/useStaffMode'
 import { Profile } from '@generated/types'
 import { CogIcon, HashtagIcon, LocationMarkerIcon } from '@heroicons/react/outline'
-import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/solid'
+import { BadgeCheckIcon } from '@heroicons/react/solid'
 import formatAddress from '@lib/formatAddress'
 import getAttribute from '@lib/getAttribute'
 import getAvatar from '@lib/getAvatar'
@@ -19,7 +20,7 @@ import { useTheme } from 'next-themes'
 import React, { FC, ReactElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { STATIC_ASSETS } from 'src/constants'
-import { useAppPersistStore, useAppStore } from 'src/store/app'
+import { useAppStore } from 'src/store/app'
 
 import Badges from './Badges'
 import Followerings from './Followerings'
@@ -32,8 +33,8 @@ interface Props {
 const Details: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const staffMode = useAppPersistStore((state) => state.staffMode)
   const [following, setFollowing] = useState(profile?.isFollowedByMe)
+  const { allowed: staffMode } = useStaffMode()
   const { resolvedTheme } = useTheme()
 
   const hasOnChainIdentity = profile?.onChainIdentity?.proofOfHumanity || profile?.onChainIdentity?.ens?.name
@@ -64,11 +65,6 @@ const Details: FC<Props> = ({ profile }) => {
           {isVerified(profile?.id) && (
             <Tooltip content="Verified">
               <BadgeCheckIcon className="w-6 h-6 text-brand" />
-            </Tooltip>
-          )}
-          {isStaff(profile?.id) && (
-            <Tooltip content="Staff">
-              <ShieldCheckIcon className="w-6 h-6 text-green-500" />
             </Tooltip>
           )}
         </div>

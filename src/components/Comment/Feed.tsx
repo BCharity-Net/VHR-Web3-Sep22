@@ -80,8 +80,8 @@ const Feed: FC<Props> = ({ publication, type = 'comment', onlyFollowers = false,
 
   return (
     <>
-      {currentProfile &&
-        (isFollowing || !onlyFollowers ? (
+      {currentProfile ? (
+        isFollowing || !onlyFollowers ? (
           <NewComment publication={publication} type={type} />
         ) : (
           <ReferenceAlert
@@ -89,7 +89,8 @@ const Feed: FC<Props> = ({ publication, type = 'comment', onlyFollowers = false,
             isSuperFollow={publication?.profile?.followModule?.__typename === 'FeeFollowModuleSettings'}
             action="comment"
           />
-        ))}
+        )
+      ) : null}
       {loading && <PublicationsShimmer />}
       {data?.publications?.items?.length === 0 && (
         <EmptyState
