@@ -8,8 +8,8 @@ import {
   PencilAltIcon,
   PhotographIcon
 } from '@heroicons/react/outline'
+import { Hog } from '@lib/hog'
 import isVerified from '@lib/isVerified'
-import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
 import clsx from 'clsx'
 import React, { Dispatch, FC, ReactNode, useEffect, useState } from 'react'
@@ -61,7 +61,7 @@ const FeedType: FC<Props> = ({ stats, address, id, setFeedType, feedType, profil
       type="button"
       onClick={() => {
         setFeedType(type)
-        Mixpanel.track(`Switch to ${type.toLowerCase()} tab in explore`)
+        Hog.track(`Switch to ${type.toLowerCase()} tab in explore`)
       }}
       className={clsx(
         {

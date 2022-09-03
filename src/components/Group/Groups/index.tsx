@@ -4,7 +4,7 @@ import { PageLoading } from '@components/UI/PageLoading'
 import Seo from '@components/utils/Seo'
 import { GroupFields } from '@gql/GroupFields'
 import { ChartBarIcon, FireIcon, SparklesIcon } from '@heroicons/react/outline'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import { NextPage } from 'next'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -47,7 +47,7 @@ const GROUP_QUERY = gql`
 
 const Groups: NextPage = () => {
   useEffect(() => {
-    Mixpanel.track(PAGEVIEW.GROUPS)
+    Hog.track(PAGEVIEW.GROUPS)
   }, [])
 
   const { t } = useTranslation('common')

@@ -21,8 +21,8 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, FEE_DATA_TYPE, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
+import { Hog } from '@lib/hog'
 import Logger from '@lib/logger'
-import { Mixpanel } from '@lib/mixpanel'
 import splitSignature from '@lib/splitSignature'
 import trimify from '@lib/trimify'
 import uploadToArweave from '@lib/uploadToArweave'
@@ -40,7 +40,8 @@ import {
   RELAY_ON,
   SIGN_WALLET,
   VHR_TO_DAI_PRICE,
-  VHR_TOKEN} from 'src/constants'
+  VHR_TOKEN
+} from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { v4 as uuid } from 'uuid'
 import { useAccount, useBalance, useContractRead, useContractWrite, useSignTypedData } from 'wagmi'
@@ -350,7 +351,7 @@ const Verify: FC<Props> = ({ publication }) => {
 
   const onCompleted = () => {
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track('hours.collect')
+    Hog.track('hours.collect')
   }
   const {
     data: collectWriteData,

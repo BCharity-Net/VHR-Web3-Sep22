@@ -20,8 +20,8 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, FEE_DATA_TYPE, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
+import { Hog } from '@lib/hog'
 import Logger from '@lib/logger'
-import { Mixpanel } from '@lib/mixpanel'
 import splitSignature from '@lib/splitSignature'
 import uploadToArweave from '@lib/uploadToArweave'
 import { ethers } from 'ethers'
@@ -34,7 +34,8 @@ import {
   LENSHUB_PROXY,
   RELAY_ON,
   SIGN_WALLET,
-  VHR_TOKEN} from 'src/constants'
+  VHR_TOKEN
+} from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { v4 as uuid } from 'uuid'
 import { useAccount, useContractWrite, useSignTypedData } from 'wagmi'
@@ -313,7 +314,7 @@ const Apply: FC<Props> = ({ publication }) => {
 
   const onCompleted = () => {
     toast.success('Transaction submitted successfully!')
-    Mixpanel.track('oppos.collect')
+    Hog.track('oppos.collect')
   }
   const {
     data: collectWriteData,

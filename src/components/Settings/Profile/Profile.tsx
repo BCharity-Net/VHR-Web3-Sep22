@@ -21,9 +21,8 @@ import getAttribute from '@lib/getAttribute'
 import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import hasPrideLogo from '@lib/hasPrideLogo'
+import { Hog } from '@lib/hog'
 import imagekitURL from '@lib/imagekitURL'
-import isBeta from '@lib/isBeta'
-import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
@@ -47,7 +46,6 @@ const Profile: FC<Props> = ({ profile }) => {
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const [beta, setBeta] = useState(isBeta(profile))
   const [pride, setPride] = useState(hasPrideLogo(profile))
   const [cover, setCover] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -55,7 +53,7 @@ const Profile: FC<Props> = ({ profile }) => {
 
   const onCompleted = () => {
     toast.success('Profile updated successfully!')
-    Mixpanel.track(SETTINGS.PROFILE.UPDATE)
+    Hog.track(SETTINGS.PROFILE.UPDATE)
   }
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
@@ -201,11 +199,6 @@ const Profile: FC<Props> = ({ profile }) => {
         },
         {
           traitType: 'boolean',
-          key: 'isBeta',
-          value: beta
-        },
-        {
-          traitType: 'boolean',
           key: 'hasPrideLogo',
           value: pride
         },
@@ -284,16 +277,6 @@ const Profile: FC<Props> = ({ profile }) => {
               <div className="flex items-center space-x-3">
                 <ChooseFile id="cover" onChange={(evt: ChangeEvent<HTMLInputElement>) => handleUpload(evt)} />
                 {uploading && <Spinner size="sm" />}
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="label">{t('Enroll beta')}</div>
-            <div className="flex items-center space-x-2">
-              <Toggle on={beta} setOn={setBeta} />
-              <div>
-                {t('Enroll beta')}
-                {APP_NAME} {t('Beta')}
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { GridItemEight, GridItemFour, GridLayout } from '@components/GridLayout'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import Seo from '@components/utils/Seo'
 import { GroupFields } from '@gql/GroupFields'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import { NextPage } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -35,7 +35,7 @@ const ViewGroup: NextPage = () => {
     query: { id }
   } = useRouter()
   useEffect(() => {
-    Mixpanel.track(PAGEVIEW.GROUP)
+    Hog.track(PAGEVIEW.GROUP)
   }, [])
   const { data, loading, error } = useQuery(GROUP_QUERY, {
     variables: { request: { publicationId: id } },

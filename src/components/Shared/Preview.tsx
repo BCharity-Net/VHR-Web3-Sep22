@@ -1,6 +1,6 @@
 import { Tooltip } from '@components/UI/Tooltip'
 import { EyeIcon } from '@heroicons/react/outline'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import { motion } from 'framer-motion'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +19,7 @@ const Preview: FC = () => {
         type="button"
         onClick={() => {
           setPreviewPublication(!previewPublication)
-          Mixpanel.track(PUBLICATION.NEW.MARKDOWN_PREVIEW)
+          Hog.track(PUBLICATION.NEW.MARKDOWN_PREVIEW)
         }}
         aria-label={t('Choose attachment')}
       >

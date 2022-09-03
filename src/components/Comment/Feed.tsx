@@ -9,7 +9,7 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { PaginatedResultInfo } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
@@ -74,7 +74,7 @@ const Feed: FC<Props> = ({ publication, type = 'comment', onlyFollowers = false,
           profileId: currentProfile?.id ?? null
         }
       })
-      Mixpanel.track(type === 'comment' ? PAGINATION.COMMENT_FEED : PAGINATION.GROUP_FEED)
+      Hog.track(type === 'comment' ? PAGINATION.COMMENT_FEED : PAGINATION.GROUP_FEED)
     }
   })
 

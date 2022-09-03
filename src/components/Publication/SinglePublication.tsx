@@ -1,6 +1,6 @@
 import UserProfile from '@components/Shared/UserProfile'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -47,7 +47,7 @@ const SinglePublication: FC<Props> = ({
         onClick={() => {
           if (!isFundraise) {
             push(`/posts/${publication?.id}`)
-            Mixpanel.track(PUBLICATION.OPEN)
+            Hog.track(PUBLICATION.OPEN)
           }
         }}
       >

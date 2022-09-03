@@ -7,7 +7,7 @@ import { Group } from '@generated/bcharitytypes'
 import { CreateCollectBroadcastItemResult, Mutation } from '@generated/types'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import React, { Dispatch, FC } from 'react'
@@ -63,7 +63,7 @@ const Join: FC<Props> = ({ group, setJoined, showJoin = true }) => {
   const onCompleted = () => {
     setJoined(true)
     toast.success('Joined successfully!')
-    Mixpanel.track(GROUP.JOIN)
+    Hog.track(GROUP.JOIN)
   }
 
   const { isLoading: writeLoading, write } = useContractWrite({

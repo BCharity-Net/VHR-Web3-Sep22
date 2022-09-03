@@ -5,8 +5,8 @@ import { Modal } from '@components/UI/Modal'
 import { BCharityPublication } from '@generated/bcharitytypes'
 import { ClockIcon, CogIcon, HashtagIcon, PencilAltIcon, UsersIcon } from '@heroicons/react/outline'
 import getIPFSLink from '@lib/getIPFSLink'
+import { Hog } from '@lib/hog'
 import imagekitURL from '@lib/imagekitURL'
-import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -85,7 +85,7 @@ const Details: FC<Props> = ({ group }) => {
                 icon={<PencilAltIcon className="w-5 h-5" />}
                 onClick={() => {
                   setShowSettingsModal(!showSettingsModal)
-                  Mixpanel.track(GROUP.SETTINGS.DELETE)
+                  Hog.track(GROUP.SETTINGS.DELETE)
                 }}
               />
               <Modal
@@ -106,7 +106,7 @@ const Details: FC<Props> = ({ group }) => {
               <button
                 type="button"
                 onClick={() => {
-                  Mixpanel.track(GROUP.OPEN_MEMBERS)
+                  Hog.track(GROUP.OPEN_MEMBERS)
                   setShowMembersModal(!showMembersModal)
                 }}
               >

@@ -14,7 +14,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import { useRouter } from 'next/router'
 import React, { FC, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -48,7 +48,7 @@ const Report: FC = () => {
   const [subReason, setSubReason] = useState('')
 
   useEffect(() => {
-    Mixpanel.track(PAGEVIEW.REPORT)
+    Hog.track('Pageview', { path: PAGEVIEW.REPORT })
   }, [])
 
   const { data, loading, error } = useQuery(PUBLICATION_QUERY, {
@@ -67,7 +67,7 @@ const Report: FC = () => {
     CREATE_REPORT_PUBLICATION_MUTATION,
     {
       onCompleted: () => {
-        Mixpanel.track(PUBLICATION.REPORT)
+        Hog.track(PUBLICATION.REPORT)
       }
     }
   )

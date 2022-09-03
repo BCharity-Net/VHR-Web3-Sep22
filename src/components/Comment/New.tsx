@@ -21,7 +21,7 @@ import { ChatAlt2Icon, PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
 import getTags from '@lib/getTags'
-import { Mixpanel } from '@lib/mixpanel'
+import { Hog } from '@lib/hog'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import trimify from '@lib/trimify'
@@ -82,7 +82,7 @@ const NewComment: FC<Props> = ({ setShowModal, hideCard = false, publication, ty
     setAttachments([])
     setSelectedModule(defaultModuleData)
     setFeeData(defaultFeeData)
-    Mixpanel.track(COMMENT.NEW)
+    Hog.track(COMMENT.NEW)
   }
 
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })

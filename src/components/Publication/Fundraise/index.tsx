@@ -245,7 +245,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   //     onCompleted,
   //     onError: (error) => {
   //       toast.error(error.message ?? ERROR_MESSAGE)
-  //       Mixpanel.track(COMMENT.NEW, {
+  //       Hog.track(COMMENT.NEW, {
   //         result: 'dispatcher_error',
   //         error: error?.message
   //       });
