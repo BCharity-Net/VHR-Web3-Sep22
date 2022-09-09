@@ -46,7 +46,7 @@
     "jssoup": "^0.0.15",
     "jwt-decode": "^3.1.2",
     "match-sorter": "^6.3.1",
-    "next": "^12.2.6-canary.8",
+    "next": "^12.3.0",
     "next-axiom": "^0.12.1",
     "next-themes": "^0.2.0",
     "next-transpile-modules": "^9.0.0",
