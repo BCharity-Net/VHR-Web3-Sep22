@@ -2,7 +2,6 @@ import { LensHubProxy } from '@abis/LensHubProxy'
 import { useMutation } from '@apollo/client'
 import Attachments from '@components/Shared/Attachments'
 import Markup from '@components/Shared/Markup'
-import PubIndexStatus from '@components/Shared/PubIndexStatus'
 import { Button } from '@components/UI/Button'
 import { Card } from '@components/UI/Card'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
@@ -21,19 +20,19 @@ import { PencilAltIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
 import getTags from '@lib/getTags'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import trimify from '@lib/trimify'
 import uploadToArweave from '@lib/uploadToArweave'
 import dynamic from 'next/dynamic'
-import { Dispatch, FC, useState } from 'react'
+import { FC, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME, LENSHUB_PROXY, RELAY_ON, SIGN_WALLET } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { useCollectModuleStore } from 'src/store/collectmodule'
-import { usePublicationStore } from 'src/store/publication'
+import { usePublicationPersistStore, usePublicationStore } from 'src/store/publication'
 import { POST } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
@@ -55,11 +54,10 @@ const Preview = dynamic(() => import('../../Shared/Preview'), {
 })
 
 interface Props {
-  setShowModal?: Dispatch<boolean>
   hideCard?: boolean
 }
 
-const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
+const NewPost: FC<Props> = ({ hideCard = false }) => {
   const { t } = useTranslation('common')
   const userSigNonce = useAppStore((state) => state.userSigNonce)
   const setUserSigNonce = useAppStore((state) => state.setUserSigNonce)
@@ -68,6 +66,8 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
   const setPublicationContent = usePublicationStore((state) => state.setPublicationContent)
   const previewPublication = usePublicationStore((state) => state.previewPublication)
   const setPreviewPublication = usePublicationStore((state) => state.setPreviewPublication)
+  const txnQueue = usePublicationPersistStore((state) => state.txnQueue)
+  const setTxnQueue = usePublicationPersistStore((state) => state.setTxnQueue)
   const selectedModule = useCollectModuleStore((state) => state.selectedModule)
   const setSelectedModule = useCollectModuleStore((state) => state.setSelectedModule)
   const feeData = useCollectModuleStore((state) => state.feeData)
@@ -84,10 +84,18 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     setAttachments([])
     setSelectedModule(defaultModuleData)
     setFeeData(defaultFeeData)
-    Hog.track(POST.NEW)
+    Mixpanel.track(POST.NEW)
+  }
+  const generateOptimisticPost = (txHash: string) => {
+    return {
+      id: uuid(),
+      type: 'NEW_POST',
+      txHash,
+      content: publicationContent,
+      attachments
+    }
   }
   const {
-    data,
     error,
     isLoading: writeLoading,
     write
@@ -96,11 +104,19 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     contractInterface: LensHubProxy,
     functionName: 'postWithSig',
     mode: 'recklesslyUnprepared',
-    onSuccess: onCompleted,
+    onSuccess: ({ hash }) => {
+      onCompleted()
+      setTxnQueue([generateOptimisticPost(hash), ...txnQueue])
+    },
     onError
   })
 
-  const { broadcast, data: broadcastData, loading: broadcastLoading } = useBroadcast({ onCompleted })
+  const { broadcast, loading: broadcastLoading } = useBroadcast({
+    onCompleted: (data) => {
+      onCompleted()
+      setTxnQueue([generateOptimisticPost(data?.broadcast?.txHash), ...txnQueue])
+    }
+  })
   const [createPostTypedData, { loading: typedDataLoading }] = useMutation<Mutation>(
     CREATE_POST_TYPED_DATA_MUTATION,
     {
@@ -150,9 +166,15 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
     }
   )
 
-  const [createPostViaDispatcher, { data: dispatcherData, loading: dispatcherLoading }] = useMutation(
+  const [createPostViaDispatcher, { loading: dispatcherLoading }] = useMutation(
     CREATE_POST_VIA_DISPATHCER_MUTATION,
-    { onCompleted, onError }
+    {
+      onCompleted: (data) => {
+        onCompleted()
+        setTxnQueue([generateOptimisticPost(data?.createPostViaDispatcher?.txHash), ...txnQueue])
+      },
+      onError
+    }
   )
 
   const createPost = async () => {
@@ -256,16 +278,8 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
               <SelectReferenceModule onlyFollowers={onlyFollowers} setOnlyFollowers={setOnlyFollowers} />
               {publicationContent && <Preview />}
             </div>
-            <div className="flex items-center pt-2 ml-auto space-x-2 sm:pt-0">
-              {data?.hash ?? broadcastData?.broadcast?.txHash ? (
-                <PubIndexStatus
-                  setShowModal={setShowModal}
-                  type="Post"
-                  txHash={data?.hash ? data?.hash : broadcastData?.broadcast?.txHash}
-                />
-              ) : null}
+            <div className="ml-auto pt-2 sm:pt-0">
               <Button
-                className="ml-auto"
                 disabled={isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading}
                 icon={
                   isUploading || typedDataLoading || signLoading || writeLoading || broadcastLoading ? (
@@ -276,15 +290,7 @@ const NewPost: FC<Props> = ({ setShowModal, hideCard = false }) => {
                 }
                 onClick={createPost}
               >
-                {isUploading
-                  ? t('Uploading')
-                  : typedDataLoading
-                  ? t('Generating post')
-                  : signLoading
-                  ? t('Sign1')
-                  : writeLoading || broadcastLoading
-                  ? t('Send')
-                  : t('Post')}
+                {t('Post')}
               </Button>
             </div>
           </div>

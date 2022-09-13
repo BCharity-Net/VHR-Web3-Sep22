@@ -23,9 +23,9 @@ import { PlusIcon } from '@heroicons/react/outline'
 import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
-import { Hog } from '@lib/hog'
 import imagekitURL from '@lib/imagekitURL'
 import isVerified from '@lib/isVerified'
+import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
@@ -93,11 +93,11 @@ const NewFundraise: NextPage = () => {
   })
 
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.CREATE_FUNDRAISE })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.CREATE_FUNDRAISE })
   }, [])
 
   const onCompleted = () => {
-    Hog.track(FUNDRAISE.NEW)
+    Mixpanel.track(FUNDRAISE.NEW)
   }
 
   const {

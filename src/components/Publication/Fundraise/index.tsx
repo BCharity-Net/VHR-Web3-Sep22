@@ -23,6 +23,7 @@ import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import getTokenImage from '@lib/getTokenImage'
 import imagekitURL from '@lib/imagekitURL'
+import { Mixpanel } from '@lib/mixpanel'
 import uploadToArweave from '@lib/uploadToArweave'
 import clsx from 'clsx'
 import { splitSignature } from 'ethers/lib/utils'
@@ -39,6 +40,7 @@ import {
   STATIC_ASSETS
 } from 'src/constants'
 import { useAppStore } from 'src/store/app'
+import { FUNDRAISE } from 'src/tracking'
 import { v4 as uuid } from 'uuid'
 import { useContractWrite, useSignTypedData } from 'wagmi'
 
@@ -245,7 +247,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   //     onCompleted,
   //     onError: (error) => {
   //       toast.error(error.message ?? ERROR_MESSAGE)
-  //       Hog.track(COMMENT.NEW, {
+  //       Mixpanel.track(COMMENT.NEW, {
   //         result: 'dispatcher_error',
   //         error: error?.message
   //       });
@@ -376,7 +378,10 @@ const Fundraise: FC<Props> = ({ fund }) => {
                   <button
                     type="button"
                     className="text-sm"
-                    onClick={() => setShowFundersModal(!showFundersModal)}
+                    onClick={() => {
+                      setShowFundersModal(!showFundersModal)
+                      Mixpanel.track(FUNDRAISE.OPEN_FUNDERS)
+                    }}
                   >
                     <Badge
                       title={

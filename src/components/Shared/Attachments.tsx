@@ -1,6 +1,7 @@
+import { Button } from '@components/UI/Button'
 import { BCharityAttachment } from '@generated/bcharitytypes'
 import { MediaSet } from '@generated/types'
-import { XIcon } from '@heroicons/react/outline'
+import { ExternalLinkIcon, XIcon } from '@heroicons/react/outline'
 import getIPFSLink from '@lib/getIPFSLink'
 import imagekitURL from '@lib/imagekitURL'
 import clsx from 'clsx'
@@ -34,9 +35,10 @@ interface Props {
   attachments: any
   setAttachments?: any
   isNew?: boolean
+  hideDelete?: boolean
 }
 
-const Attachments: FC<Props> = ({ attachments, setAttachments, isNew = false }) => {
+const Attachments: FC<Props> = ({ attachments, setAttachments, isNew = false, hideDelete = false }) => {
   const removeAttachment = (attachment: any) => {
     const arr = attachments
     setAttachments(
@@ -66,7 +68,18 @@ const Attachments: FC<Props> = ({ attachments, setAttachments, isNew = false }) 
               event.stopPropagation()
             }}
           >
-            {type === 'video/mp4' ? (
+            {type === 'image/svg+xml' ? (
+              <Button
+                className="text-sm"
+                variant="primary"
+                icon={<ExternalLinkIcon className="h-4 w-4" />}
+                onClick={() => {
+                  window.open(url, '_blank')
+                }}
+              >
+                <span>Open Image in new tab</span>
+              </Button>
+            ) : type === 'video/mp4' ? (
               <Video src={url} />
             ) : (
               <img
@@ -77,7 +90,7 @@ const Attachments: FC<Props> = ({ attachments, setAttachments, isNew = false }) 
                 alt={imagekitURL(url, 'attachment')}
               />
             )}
-            {isNew && (
+            {isNew && !hideDelete && (
               <div className="m-3">
                 <button
                   type="button"

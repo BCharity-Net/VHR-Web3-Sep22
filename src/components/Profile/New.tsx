@@ -3,7 +3,7 @@ import Signup from '@components/Shared/Navbar/Login/New'
 import SettingsHelper from '@components/Shared/SettingsHelper'
 import { Card, CardBody } from '@components/UI/Card'
 import Seo from '@components/utils/Seo'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { NextPage } from 'next'
 import React, { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -17,7 +17,7 @@ const NewProfile: NextPage = () => {
   const { t } = useTranslation('common')
 
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.CREATE_PROFILE })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.CREATE_PROFILE })
   }, [])
 
   if (!currentProfile) {

@@ -1,4 +1,5 @@
 import { gql, useQuery } from '@apollo/client'
+import QueuedPublication from '@components/Publication/QueuedPublication'
 import SinglePublication from '@components/Publication/SinglePublication'
 import PublicationsShimmer from '@components/Shared/Shimmer/PublicationsShimmer'
 import { Card } from '@components/UI/Card'
@@ -10,11 +11,12 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from 'src/store/app'
+import { usePublicationPersistStore } from 'src/store/publication'
 import { PAGINATION } from 'src/tracking'
 
 const HOME_FEED_QUERY = gql`
@@ -49,6 +51,7 @@ const HOME_FEED_QUERY = gql`
 const Feed: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
+  const txnQueue = usePublicationPersistStore((state) => state.txnQueue)
   const { data, loading, error, fetchMore } = useQuery(HOME_FEED_QUERY, {
     variables: {
       request: { profileId: currentProfile?.id, limit: 10 },
@@ -71,7 +74,7 @@ const Feed: FC = () => {
           profileId: currentProfile?.id ?? null
         }
       })
-      Hog.track(PAGINATION.HOME_FEED)
+      Mixpanel.track(PAGINATION.HOME_FEED)
     }
   })
 
@@ -88,6 +91,14 @@ const Feed: FC = () => {
       {!error && !loading && data?.timeline?.items?.length !== 0 && (
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
+            {txnQueue.map(
+              (txn) =>
+                txn?.type === 'NEW_POST' && (
+                  <div key={txn.id}>
+                    <QueuedPublication txn={txn} />
+                  </div>
+                )
+            )}
             {data?.timeline?.items?.map((post: BCharityPublication, index: number) => (
               <SinglePublication key={`${post?.id}_${index}`} publication={post} />
             ))}

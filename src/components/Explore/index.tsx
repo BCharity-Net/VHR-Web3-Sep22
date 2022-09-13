@@ -4,7 +4,7 @@ import Trending from '@components/Home/Trending'
 import Footer from '@components/Shared/Footer'
 import Seo from '@components/utils/Seo'
 import { PublicationSortCriteria } from '@generated/types'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
@@ -22,13 +22,16 @@ const Explore: NextPage = () => {
   } = useRouter()
   const currentProfile = useAppStore((state) => state.currentProfile)
   const [feedType, setFeedType] = useState(
-    type && ['top_commented', 'top_collected', 'latest'].includes(type as string)
+    type &&
+      ['curated_profiles', 'top_commented', 'top_collected', 'top_mirrored', 'latest'].includes(
+        type as string
+      )
       ? type.toString().toUpperCase()
-      : PublicationSortCriteria.TopCommented
+      : PublicationSortCriteria.CuratedProfiles
   )
 
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.EXPLORE })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.EXPLORE })
   }, [])
 
   return (

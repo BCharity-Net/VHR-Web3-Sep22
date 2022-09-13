@@ -83,8 +83,14 @@ const Details: FC<Props> = ({ profile }) => {
       </div>
       <div className="space-y-5">
         <Followerings profile={profile} />
-        <div className="flex items-center space-x-2">
-          {followType !== 'RevertFollowModuleSettings' ? (
+        <div>
+          {currentProfile?.id === profile?.id ? (
+            <Link href="/settings">
+              <Button variant="secondary" icon={<CogIcon className="w-5 h-5" />} outline>
+                Edit Profile
+              </Button>
+            </Link>
+          ) : followType !== 'RevertFollowModuleSettings' ? (
             following ? (
               <div className="flex space-x-2">
                 <Unfollow profile={profile} setFollowing={setFollowing} showText />
@@ -98,11 +104,6 @@ const Details: FC<Props> = ({ profile }) => {
               <Follow profile={profile} setFollowing={setFollowing} showText />
             )
           ) : null}
-          {currentProfile?.id === profile?.id && (
-            <Link href="/settings">
-              <Button variant="secondary" className="!py-1.5" icon={<CogIcon className="w-5 h-5" />} />
-            </Link>
-          )}
         </div>
         {profile?.bio && (
           <div className="mr-0 sm:mr-10 leading-md linkify text-md">

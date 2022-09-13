@@ -20,8 +20,8 @@ export const GIT_COMMIT_SHA = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.sli
 // Misc
 export const CONTACT_EMAIL = 'admin@bcharity.net'
 export const RELAY_ON = process.env.NEXT_PUBLIC_RELAY_ON === 'true'
-export const POSTHOG_TOKEN = process.env.NEXT_PUBLIC_POSTHOG_TOKEN ?? ''
-export const HOG_ENDPOINT = 'https://hog.bcharity.net'
+export const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN ?? ''
+export const MIXPANEL_API_HOST = 'https://utils.lenster.xyz/collect'
 export const CATEGORIES = [
   'Education',
   'Environment',
@@ -56,10 +56,8 @@ export const POLYGONSCAN_URL = IS_MAINNET ? 'https://polygonscan.com' : 'https:/
 export const VHR_TOP_HOLDERS_URL =
   'https://mumbai.polygonscan.com/token/tokenholderchart/0x28ee241ab245699968f2980d3d1b1d23120ab8be'
 export const RARIBLE_URL = IS_MAINNET ? 'https://rarible.com' : 'https://rinkeby.rarible.com'
-export const IMAGEKIT_URL_PROD = 'https://ik.imagekit.io/gznuz6k7b/'
-export const IMAGEKIT_URL_DEV = 'https://ik.imagekit.io/ivzeeb1pg/'
 export const ARWEAVE_GATEWAY = 'https://arweave.net'
-export const IMAGEKIT_URL = IS_PRODUCTION ? IMAGEKIT_URL_PROD : IMAGEKIT_URL_DEV
+export const IMAGEKIT_URL = `https://ik.imagekit.io/${process.env.NEXT_PUBLIC_IMAGEKIT_ID}`
 export const IPFS_GATEWAY = 'https://lens.infura-ipfs.io/ipfs/'
 
 // Web3

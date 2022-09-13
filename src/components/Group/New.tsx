@@ -16,7 +16,7 @@ import { CreatePostBroadcastItemResult, Mutation } from '@generated/types'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
@@ -54,11 +54,11 @@ const NewGroup: NextPage = () => {
   })
 
   useEffect(() => {
-    Hog.track(PAGEVIEW.CREATE_GROUP)
+    Mixpanel.track(PAGEVIEW.CREATE_GROUP)
   }, [])
 
   const onCompleted = () => {
-    Hog.track(GROUP.NEW)
+    Mixpanel.track(GROUP.NEW)
   }
 
   const {

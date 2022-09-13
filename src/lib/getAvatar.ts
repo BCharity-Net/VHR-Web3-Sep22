@@ -1,6 +1,7 @@
-import { Profile } from '@generated/types'
+import { ZERO_ADDRESS } from 'src/constants'
 
 import getIPFSLink from './getIPFSLink'
+import getStampFyiURL from './getStampFyiURL'
 import imagekitURL from './imagekitURL'
 
 /**
@@ -8,14 +9,12 @@ import imagekitURL from './imagekitURL'
  * @param profile - Profile object
  * @returns avatar image url
  */
-const getAvatar = (profile: Profile): string => {
+const getAvatar = (profile: any): string => {
   return imagekitURL(
     getIPFSLink(
-      // @ts-ignore
       profile?.picture?.original?.url ??
-        // @ts-ignore
         profile?.picture?.uri ??
-        `https://avatar.tobi.sh/${profile?.ownedBy}_${profile?.handle}.png`
+        getStampFyiURL(profile?.ownedBy ?? ZERO_ADDRESS)
     ),
     'avatar'
   )

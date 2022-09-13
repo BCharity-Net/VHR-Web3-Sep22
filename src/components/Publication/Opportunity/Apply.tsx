@@ -20,8 +20,8 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/outline'
 import { defaultFeeData, defaultModuleData, FEE_DATA_TYPE, getModule } from '@lib/getModule'
 import getSignature from '@lib/getSignature'
-import { Hog } from '@lib/hog'
 import Logger from '@lib/logger'
+import { Mixpanel } from '@lib/mixpanel'
 import splitSignature from '@lib/splitSignature'
 import uploadToArweave from '@lib/uploadToArweave'
 import { ethers } from 'ethers'
@@ -314,7 +314,7 @@ const Apply: FC<Props> = ({ publication }) => {
 
   const onCompleted = () => {
     toast.success('Transaction submitted successfully!')
-    Hog.track('oppos.collect')
+    Mixpanel.track('oppos.collect')
   }
   const {
     data: collectWriteData,

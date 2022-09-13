@@ -1,14 +1,12 @@
 /* eslint-disable no-unused-vars */
-import { BCharityPublication } from '@generated/bcharitytypes'
 import create from 'zustand'
+import { persist } from 'zustand/middleware'
 
 interface PublicationState {
   showNewPostModal: boolean
   setShowNewPostModal: (showNewPostModal: boolean) => void
   showShareModal: boolean
   setShowShareModal: (showShareModal: boolean) => void
-  parentPub: BCharityPublication | null
-  setParentPub: (parentPub: BCharityPublication | null) => void
   publicationContent: string
   setPublicationContent: (publicationContent: string) => void
   previewPublication: boolean
@@ -20,10 +18,23 @@ export const usePublicationStore = create<PublicationState>((set) => ({
   setShowNewPostModal: (showNewPostModal) => set(() => ({ showNewPostModal })),
   showShareModal: false,
   setShowShareModal: (showShareModal) => set(() => ({ showShareModal })),
-  parentPub: null,
-  setParentPub: (parentPub) => set(() => ({ parentPub })),
   publicationContent: '',
   setPublicationContent: (publicationContent) => set(() => ({ publicationContent })),
   previewPublication: false,
   setPreviewPublication: (previewPublication) => set(() => ({ previewPublication }))
 }))
+
+interface PublicationPersistState {
+  txnQueue: any[]
+  setTxnQueue: (txnQueue: any[]) => void
+}
+
+export const usePublicationPersistStore = create(
+  persist<PublicationPersistState>(
+    (set) => ({
+      txnQueue: [],
+      setTxnQueue: (txnQueue) => set(() => ({ txnQueue }))
+    }),
+    { name: 'publication.store' }
+  )
+)

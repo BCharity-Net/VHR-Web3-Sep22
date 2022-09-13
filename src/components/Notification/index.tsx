@@ -1,6 +1,6 @@
 import Seo from '@components/utils/Seo'
 import { LightningBoltIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { APP_NAME } from 'src/constants'
@@ -15,7 +15,7 @@ const Notification: FC = () => {
   const currentProfile = useAppStore((state) => state.currentProfile)
 
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.NOTIFICATION })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.NOTIFICATION })
   }, [])
 
   if (!currentProfile) {

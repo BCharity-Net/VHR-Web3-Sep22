@@ -5,7 +5,7 @@ import { WarningMessage } from '@components/UI/WarningMessage'
 import { Group } from '@generated/bcharitytypes'
 import { Mutation } from '@generated/types'
 import { TrashIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { useRouter } from 'next/router'
 import React, { FC } from 'react'
 import { GROUP } from 'src/tracking'
@@ -18,7 +18,7 @@ const Settings: FC<Props> = ({ group }) => {
   const { push } = useRouter()
   const [hidePost] = useMutation<Mutation>(HIDE_POST_MUTATION, {
     onCompleted: () => {
-      Hog.track(GROUP.SETTINGS.DELETE)
+      Mixpanel.track(GROUP.SETTINGS.DELETE)
       push('/')
     }
   })

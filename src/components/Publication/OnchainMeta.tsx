@@ -29,7 +29,7 @@ interface Props {
 const OnchainMeta: FC<Props> = ({ publication }) => {
   const hash = publication.onChainContentURI.split('/').pop()
   const isArweaveHash = hash?.length === 43
-  const isIPFSHash = hash?.length === 46
+  const isIPFSHash = hash?.length === 46 || hash?.length === 59
 
   if (!isArweaveHash && !isIPFSHash && !publication?.collectNftAddress) {
     return null
@@ -41,7 +41,7 @@ const OnchainMeta: FC<Props> = ({ publication }) => {
         {isArweaveHash ? (
           <Meta name="ARWEAVE TRANSACTION" uri={`https://v2.viewblock.io/arweave/tx/${hash}`} hash={hash} />
         ) : null}
-        {isIPFSHash ? <Meta name="IPFS TRANSACTION" uri={`${IPFS_GATEWAY}/${hash}`} hash={hash} /> : null}
+        {isIPFSHash ? <Meta name="IPFS TRANSACTION" uri={`${IPFS_GATEWAY}${hash}`} hash={hash} /> : null}
         {publication?.collectNftAddress ? (
           <Meta
             name="NFT ADDRESS"

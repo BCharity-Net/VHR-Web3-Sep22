@@ -8,7 +8,7 @@ import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { MetadataFields } from '@gql/MetadataFields'
 import { ProfileFields } from '@gql/ProfileFields'
 import { MailIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +19,7 @@ import NotificationShimmer from './Shimmer'
 import CollectNotification from './Type/CollectNotification'
 import CommentNotification from './Type/CommentNotification'
 import FollowerNotification from './Type/FollowerNotification'
+import LikeNotification from './Type/LikeNotification'
 import MentionNotification from './Type/MentionNotification'
 import MirrorNotification from './Type/MirrorNotification'
 
@@ -53,6 +54,33 @@ const NOTIFICATIONS_QUERY = gql`
               profile {
                 ...ProfileFields
               }
+              metadata {
+                content
+              }
+            }
+          }
+          createdAt
+        }
+        ... on NewReactionNotification {
+          notificationId
+          profile {
+            ...ProfileFields
+          }
+          publication {
+            ... on Post {
+              id
+              metadata {
+                content
+              }
+            }
+            ... on Comment {
+              id
+              metadata {
+                content
+              }
+            }
+            ... on Mirror {
+              id
               metadata {
                 content
               }
@@ -175,7 +203,7 @@ const List: FC = () => {
           }
         }
       })
-      Hog.track(PAGINATION.NOTIFICATION_FEED)
+      Mixpanel.track(PAGINATION.NOTIFICATION_FEED)
     }
   })
 
@@ -210,13 +238,16 @@ const List: FC = () => {
 
   return (
     <Card className="divide-y dark:divide-gray-700">
-      {data?.notifications?.items?.map((notification: Notification) => (
-        <div key={notification?.notificationId} className="p-5">
+      {data?.notifications?.items?.map((notification: Notification, index: number) => (
+        <div key={`${notification?.notificationId}_${index}`} className="p-5">
           {notification?.__typename === 'NewFollowerNotification' && (
             <FollowerNotification notification={notification as any} />
           )}
           {notification?.__typename === 'NewMentionNotification' && (
             <MentionNotification notification={notification as any} />
+          )}
+          {notification?.__typename === 'NewReactionNotification' && (
+            <LikeNotification notification={notification} />
           )}
           {notification?.__typename === 'NewCommentNotification' && (
             <CommentNotification notification={notification} />

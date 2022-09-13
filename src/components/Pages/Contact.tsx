@@ -9,7 +9,7 @@ import { TextArea } from '@components/UI/TextArea'
 import Seo from '@components/utils/Seo'
 import { PencilAltIcon } from '@heroicons/react/outline'
 import { CheckCircleIcon } from '@heroicons/react/solid'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { useRouter } from 'next/router'
 import React, { FC, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -28,7 +28,7 @@ const newContactSchema = object({
 
 const Contact: FC = () => {
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.CONTACT })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.CONTACT })
   }, [])
 
   const { t } = useTranslation('common')

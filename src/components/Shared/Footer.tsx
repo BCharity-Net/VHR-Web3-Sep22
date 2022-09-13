@@ -1,5 +1,5 @@
 import useStaffMode from '@components/utils/hooks/useStaffMode'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import Link from 'next/link'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,7 +20,7 @@ const Footer: FC = () => {
         href="https://polygive.gitbook.io/bcharity/"
         target="_blank"
         rel="noreferrer noopener"
-        onClick={() => Hog.track(FOOTER.ABOUT)}
+        onClick={() => Mixpanel.track(FOOTER.ABOUT)}
       >
         {t('About')}
       </a>
@@ -28,7 +28,7 @@ const Footer: FC = () => {
         href="https://discord.gg/4vKS59q5kV"
         target="_blank"
         rel="noreferrer noopener"
-        onClick={() => Hog.track(FOOTER.DISCORD)}
+        onClick={() => Mixpanel.track(FOOTER.DISCORD)}
       >
         Discord
       </a>
@@ -36,7 +36,7 @@ const Footer: FC = () => {
         href="https://twitter.com/BCharityFi"
         target="_blank"
         rel="noreferrer noopener"
-        onClick={() => Hog.track(FOOTER.TWITTER)}
+        onClick={() => Mixpanel.track(FOOTER.TWITTER)}
       >
         {t('Twitter')}
       </a>
@@ -44,21 +44,21 @@ const Footer: FC = () => {
         href="https://t.me/BCharitynet"
         target="_blank"
         rel="noreferrer noopener"
-        onClick={() => Hog.track(FOOTER.TELEGRAM)}
+        onClick={() => Mixpanel.track(FOOTER.TELEGRAM)}
       >
         {t('Telegram')}
       </a>
-      <a href="" target="_blank" rel="noreferrer noopener" onClick={() => Hog.track(FOOTER.DONATE)}>
+      <a href="" target="_blank" rel="noreferrer noopener" onClick={() => Mixpanel.track(FOOTER.DONATE)}>
         {t('Donate')}
       </a>
-      <a href="" target="_blank" rel="noreferrer noopener" onClick={() => Hog.track(FOOTER.STATUS)}>
+      <a href="" target="_blank" rel="noreferrer noopener" onClick={() => Mixpanel.track(FOOTER.STATUS)}>
         {t('Status')}
       </a>
       <a
         href="https://snapshot.org/#/igive.eth"
         target="_blank"
         rel="noreferrer noopener"
-        onClick={() => Hog.track(FOOTER.VOTE)}
+        onClick={() => Mixpanel.track(FOOTER.VOTE)}
       >
         {t('Vote')}
       </a>

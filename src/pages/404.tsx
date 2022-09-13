@@ -1,7 +1,7 @@
 import { Button } from '@components/UI/Button'
 import Seo from '@components/utils/Seo'
 import { HomeIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,7 +10,7 @@ import { PAGEVIEW } from 'src/tracking'
 
 export default function Custom404() {
   useEffect(() => {
-    Hog.track('Pageview', { path: PAGEVIEW.ERROR_404 })
+    Mixpanel.track('Pageview', { path: PAGEVIEW.ERROR_404 })
   }, [])
   const { t } = useTranslation('common')
   return (

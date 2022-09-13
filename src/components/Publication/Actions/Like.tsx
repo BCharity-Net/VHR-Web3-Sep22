@@ -4,8 +4,8 @@ import { BCharityPublication } from '@generated/bcharitytypes'
 import { Mutation, ReactionTypes } from '@generated/types'
 import { HeartIcon } from '@heroicons/react/outline'
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/solid'
-import { Hog } from '@lib/hog'
 import { publicationKeyFields } from '@lib/keyFields'
+import { Mixpanel } from '@lib/mixpanel'
 import nFormatter from '@lib/nFormatter'
 import onError from '@lib/onError'
 import { motion } from 'framer-motion'
@@ -56,7 +56,7 @@ const Like: FC<Props> = ({ publication, isFullPublication }) => {
 
   const [addReaction] = useMutation<Mutation>(ADD_REACTION_MUTATION, {
     onCompleted: () => {
-      Hog.track(PUBLICATION.LIKE)
+      Mixpanel.track(PUBLICATION.LIKE)
     },
     onError: (error) => {
       setLiked(!liked)
@@ -68,7 +68,7 @@ const Like: FC<Props> = ({ publication, isFullPublication }) => {
 
   const [removeReaction] = useMutation<Mutation>(REMOVE_REACTION_MUTATION, {
     onCompleted: () => {
-      Hog.track(PUBLICATION.DISLIKE)
+      Mixpanel.track(PUBLICATION.DISLIKE)
     },
     onError: (error) => {
       setLiked(!liked)

@@ -1,7 +1,13 @@
 import useStaffMode from '@components/utils/hooks/useStaffMode'
 import { PublicationSortCriteria } from '@generated/types'
-import { ChatAlt2Icon, ClockIcon, CollectionIcon, SwitchHorizontalIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import {
+  ChatAlt2Icon,
+  ClockIcon,
+  CollectionIcon,
+  SparklesIcon,
+  SwitchHorizontalIcon
+} from '@heroicons/react/outline'
+import { Mixpanel } from '@lib/mixpanel'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import React, { Dispatch, FC, ReactNode } from 'react'
@@ -29,7 +35,7 @@ const FeedType: FC<Props> = ({ setFeedType, feedType }) => {
       onClick={() => {
         push({ query: { type: type.toLowerCase() } })
         setFeedType(type)
-        Hog.track(`Switch to ${type.toLowerCase()} type in explore`)
+        Mixpanel.track(`Switch to ${type.toLowerCase()} type in explore`)
       }}
       className={clsx(
         {
@@ -46,6 +52,11 @@ const FeedType: FC<Props> = ({ setFeedType, feedType }) => {
 
   return (
     <div className="flex gap-3 px-5 mt-3 sm:px-0 sm:mt-0">
+      <FeedLink
+        name="Curated"
+        icon={<SparklesIcon className="w-4 h-4" />}
+        type={PublicationSortCriteria.CuratedProfiles}
+      />
       <FeedLink
         name={t('Top Commented')}
         icon={<ChatAlt2Icon className="w-4 h-4" />}

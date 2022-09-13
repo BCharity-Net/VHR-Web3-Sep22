@@ -7,9 +7,11 @@ import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import { RelayerResultFields } from '@gql/RelayerResultFields'
 import { PlusIcon } from '@heroicons/react/outline'
+import getStampFyiURL from '@lib/getStampFyiURL'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
 import React, { ChangeEvent, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { APP_NAME, HANDLE_REGEX, ZERO_ADDRESS } from 'src/constants'
 import { useAccount } from 'wagmi'
 import { object, string } from 'zod'
 
@@ -39,7 +41,7 @@ const NewProfile: FC<Props> = ({ isModal = false }) => {
     handle: string()
       .min(2, { message: 'Handle should be atleast 2 characters' })
       .max(31, { message: 'Handle should be less than 32 characters' })
-      .regex(/^[a-z0-9]+$/, {
+      .regex(HANDLE_REGEX, {
         message: 'Handle should only contain alphanumeric characters'
       })
   })
@@ -73,7 +75,7 @@ const NewProfile: FC<Props> = ({ isModal = false }) => {
           variables: {
             request: {
               handle: username,
-              profilePictureUri: avatar ? avatar : `https://avatar.tobi.sh/${address}_${username}.png`
+              profilePictureUri: avatar ? avatar : getStampFyiURL(address ?? ZERO_ADDRESS)
             }
           }
         })

@@ -4,7 +4,7 @@ import { Input } from '@components/UI/Input'
 import { Erc20 } from '@generated/types'
 import { ArrowLeftIcon } from '@heroicons/react/outline'
 import { defaultModuleData } from '@lib/getModule'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import { Dispatch, FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DEFAULT_COLLECT_TOKEN } from 'src/constants'
@@ -56,7 +56,7 @@ const FeeEntry: FC<Props> = ({ enabledModuleCurrencies, setShowFeeEntry, setShow
         onClick={() => {
           setSelectedModule(defaultModuleData)
           setShowFeeEntry(false)
-          Hog.track(PUBLICATION.NEW.COLLECT_MODULE.BACK_FEE_ENTRY)
+          Mixpanel.track(PUBLICATION.NEW.COLLECT_MODULE.BACK_FEE_ENTRY)
         }}
       >
         <ArrowLeftIcon className="w-4 h-4" />

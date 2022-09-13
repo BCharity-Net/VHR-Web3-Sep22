@@ -8,7 +8,7 @@ import { Spinner } from '@components/UI/Spinner'
 import { Profile } from '@generated/types'
 import { ProfileFields } from '@gql/ProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
@@ -55,7 +55,7 @@ const Profiles: FC<Props> = ({ query }) => {
           }
         }
       })
-      Hog.track(PAGINATION.PROFILE_SEARCH)
+      Mixpanel.track(PAGINATION.PROFILE_SEARCH)
     }
   })
 

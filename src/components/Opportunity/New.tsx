@@ -17,8 +17,8 @@ import { CreatePostBroadcastItemResult, Profile } from '@generated/types'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
 import getSignature from '@lib/getSignature'
-import { Hog } from '@lib/hog'
 import imagekitURL from '@lib/imagekitURL'
+import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
 import uploadMediaToIPFS from '@lib/uploadMediaToIPFS'
@@ -138,7 +138,7 @@ const Opportunity: NextPage = () => {
   const { isLoading: signLoading, signTypedDataAsync } = useSignTypedData({ onError })
 
   const onCompleted = () => {
-    Hog.track(OPPOS.NEW)
+    Mixpanel.track(OPPOS.NEW)
   }
 
   const {

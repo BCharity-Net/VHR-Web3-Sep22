@@ -11,7 +11,7 @@ import { CommentFields } from '@gql/CommentFields'
 import { MirrorFields } from '@gql/MirrorFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
-import { Hog } from '@lib/hog'
+import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
@@ -51,7 +51,7 @@ interface Props {
   feedType?: string
 }
 
-const Feed: FC<Props> = ({ feedType = PublicationSortCriteria.TopCommented }) => {
+const Feed: FC<Props> = ({ feedType = PublicationSortCriteria.CuratedProfiles }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
   const { data, loading, error, fetchMore } = useQuery(EXPLORE_FEED_QUERY, {
@@ -81,7 +81,7 @@ const Feed: FC<Props> = ({ feedType = PublicationSortCriteria.TopCommented }) =>
           profileId: currentProfile?.id ?? null
         }
       })
-      Hog.track(PAGINATION.EXPLORE_FEED)
+      Mixpanel.track(PAGINATION.EXPLORE_FEED)
     }
   })
 
