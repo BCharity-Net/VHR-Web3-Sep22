@@ -1,5 +1,6 @@
 import { Card } from '@components/UI/Card'
 import { BCharityPublication } from '@generated/bcharitytypes'
+import getIPFSLink from '@lib/getIPFSLink'
 import imagekitURL from '@lib/imagekitURL'
 import React, { FC, useState } from 'react'
 
@@ -14,7 +15,9 @@ interface MediaProps {
 const Media: FC<MediaProps> = ({ media }) => {
   const [activeIndex, setActiveIndex] = useState(0)
   let attachments: any[] = []
-  if (media) {attachments = JSON.parse(media)}
+  if (media) {
+    attachments = JSON.parse(media)
+  }
   return (
     <div>
       {attachments && (
@@ -23,7 +26,7 @@ const Media: FC<MediaProps> = ({ media }) => {
             key="attachment"
             className="object-cover w-full h-full rounded-lg border-[3px] border-black margin mb-[20px]"
             // height={240}
-            src={imagekitURL(attachments[activeIndex].item, 'attachment')}
+            src={imagekitURL(getIPFSLink(attachments[activeIndex].item), 'attachment')}
             alt={attachments[activeIndex].item}
           />
           <div className="w-full h-full overflow-x-scroll scroll whitespace-nowrap scroll-smooth">
@@ -32,7 +35,7 @@ const Media: FC<MediaProps> = ({ media }) => {
                 <img
                   key="attachment"
                   className="object-cover w-[200px] h-[100px] rounded-lg inline-block mr-[20px] border-[3px] border-black"
-                  src={imagekitURL(i.item, 'attachment')}
+                  src={imagekitURL(getIPFSLink(i.item), 'attachment')}
                   alt={i.item}
                   onClick={() => {
                     setActiveIndex(index)
@@ -42,7 +45,7 @@ const Media: FC<MediaProps> = ({ media }) => {
                 <img
                   key="attachment"
                   className="object-cover w-[200px] h-[100px] rounded-lg inline-block mr-[20px] cursor-pointer blur-[1px] border-[3px] border-gray-300"
-                  src={imagekitURL(i.item, 'attachment')}
+                  src={imagekitURL(getIPFSLink(i.item), 'attachment')}
                   alt={i.item}
                   onClick={() => {
                     setActiveIndex(index)
@@ -59,7 +62,9 @@ const Media: FC<MediaProps> = ({ media }) => {
 
 const Opportunities: FC<Props> = ({ publication }) => {
   // const { t } = useTranslation('common')
-  if (publication.metadata.attributes.length < 9) {return <div />}
+  if (publication.metadata.attributes.length < 9) {
+    return <div />
+  }
   return (
     <Card forceRounded>
       <div className="p-5">

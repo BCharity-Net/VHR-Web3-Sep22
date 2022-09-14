@@ -17,6 +17,7 @@ import Seo from '@components/utils/Seo'
 import { CreatePostBroadcastItemResult, Mutation } from '@generated/types'
 import { CREATE_POST_TYPED_DATA_MUTATION } from '@gql/TypedAndDispatcherData/CreatePost'
 import { PlusIcon } from '@heroicons/react/outline'
+import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import imagekitURL from '@lib/imagekitURL'
 import { Mixpanel } from '@lib/mixpanel'
@@ -112,7 +113,7 @@ const Media: FC<Props> = ({ media }) => {
             key="attachment"
             className="object-cover w-full h-60 rounded-lg"
             height={240}
-            src={imagekitURL(i.item, 'attachment')}
+            src={imagekitURL(getIPFSLink(i.item), 'attachment')}
             alt={i.item}
           />
         ))}
@@ -379,8 +380,10 @@ const NewHours: NextPage = () => {
                     placeholder={'BCharity'}
                     value={value}
                     onChange={onChange}
-                    onAdd={async (e: string) => {
-                      form.setValue('orgWalletAddress', await fetchWalletAddress(e))
+                    onAdd={(e: string) => {
+                      fetchWalletAddress(e).then((val) => {
+                        form.setValue('orgWalletAddress', val)
+                      })
                     }}
                   />
                 )}
