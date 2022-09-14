@@ -379,8 +379,10 @@ const NewHours: NextPage = () => {
                     placeholder={'BCharity'}
                     value={value}
                     onChange={onChange}
-                    onAdd={async (e: string) => {
-                      form.setValue('orgWalletAddress', await fetchWalletAddress(e))
+                    onAdd={(e: string) => {
+                      fetchWalletAddress(e).then((val) => {
+                        form.setValue('orgWalletAddress', val)
+                      })
                     }}
                   />
                 )}
