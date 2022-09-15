@@ -424,17 +424,18 @@ const NewFundraise: NextPage = () => {
                   </div>
                 </div>
               </div>
-              {!isVerified(currentProfile?.id) && (
+              {!isVerified(currentProfile?.id) ? (
                 <a className="ml-auto text-red-500">You need to be verified to create a fundraiser</a>
+              ) : (
+                <Button
+                  className="ml-auto"
+                  type="submit"
+                  disabled={isLoading}
+                  icon={isLoading ? <Spinner size="xs" /> : <PlusIcon className="w-4 h-4" />}
+                >
+                  {t('Create')}
+                </Button>
               )}
-              <Button
-                className="ml-auto"
-                type="submit"
-                disabled={isLoading}
-                icon={isLoading ? <Spinner size="xs" /> : <PlusIcon className="w-4 h-4" />}
-              >
-                {t('Create')}
-              </Button>
             </Form>
           )}
         </Card>

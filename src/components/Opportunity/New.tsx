@@ -19,6 +19,7 @@ import { PlusIcon } from '@heroicons/react/outline'
 import getIPFSLink from '@lib/getIPFSLink'
 import getSignature from '@lib/getSignature'
 import imagekitURL from '@lib/imagekitURL'
+import isVerified from '@lib/isVerified'
 import { Mixpanel } from '@lib/mixpanel'
 import onError from '@lib/onError'
 import splitSignature from '@lib/splitSignature'
@@ -475,20 +476,28 @@ const Opportunity: NextPage = () => {
                   </div>
                 </div>
               </div>
-              <Button
-                className="ml-auto"
-                type="submit"
-                disabled={typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading}
-                icon={
-                  typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
-                    <Spinner size="xs" />
-                  ) : (
-                    <PlusIcon className="w-4 h-4" />
-                  )
-                }
-              >
-                {t('Submit')}
-              </Button>
+              {!isVerified(currentProfile?.id) ? (
+                <a className="ml-auto text-red-500">
+                  You need to be verified to create a volunteer opportunity
+                </a>
+              ) : (
+                <Button
+                  className="ml-auto"
+                  type="submit"
+                  disabled={
+                    typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading
+                  }
+                  icon={
+                    typedDataLoading || isUploading || signLoading || writeLoading || broadcastLoading ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <PlusIcon className="w-4 h-4" />
+                    )
+                  }
+                >
+                  {t('Submit')}
+                </Button>
+              )}
             </Form>
           )}
         </Card>

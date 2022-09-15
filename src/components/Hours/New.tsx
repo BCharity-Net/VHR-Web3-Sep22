@@ -396,8 +396,8 @@ const NewHours: NextPage = () => {
               />
               <Input
                 label={singleDay ? `${t('Date')}` : `${t('Start Date')}`}
-                type="startDate"
-                placeholder={'Enter your start date'}
+                type="date"
+                placeholder={'  yyyy-mm-dd'}
                 change={() => {
                   if (singleDay === true) {
                     setSingleDay(false)
@@ -416,7 +416,7 @@ const NewHours: NextPage = () => {
                 <Input
                   label={t('End Date')}
                   type="date"
-                  placeholder={'Enter your end date'}
+                  placeholder={'  yyyy-mm-dd'}
                   change={() => {
                     const startDate = form.getValues('startDate')
                     form.setValue('endDate', startDate)

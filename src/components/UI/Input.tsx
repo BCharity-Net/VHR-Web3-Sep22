@@ -19,17 +19,7 @@ interface Props extends Omit<ComponentProps<'input'>, 'prefix'> {
 }
 
 export const Input = forwardRef<HTMLInputElement, Props>(function Input(
-  {
-    label,
-    prefix,
-    type = 'text',
-    iconLeft,
-    iconRight,
-    error,
-    className = '',
-    helper,
-    ...props
-  },
+  { label, prefix, type = 'text', iconLeft, iconRight, error, className = '', helper, ...props },
   ref
 ) {
   const id = useId()
@@ -45,25 +35,19 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
       {label && (
         <div className="flex items-center mb-1 space-x-1.5">
           <div className="font-medium text-gray-800 dark:text-gray-200">
-            <label
-              style={{ width: '500px', float: 'right', marginRight: '-400px' }}
-            >
-              {label}
-            </label>
+            <label style={{ width: '500px', float: 'right', marginRight: '-400px' }}>{label}</label>
           </div>
-          {type === 'startDate' && (
+          {type === 'date' && (
             <>
               <input
                 type="checkbox"
                 style={{ position: 'relative' }}
                 onClick={() => {
-                  if (!props.change) return
+                  if (!props.change) {return}
                   props.change()
                 }}
               />
-              <label style={{ position: 'relative' }}>
-                {t('Multiple Days')}
-              </label>
+              <label style={{ position: 'relative' }}>{t('Multiple Days')}</label>
             </>
           )}
 
@@ -101,16 +85,10 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
             ref={ref}
             {...props}
           />
-          <span
-            tabIndex={-1}
-            className={clsx({ 'order-first pl-3': iconLeft }, iconStyles)}
-          >
+          <span tabIndex={-1} className={clsx({ 'order-first pl-3': iconLeft }, iconStyles)}>
             {iconLeft}
           </span>
-          <span
-            tabIndex={-1}
-            className={clsx({ 'order-last pr-3': iconRight }, iconStyles)}
-          >
+          <span tabIndex={-1} className={clsx({ 'order-last pr-3': iconRight }, iconStyles)}>
             {iconRight}
           </span>
         </div>

@@ -83,7 +83,7 @@ const Hours: FC<Props> = ({ publication }) => {
         <div className="block justify-between items-center sm:flex">
           <div className="text-xl font-bold">
             {' '}
-            <div className="text-2xl">VHR Voluteer Hour Verification </div>
+            <div className="text-2xl">VHR Volunteer Hour Verification </div>
             <div className="text-xl">
               Submitted by {publication.profile.name} ({publication.profile.handle}):
             </div>
