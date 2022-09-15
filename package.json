@@ -88,7 +88,7 @@
     "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "@typescript-eslint/parser": "^5.36.1",
-    "autoprefixer": "^10.4.10",
+    "autoprefixer": "^10.4.11",
     "eslint": "^8.23.1",
     "eslint-config-next": "^12.3.0",
     "eslint-config-prettier": "^8.5.0",
