@@ -8,14 +8,9 @@ import { useTranslation } from 'react-i18next'
 interface Props {
   handle: string
   isSuperFollow?: boolean | null | undefined
-  action: string
 }
 
-const ReferenceAlert: FC<Props> = ({
-  handle,
-  isSuperFollow = false,
-  action
-}) => {
+const CollectWarning: FC<Props> = ({ handle, isSuperFollow = false }) => {
   const { t } = useTranslation('common')
   return (
     <Card className={clsx({ '!bg-pink-100 border-pink-300': isSuperFollow })}>
@@ -26,18 +21,14 @@ const ReferenceAlert: FC<Props> = ({
             <span>{t('Only')} </span>
             <Slug slug={`${handle}'s`} prefix="@" />
             <span className="text-pink-500"> {t('Super followers')}</span>
-            <span>
-              {' '}
-              {t('Can')}
-              {action}
-            </span>
+            <span> {t('Can')}</span>
           </>
         ) : (
           <>
             <UsersIcon className="w-4 h-4 text-brand" />
             <span>{t('Only')}</span>
             <Slug slug={`${handle}'s`} prefix="@" />
-            <span> {t('Followers can comment')}</span>
+            <span> {t('Followers can collect')}</span>
           </>
         )}
       </CardBody>
@@ -45,4 +36,4 @@ const ReferenceAlert: FC<Props> = ({
   )
 }
 
-export default ReferenceAlert
+export default CollectWarning

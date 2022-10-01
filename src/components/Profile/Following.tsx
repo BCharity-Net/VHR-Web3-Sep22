@@ -11,6 +11,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 
 const FOLLOWING_QUERY = gql`
@@ -38,32 +39,39 @@ interface Props {
 
 const Following: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
+
+  // Variables
+  const request = { address: profile?.ownedBy, limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(FOLLOWING_QUERY, {
-    variables: { request: { address: profile?.ownedBy, limit: 10 } },
+    variables: { request },
     skip: !profile?.id
   })
 
+  const followings = data?.following?.items
   const pageInfo = data?.following?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
         variables: {
-          request: {
-            address: profile?.ownedBy,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
+          request: { ...request, cursor: pageInfo?.next }
         }
       })
       Mixpanel.track(PAGINATION.FOLLOWING)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
     return <Loader message="Loading following" />
   }
 
-  if (data?.following?.items?.length === 0) {
+  if (followings?.length === 0) {
     return (
       <EmptyState
         message={
@@ -83,7 +91,7 @@ const Following: FC<Props> = ({ profile }) => {
       <ErrorMessage className="m-5" title="Failed to load following" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.following?.items?.map((following: Following) => (
+          {followings?.map((following: Following) => (
             <div className="p-5" key={following?.profile?.id}>
               <UserProfile
                 profile={following?.profile}
@@ -94,7 +102,7 @@ const Following: FC<Props> = ({ profile }) => {
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.following?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && followings?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

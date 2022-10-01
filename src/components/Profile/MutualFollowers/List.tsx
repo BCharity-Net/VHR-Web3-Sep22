@@ -8,6 +8,7 @@ import { ProfileFields } from '@gql/ProfileFields'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
@@ -34,32 +35,33 @@ interface Props {
 const MutualFollowersList: FC<Props> = ({ profileId }) => {
   const currentProfile = useAppStore((state) => state.currentProfile)
 
+  // Variables
+  const request = {
+    viewingProfileId: profileId,
+    yourProfileId: currentProfile?.id,
+    limit: 10
+  }
+
   const { data, loading, error, fetchMore } = useQuery(MUTUAL_FOLLOWERS_QUERY, {
-    variables: {
-      request: {
-        viewingProfileId: profileId,
-        yourProfileId: currentProfile?.id,
-        limit: 10
-      }
-    },
+    variables: { request },
     skip: !profileId
   })
 
+  const profiles = data?.mutualFollowersProfiles?.items
   const pageInfo = data?.mutualFollowersProfiles?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            viewingProfileId: profileId,
-            yourProfileId: currentProfile?.id,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.MUTUAL_FOLLOWERS)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
@@ -71,13 +73,13 @@ const MutualFollowersList: FC<Props> = ({ profileId }) => {
       <ErrorMessage className="m-5" title="Failed to load mutual followers" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.mutualFollowersProfiles?.items?.map((profile: Profile) => (
+          {profiles?.map((profile: Profile) => (
             <div className="p-5" key={profile?.id}>
               <UserProfile profile={profile} showBio showFollow isFollowing={profile?.isFollowedByMe} />
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.mutualFollowersProfiles?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && profiles?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

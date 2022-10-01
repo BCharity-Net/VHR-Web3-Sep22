@@ -10,7 +10,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
-import { CHAIN_ID, IS_MAINNET } from 'src/constants'
+import { CHAIN_ID, IS_MAINNET, PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 import { chain } from 'wagmi'
 
@@ -42,38 +42,42 @@ interface Props {
 
 const NFTFeed: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
+
+  // Variables
+  const request = {
+    chainIds: [CHAIN_ID, IS_MAINNET ? chain.mainnet.id : chain.kovan.id],
+    ownerAddress: profile?.ownedBy,
+    limit: 10
+  }
+
   const { data, loading, error, fetchMore } = useQuery(PROFILE_NFT_FEED_QUERY, {
-    variables: {
-      request: {
-        chainIds: [CHAIN_ID, IS_MAINNET ? chain.mainnet.id : chain.kovan.id],
-        ownerAddress: profile?.ownedBy,
-        limit: 10
-      }
-    },
+    variables: { request },
     skip: !profile?.ownedBy
   })
 
+  const nfts = data?.nfts?.items
   const pageInfo = data?.nfts?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
         variables: {
-          request: {
-            chainIds: [CHAIN_ID, IS_MAINNET ? chain.mainnet.id : chain.kovan.id],
-            ownerAddress: profile?.ownedBy,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
+          variables: { request: { ...request, cursor: pageInfo?.next } }
         }
       })
       Mixpanel.track(PAGINATION.NFT_FEED)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   return (
     <>
       {loading && <NFTSShimmer />}
-      {data?.nfts?.items?.length === 0 && (
+      {nfts?.length === 0 && (
         <EmptyState
           message={
             <div>
@@ -88,11 +92,13 @@ const NFTFeed: FC<Props> = ({ profile }) => {
       {!error && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {data?.nfts?.items?.map((nft: Nft) => (
-              <SingleNFT key={`${nft?.chainId}_${nft?.contractAddress}_${nft?.tokenId}`} nft={nft} />
+            {nfts?.map((nft: Nft) => (
+              <div key={`${nft?.chainId}_${nft?.contractAddress}_${nft?.tokenId}`}>
+                <SingleNFT nft={nft} />
+              </div>
             ))}
           </div>
-          {pageInfo?.next && data?.nfts?.items?.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && nfts?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

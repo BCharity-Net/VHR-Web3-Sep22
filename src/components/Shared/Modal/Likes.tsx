@@ -9,6 +9,7 @@ import { HeartIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 
 import Loader from '../Loader'
@@ -33,36 +34,40 @@ const LIKES_QUERY = gql`
 `
 
 interface Props {
-  pubId: string
+  publicationId: string
 }
 
-const Likes: FC<Props> = ({ pubId }) => {
+const Likes: FC<Props> = ({ publicationId }) => {
+  // Variables
+  const request = { publicationId: publicationId, limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(LIKES_QUERY, {
-    variables: { request: { publicationId: pubId, limit: 10 } },
-    skip: !pubId
+    variables: { request },
+    skip: !publicationId
   })
 
+  const profiles = data?.whoReactedPublication?.items
   const pageInfo = data?.whoReactedPublication?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            publicationId: pubId,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.LIKES)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
     return <Loader message="Loading likes" />
   }
 
-  if (data?.whoReactedPublication?.items?.length === 0) {
+  if (profiles?.length === 0) {
     return (
       <div className="p-5">
         <EmptyState
@@ -79,7 +84,7 @@ const Likes: FC<Props> = ({ pubId }) => {
       <ErrorMessage className="m-5" title="Failed to load likes" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.whoReactedPublication?.items?.map((like: WhoReactedResult) => (
+          {profiles?.map((like: WhoReactedResult) => (
             <div className="p-5" key={like?.reactionId}>
               <UserProfile
                 profile={like?.profile}
@@ -90,7 +95,7 @@ const Likes: FC<Props> = ({ pubId }) => {
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.whoReactedPublication?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && profiles?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

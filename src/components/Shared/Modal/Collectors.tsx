@@ -11,6 +11,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 
 import Loader from '../Loader'
@@ -35,37 +36,42 @@ const COLLECTORS_QUERY = gql`
 `
 
 interface Props {
-  pubId: string
+  publicationId: string
 }
 
-const Collectors: FC<Props> = ({ pubId }) => {
+const Collectors: FC<Props> = ({ publicationId }) => {
   const { t } = useTranslation('common')
+
+  // Variables
+  const request = { publicationId: publicationId, limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(COLLECTORS_QUERY, {
-    variables: { request: { publicationId: pubId, limit: 10 } },
-    skip: !pubId
+    variables: { request },
+    skip: !publicationId
   })
 
+  const profiles = data?.whoCollectedPublication?.items
   const pageInfo = data?.whoCollectedPublication?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            publicationId: pubId,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.COLLECTORS)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
     return <Loader message="Loading collectors" />
   }
 
-  if (data?.whoCollectedPublication?.items?.length === 0) {
+  if (profiles?.length === 0) {
     return (
       <div className="p-5">
         <EmptyState
@@ -82,7 +88,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
       <ErrorMessage className="m-5" title="Failed to load collectors" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.whoCollectedPublication?.items?.map((wallet: Wallet) => (
+          {profiles?.map((wallet: Wallet) => (
             <div className="p-5" key={wallet?.address}>
               {wallet?.defaultProfile ? (
                 <UserProfile
@@ -97,7 +103,7 @@ const Collectors: FC<Props> = ({ pubId }) => {
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.whoCollectedPublication?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && profiles?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

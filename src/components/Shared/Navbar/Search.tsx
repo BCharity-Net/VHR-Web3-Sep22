@@ -3,7 +3,7 @@ import { Card } from '@components/UI/Card'
 import { Input } from '@components/UI/Input'
 import { Spinner } from '@components/UI/Spinner'
 import useOnClickOutside from '@components/utils/hooks/useOnClickOutside'
-import { Profile } from '@generated/types'
+import { CustomFiltersTypes, Profile } from '@generated/types'
 import { ProfileFields } from '@gql/ProfileFields'
 import { SearchIcon, XIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
@@ -49,7 +49,14 @@ const Search: FC<Props> = ({ hideDrodown = false }) => {
     setSearchText(keyword)
     if (pathname !== '/search' && !hideDrodown) {
       searchUsers({
-        variables: { request: { type: 'PROFILE', query: keyword, limit: 8 } }
+        variables: {
+          request: {
+            type: 'PROFILE',
+            query: keyword,
+            customFilters: [CustomFiltersTypes.Gardeners],
+            limit: 8
+          }
+        }
       })
     }
   }

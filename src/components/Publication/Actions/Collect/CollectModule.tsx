@@ -3,11 +3,11 @@ import { gql, useMutation, useQuery } from '@apollo/client'
 import { PUBLICATION_REVENUE_QUERY } from '@components/Publication/Fundraise'
 import { ALLOWANCE_SETTINGS_QUERY } from '@components/Settings/Allowance'
 import AllowanceButton from '@components/Settings/Allowance/Button'
+import CollectWarning from '@components/Shared/CollectWarning'
 import IndexStatus from '@components/Shared/IndexStatus'
 import Loader from '@components/Shared/Loader'
 import Markup from '@components/Shared/Markup'
 import Collectors from '@components/Shared/Modal/Collectors'
-import ReferenceAlert from '@components/Shared/ReferenceAlert'
 import ReferralAlert from '@components/Shared/ReferralAlert'
 import Uniswap from '@components/Shared/Uniswap'
 import { Button } from '@components/UI/Button'
@@ -177,7 +177,7 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
   const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
     variables: {
       request: {
-        publicationId: publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
+        publicationId: publication.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
       }
     },
     skip: !publication?.id
@@ -225,15 +225,15 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
           }
 
           setUserSigNonce(userSigNonce + 1)
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ request: { id, signature } })
+          if (!RELAY_ON) {
+            return write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
 
-            if ('reason' in result) {
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-            }
-          } else {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ request: { id, signature } })
+
+          if ('reason' in result) {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch {}
@@ -287,16 +287,15 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
       <div className="p-5">
         {collectModule?.followerOnly && (
           <div className="pb-5">
-            <ReferenceAlert
+            <CollectWarning
               handle={publication?.profile?.handle}
               isSuperFollow={publication?.profile?.followModule?.__typename === 'FeeFollowModuleSettings'}
-              action="collect"
             />
           </div>
         )}
         <div className="pb-2 space-y-1.5">
           <div className="flex items-center space-x-2">
-            {publication?.__typename === 'Mirror' && (
+            {publication.__typename === 'Mirror' && (
               <Tooltip
                 content={`Mirror of ${publication?.mirrorOf?.__typename?.toLowerCase()} by ${
                   publication?.mirrorOf?.profile?.handle
@@ -353,7 +352,9 @@ const CollectModule: FC<Props> = ({ count, setCount, publication }) => {
                 onClose={() => setShowCollectorsModal(false)}
               >
                 <Collectors
-                  pubId={publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id}
+                  publicationId={
+                    publication.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
+                  }
                 />
               </Modal>
             </div>

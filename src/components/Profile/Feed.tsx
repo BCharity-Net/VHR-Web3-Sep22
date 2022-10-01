@@ -14,6 +14,7 @@ import { CollectionIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
@@ -53,6 +54,8 @@ interface Props {
 
 const Feed: FC<Props> = ({ profile, type }) => {
   const currentProfile = useAppStore((state) => state.currentProfile)
+
+  // Variables
   const publicationTypes =
     type === 'FEED'
       ? [PublicationTypes.Post, PublicationTypes.Mirror]
@@ -69,43 +72,36 @@ const Feed: FC<Props> = ({ profile, type }) => {
           ]
         }
       : null
+  const request = { publicationTypes, metadata, profileId: profile?.id, limit: 10 }
+  const reactionRequest = currentProfile ? { profileId: currentProfile?.id } : null
+  const profileId = currentProfile?.id ?? null
+
   const { data, loading, error, fetchMore } = useQuery(PROFILE_FEED_QUERY, {
-    variables: {
-      request: {
-        publicationTypes,
-        metadata,
-        profileId: profile?.id,
-        limit: 10
-      },
-      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-      profileId: currentProfile?.id ?? null
-    },
+    variables: { request, reactionRequest, profileId },
     skip: !profile?.id
   })
 
   const pageInfo = data?.publications?.pageInfo
+  const publications = data?.publications?.items
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            publicationTypes,
-            profileId: profile?.id,
-            cursor: pageInfo?.next,
-            limit: 10
-          },
-          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-          profileId: currentProfile?.id ?? null
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next }, reactionRequest, profileId }
       })
       Mixpanel.track(PAGINATION.PROFILE_FEED)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   return (
     <>
       {loading && <PublicationsShimmer />}
-      {data?.publications?.items?.length === 0 && (
+      {publications?.length === 0 && (
         <EmptyState
           message={
             <div>
@@ -117,10 +113,10 @@ const Feed: FC<Props> = ({ profile, type }) => {
         />
       )}
       <ErrorMessage title="Failed to load profile feed" error={error} />
-      {!error && !loading && data?.publications?.items?.length !== 0 && (
+      {!error && !loading && publications?.length !== 0 && (
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
-            {data?.publications?.items?.map((post: BCharityPublication, index: number) => (
+            {publications?.map((post: BCharityPublication, index: number) => (
               <SinglePublication
                 key={`${post?.id}_${index}`}
                 publication={post}
@@ -128,7 +124,7 @@ const Feed: FC<Props> = ({ profile, type }) => {
               />
             ))}
           </Card>
-          {pageInfo?.next && data?.publications?.items?.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && publications?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

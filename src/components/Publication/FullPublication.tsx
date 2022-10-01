@@ -19,7 +19,7 @@ interface Props {
 
 const FullPublication: FC<Props> = ({ publication }) => {
   const publicationType = publication?.metadata?.attributes[0]?.value
-  const isMirror = publication?.__typename === 'Mirror'
+  const isMirror = publication.__typename === 'Mirror'
   const profile = isMirror ? publication?.mirrorOf?.profile : publication?.profile
   const timestamp = isMirror ? publication?.mirrorOf?.createdAt : publication?.createdAt
 
@@ -51,7 +51,7 @@ const FullPublication: FC<Props> = ({ publication }) => {
         </div>
         <div className="ml-[53px]">
           {publication?.hidden ? (
-            <HiddenPublication type={publication?.__typename} />
+            <HiddenPublication type={publication.__typename} />
           ) : (
             <>
               <PublicationBody publication={publication} />

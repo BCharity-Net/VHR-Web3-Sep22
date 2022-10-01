@@ -13,6 +13,12 @@ export const PostFields = gql`
     }
     reaction(request: $reactionRequest)
     mirrors(by: $profileId)
+    canComment(profileId: $profileId) {
+      result
+    }
+    canMirror(profileId: $profileId) {
+      result
+    }
     hasCollectedByMe
     collectedBy {
       address

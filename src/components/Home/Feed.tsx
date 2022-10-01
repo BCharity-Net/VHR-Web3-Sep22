@@ -15,8 +15,9 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
-import { usePublicationPersistStore } from 'src/store/publication'
+import { useTransactionPersistStore } from 'src/store/transaction'
 import { PAGINATION } from 'src/tracking'
 
 const HOME_FEED_QUERY = gql`
@@ -51,44 +52,45 @@ const HOME_FEED_QUERY = gql`
 const Feed: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const txnQueue = usePublicationPersistStore((state) => state.txnQueue)
+  const txnQueue = useTransactionPersistStore((state) => state.txnQueue)
+
+  // Variables
+  const request = { profileId: currentProfile?.id, limit: 10 }
+  const reactionRequest = currentProfile ? { profileId: currentProfile?.id } : null
+  const profileId = currentProfile?.id ?? null
+
   const { data, loading, error, fetchMore } = useQuery(HOME_FEED_QUERY, {
-    variables: {
-      request: { profileId: currentProfile?.id, limit: 10 },
-      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-      profileId: currentProfile?.id ?? null
-    }
+    variables: { request, reactionRequest, profileId }
   })
 
   const pageInfo = data?.timeline?.pageInfo
+  const publications = data?.timeline?.items
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            profileId: currentProfile?.id,
-            cursor: pageInfo?.next,
-            limit: 10
-          },
-          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-          profileId: currentProfile?.id ?? null
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next }, reactionRequest, profileId }
       })
       Mixpanel.track(PAGINATION.HOME_FEED)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   return (
     <>
       {loading && <PublicationsShimmer />}
-      {data?.timeline?.items?.length === 0 && (
+      {publications?.length === 0 && (
         <EmptyState
           message={<div>{t('No posts 1')}</div>}
           icon={<CollectionIcon className="w-8 h-8 text-brand" />}
         />
       )}
       <ErrorMessage title="Failed to load home feed" error={error} />
-      {!error && !loading && data?.timeline?.items?.length !== 0 && (
+      {!error && !loading && publications?.length !== 0 && (
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
             {txnQueue.map(
@@ -99,11 +101,11 @@ const Feed: FC = () => {
                   </div>
                 )
             )}
-            {data?.timeline?.items?.map((post: BCharityPublication, index: number) => (
+            {publications?.map((post: BCharityPublication, index: number) => (
               <SinglePublication key={`${post?.id}_${index}`} publication={post} />
             ))}
           </Card>
-          {pageInfo?.next && data?.timeline?.items?.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && publications?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

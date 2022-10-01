@@ -286,17 +286,17 @@ const Verify: FC<Props> = ({ publication }) => {
         }
 
         setUserSigNonce(userSigNonce + 1)
-        if (RELAY_ON) {
-          const {
-            data: { broadcast: result }
-          } = await commentBroadcast({
-            variables: { request: { id, signature } }
-          })
+        if (!RELAY_ON) {
+          return commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
+        }
 
-          if ('reason' in result) {
-            commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
-          }
-        } else {
+        const {
+          data: { broadcast: result }
+        } = await commentBroadcast({
+          variables: { request: { id, signature } }
+        })
+
+        if ('reason' in result) {
           commentWrite?.({ recklesslySetUnpreparedArgs: inputStruct })
         }
       } catch {}

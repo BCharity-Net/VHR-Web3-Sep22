@@ -3,7 +3,7 @@ import { Card } from '@components/UI/Card'
 import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
-import { Notification } from '@generated/types'
+import { CustomFiltersTypes, Notification } from '@generated/types'
 import { CollectModuleFields } from '@gql/CollectModuleFields'
 import { MetadataFields } from '@gql/MetadataFields'
 import { ProfileFields } from '@gql/ProfileFields'
@@ -12,6 +12,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
@@ -185,26 +186,33 @@ const NOTIFICATIONS_QUERY = gql`
 const List: FC = () => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
+
+  // Variables
+  const request = {
+    profileId: currentProfile?.id,
+    customFilters: [CustomFiltersTypes.Gardeners],
+    limit: 10
+  }
+
   const { data, loading, error, fetchMore } = useQuery(NOTIFICATIONS_QUERY, {
-    variables: {
-      request: { profileId: currentProfile?.id, limit: 10 }
-    }
+    variables: { request }
   })
 
+  const notifications = data?.notifications?.items
   const pageInfo = data?.notifications?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            profileId: currentProfile?.id,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.NOTIFICATION_FEED)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
@@ -222,7 +230,7 @@ const List: FC = () => {
     return <ErrorMessage className="m-3" title="Failed to load notifications" error={error} />
   }
 
-  if (data?.notifications?.items?.length === 0) {
+  if (notifications?.length === 0) {
     return (
       <EmptyState
         message={
@@ -238,24 +246,24 @@ const List: FC = () => {
 
   return (
     <Card className="divide-y dark:divide-gray-700">
-      {data?.notifications?.items?.map((notification: Notification, index: number) => (
+      {notifications?.map((notification: Notification, index: number) => (
         <div key={`${notification?.notificationId}_${index}`} className="p-5">
-          {notification?.__typename === 'NewFollowerNotification' && (
+          {notification.__typename === 'NewFollowerNotification' && (
             <FollowerNotification notification={notification as any} />
           )}
-          {notification?.__typename === 'NewMentionNotification' && (
+          {notification.__typename === 'NewMentionNotification' && (
             <MentionNotification notification={notification as any} />
           )}
-          {notification?.__typename === 'NewReactionNotification' && (
+          {notification.__typename === 'NewReactionNotification' && (
             <LikeNotification notification={notification} />
           )}
-          {notification?.__typename === 'NewCommentNotification' && (
+          {notification.__typename === 'NewCommentNotification' && (
             <CommentNotification notification={notification} />
           )}
-          {notification?.__typename === 'NewMirrorNotification' && (
+          {notification.__typename === 'NewMirrorNotification' && (
             <MirrorNotification notification={notification} />
           )}
-          {notification?.__typename === 'NewCollectNotification' && (
+          {notification.__typename === 'NewCollectNotification' && (
             <CollectNotification notification={notification as any} />
           )}
         </div>

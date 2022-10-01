@@ -1,7 +1,8 @@
 import NotificationIcon from '@components/Notification/Icon'
 import useStaffMode from '@components/utils/hooks/useStaffMode'
 import { Disclosure } from '@headlessui/react'
-import { MenuIcon, XIcon } from '@heroicons/react/outline'
+import { MenuIcon, ShieldCheckIcon, XIcon } from '@heroicons/react/outline'
+import isGardener from '@lib/isGardener'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -103,6 +104,11 @@ const Navbar: FC = () => {
               <div className="flex gap-8 items-center">
                 {currentProfile ? (
                   <>
+                    {isGardener(currentProfile?.id) && (
+                      <Link href="/mod">
+                        <ShieldCheckIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </Link>
+                    )}
                     <NewPostModal />
                     <NotificationIcon />
                   </>

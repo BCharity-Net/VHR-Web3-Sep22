@@ -14,12 +14,12 @@ import Modules from './Modules'
 
 const SelectCollectModule: FC = () => {
   const { t } = useTranslation('common')
-  const selectedModule = useCollectModuleStore((state) => state.selectedModule)
+  const selectedCollectModule = useCollectModuleStore((state) => state.selectedCollectModule)
   const [showModal, setShowModal] = useState(false)
 
   return (
     <>
-      <Tooltip placement="top" content={getModule(selectedModule.moduleName).name}>
+      <Tooltip placement="top" content={getModule(selectedCollectModule.moduleName).name}>
         <motion.button
           whileTap={{ scale: 0.9 }}
           type="button"
@@ -30,7 +30,7 @@ const SelectCollectModule: FC = () => {
           aria-label={t('Choose collect module')}
         >
           <div className="text-brand">
-            <GetModuleIcon module={selectedModule.moduleName} size={5} />
+            <GetModuleIcon module={selectedCollectModule.moduleName} size={5} />
           </div>
         </motion.button>
       </Tooltip>

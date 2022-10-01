@@ -1,17 +1,18 @@
-import { useApolloClient, useQuery } from '@apollo/client'
+import { useApolloClient, useLazyQuery, useQuery } from '@apollo/client'
 import Attachments from '@components/Shared/Attachments'
 import IFramely from '@components/Shared/IFramely'
 import Markup from '@components/Shared/Markup'
 import UserProfile from '@components/Shared/UserProfile'
 import { Tooltip } from '@components/UI/Tooltip'
-import { Profile } from '@generated/types'
+import { Profile, PublicationMetadataStatusType } from '@generated/types'
+import { TX_STATUS_QUERY } from '@gql/HasTxHashBeenIndexed'
 import getURLs from '@lib/getURLs'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import React, { FC } from 'react'
 import { POLYGONSCAN_URL } from 'src/constants'
 import { useAppStore } from 'src/store/app'
-import { usePublicationPersistStore } from 'src/store/publication'
+import { useTransactionPersistStore } from 'src/store/transaction'
 
 import { PUBLICATION_QUERY } from '.'
 
@@ -23,18 +24,12 @@ interface Props {
 
 const QueuedPublication: FC<Props> = ({ txn }) => {
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const txnQueue = usePublicationPersistStore((state) => state.txnQueue)
-  const setTxnQueue = usePublicationPersistStore((state) => state.setTxnQueue)
+  const txnQueue = useTransactionPersistStore((state) => state.txnQueue)
+  const setTxnQueue = useTransactionPersistStore((state) => state.setTxnQueue)
   const { cache } = useApolloClient()
   const txHash = txn?.txHash
 
-  useQuery(PUBLICATION_QUERY, {
-    variables: {
-      request: { txHash },
-      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-      profileId: currentProfile?.id ?? null
-    },
-    pollInterval: 1000,
+  const [getPublication] = useLazyQuery(PUBLICATION_QUERY, {
     onCompleted: (data) => {
       if (data?.publication) {
         setTxnQueue(txnQueue.filter((o) => o.txHash !== txHash))
@@ -46,6 +41,34 @@ const QueuedPublication: FC<Props> = ({ txn }) => {
                 query: PUBLICATION_QUERY
               })
             }
+          }
+        })
+        setTxnQueue(txnQueue.filter((o) => o.txHash !== txHash))
+      }
+    }
+  })
+
+  useQuery(TX_STATUS_QUERY, {
+    variables: { request: { txHash } },
+    pollInterval: 1000,
+    onCompleted: (data) => {
+      const status = data.hasTxHashBeenIndexed?.metadataStatus?.status
+      const hasFailReason = 'reason' in data.hasTxHashBeenIndexed
+
+      if (
+        status === PublicationMetadataStatusType.MetadataValidationFailed ||
+        status === PublicationMetadataStatusType.NotFound ||
+        hasFailReason
+      ) {
+        return setTxnQueue(txnQueue.filter((o) => o.txHash !== txHash))
+      }
+
+      if (data.hasTxHashBeenIndexed?.indexed) {
+        getPublication({
+          variables: {
+            request: { txHash },
+            reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
+            profileId: currentProfile?.id ?? null
           }
         })
       }

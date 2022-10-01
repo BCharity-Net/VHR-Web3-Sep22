@@ -119,7 +119,7 @@ const ViewPublication: NextPage = () => {
     <GridLayout>
       <Seo
         title={
-          publication?.__typename && publication?.profile?.handle
+          publication.__typename && publication?.profile?.handle
             ? `${publication.__typename} by @${publication.profile.handle} • ${APP_NAME}`
             : APP_NAME
         }
@@ -128,18 +128,14 @@ const ViewPublication: NextPage = () => {
         <Card as="aside">
           <FullPublication publication={publication} />
         </Card>
-        <Feed
-          publication={publication}
-          onlyFollowers={publication?.referenceModule?.__typename === 'FollowOnlyReferenceModuleSettings'}
-          isFollowing={publication?.profile?.isFollowedByMe}
-        />
+        <Feed publication={publication} />
       </GridItemEight>
       <GridItemFour className="space-y-5">
         <Card>
           <CardBody>
             <UserProfile
               profile={
-                publication?.__typename === 'Mirror' ? publication?.mirrorOf?.profile : publication?.profile
+                publication.__typename === 'Mirror' ? publication?.mirrorOf?.profile : publication?.profile
               }
               showBio
             />

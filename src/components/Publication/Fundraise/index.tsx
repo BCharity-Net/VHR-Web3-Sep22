@@ -149,7 +149,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
   const { data: revenueData, loading: revenueLoading } = useQuery(PUBLICATION_REVENUE_QUERY, {
     variables: {
       request: {
-        publicationId: fund?.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.id
+        publicationId: fund.__typename === 'Mirror' ? fund?.mirrorOf?.id : fund?.id
       }
     }
   })
@@ -400,7 +400,7 @@ const Fundraise: FC<Props> = ({ fund }) => {
                     show={showFundersModal}
                     onClose={() => setShowFundersModal(false)}
                   >
-                    <Collectors pubId={fund?.id} />
+                    <Collectors publicationId={fund?.id} />
                   </Modal>
                 </>
               )}

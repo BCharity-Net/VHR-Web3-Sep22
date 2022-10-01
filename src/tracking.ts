@@ -53,7 +53,8 @@ export const PUBLICATION = {
     REFERENCE_MODULE: {
       OPEN_COLLECT_CONFIG: 'Open reference modal',
       EVERYONE: 'Select everyone reference',
-      ONLY_FOLLOWERS: 'Select only followers reference'
+      ONLY_FOLLOWERS: 'Select only followers reference',
+      DEGREES: 'Select degrees reference'
     }
   }
 }
@@ -104,6 +105,7 @@ export const PAGINATION = {
   PROFILE_FEED: 'Paginate profile feed',
   NOTIFICATION_FEED: 'Paginate notification feed',
   NFT_FEED: 'Paginate NFT feed',
+  MOD_FEED: 'Paginate mod feed',
   FOLLOWERS: 'Paginate followers list',
   FOLLOWING: 'Paginate following list',
   MIRRORS: 'Paginate mirrors list',
@@ -112,6 +114,11 @@ export const PAGINATION = {
   MUTUAL_FOLLOWERS: 'Paginate mutual followers list',
   PROFILE_SEARCH: 'Paginate profile search list',
   PUBLICATION_SEARCH: 'Paginate publication search list'
+}
+
+export const MOD = {
+  SPAM: 'Mod spam report',
+  OTHER: 'Mod report'
 }
 
 export const SETTINGS = {
@@ -154,7 +161,6 @@ export const PAGEVIEW = {
   EXPLORE: 'Explore page',
   NOTIFICATION: 'Notification page',
   SEARCH: 'Search page',
-  REPORT: 'Report page',
   THANKS: 'Thanks page',
   PRIVACY: 'Privacy page',
   CONTACT: 'Contact page',
@@ -163,6 +169,7 @@ export const PAGEVIEW = {
   CREATE_PROFILE: 'Create profile page',
   GROUPS: 'Groups page',
   GROUP: 'Group page',
+  MOD: 'Mod page',
   ERROR_500: 'Error 500 page',
   ERROR_404: 'Error 404 page',
   SETTINGS: {

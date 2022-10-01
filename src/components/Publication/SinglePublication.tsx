@@ -9,6 +9,7 @@ import React, { FC } from 'react'
 import { PUBLICATION } from 'src/tracking'
 
 import PublicationActions from './Actions'
+import ModAction from './Actions/ModAction'
 import HiddenPublication from './HiddenPublication'
 import PublicationBody from './PublicationBody'
 import PublicationType from './Type'
@@ -19,6 +20,7 @@ interface Props {
   publication: BCharityPublication
   showType?: boolean
   showActions?: boolean
+  showModActions?: boolean
   showThread?: boolean
 }
 
@@ -26,11 +28,12 @@ const SinglePublication: FC<Props> = ({
   publication,
   showType = true,
   showActions = true,
+  showModActions = false,
   showThread = true
 }) => {
   const { push } = useRouter()
   const publicationType = publication?.metadata?.attributes[0]?.value
-  const isMirror = publication?.__typename === 'Mirror'
+  const isMirror = publication.__typename === 'Mirror'
   const isFundraise = publication?.metadata?.attributes[0]?.value === 'fundraise'
   const profile = isMirror ? publication?.mirrorOf?.profile : publication?.profile
   const timestamp = isMirror ? publication?.mirrorOf?.createdAt : publication?.createdAt
@@ -65,11 +68,12 @@ const SinglePublication: FC<Props> = ({
         </div>
         <div className="ml-[53px]">
           {publication?.hidden ? (
-            <HiddenPublication type={publication?.__typename} />
+            <HiddenPublication type={publication.__typename} />
           ) : (
             <>
               <PublicationBody publication={publication} />
               {showActions && <PublicationActions publication={publication} />}
+              {showModActions && <ModAction publication={publication} />}
             </>
           )}
         </div>

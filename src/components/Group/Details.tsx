@@ -119,7 +119,7 @@ const Details: FC<Props> = ({ group }) => {
                 show={showMembersModal}
                 onClose={() => setShowMembersModal(false)}
               >
-                <Collectors pubId={group.id} />
+                <Collectors publicationId={group.id} />
               </Modal>
             </>
           </MetaDetails>

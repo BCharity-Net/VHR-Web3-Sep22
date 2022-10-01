@@ -136,7 +136,7 @@ const PublicationBody: FC<Props> = ({ publication }) => {
                       show={showVerifyModal}
                       onClose={() => setShowVerifyModal(false)}
                     >
-                      <Collectors pubId={publication?.id} />
+                      <Collectors publicationId={publication?.id} />
                     </Modal>
                   </div>
                 </div>

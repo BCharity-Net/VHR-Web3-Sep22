@@ -12,6 +12,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 
 const FOLLOWERS_QUERY = gql`
@@ -42,32 +43,36 @@ interface Props {
 
 const Followers: FC<Props> = ({ profile }) => {
   const { t } = useTranslation('common')
+  // Variables
+  const request = { profileId: profile?.id, limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(FOLLOWERS_QUERY, {
-    variables: { request: { profileId: profile?.id, limit: 10 } },
+    variables: { request },
     skip: !profile?.id
   })
 
+  const followers = data?.followers?.items
   const pageInfo = data?.followers?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            profileId: profile?.id,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.FOLLOWERS)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
     return <Loader message="Loading followers" />
   }
 
-  if (data?.followers?.items?.length === 0) {
+  if (followers?.length === 0) {
     return (
       <EmptyState
         message={
@@ -87,7 +92,7 @@ const Followers: FC<Props> = ({ profile }) => {
       <ErrorMessage className="m-5" title="Failed to load followers" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.followers?.items?.map((follower: Follower) => (
+          {followers?.map((follower: Follower) => (
             <div className="p-5" key={follower?.wallet?.defaultProfile?.id}>
               {follower?.wallet?.defaultProfile ? (
                 <UserProfile
@@ -102,7 +107,7 @@ const Followers: FC<Props> = ({ profile }) => {
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.followers?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && followers?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

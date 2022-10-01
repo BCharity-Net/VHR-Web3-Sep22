@@ -6,6 +6,7 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
+import { CustomFiltersTypes } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { PostFields } from '@gql/PostFields'
 import { CollectionIcon } from '@heroicons/react/outline'
@@ -13,6 +14,7 @@ import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
 import { PAGINATION } from 'src/tracking'
 
@@ -50,37 +52,42 @@ interface Props {
 const Publications: FC<Props> = ({ query }) => {
   const { t } = useTranslation('common')
   const currentProfile = useAppStore((state) => state.currentProfile)
+
+  // Variables
+  const request = {
+    query,
+    type: 'PUBLICATION',
+    customFilters: [CustomFiltersTypes.Gardeners],
+    limit: 10
+  }
+  const reactionRequest = currentProfile ? { profileId: currentProfile?.id } : null
+  const profileId = currentProfile?.id ?? null
+
   const { data, loading, error, fetchMore } = useQuery(SEARCH_PUBLICATIONS_QUERY, {
-    variables: {
-      request: { query, type: 'PUBLICATION', limit: 10 },
-      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-      profileId: currentProfile?.id ?? null
-    }
+    variables: { request, reactionRequest, profileId }
   })
 
+  const publications = data?.search?.items
   const pageInfo = data?.search?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            query,
-            type: 'PUBLICATION',
-            cursor: pageInfo?.next,
-            limit: 10
-          },
-          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-          profileId: currentProfile?.id ?? null
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next }, reactionRequest, profileId }
       })
       Mixpanel.track(PAGINATION.PUBLICATION_SEARCH)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   return (
     <>
       {loading && <PublicationsShimmer />}
-      {data?.search?.items?.length === 0 && (
+      {publications?.length === 0 && (
         <EmptyState
           message={
             <div>
@@ -94,11 +101,11 @@ const Publications: FC<Props> = ({ query }) => {
       {!error && !loading && (
         <>
           <Card className="divide-y-[1px] dark:divide-gray-700/80">
-            {data?.search?.items?.map((post: BCharityPublication, index: number) => (
+            {publications?.map((post: BCharityPublication, index: number) => (
               <SinglePublication key={`${post?.id}_${index}`} publication={post} />
             ))}
           </Card>
-          {pageInfo?.next && data?.search?.items?.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && publications?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

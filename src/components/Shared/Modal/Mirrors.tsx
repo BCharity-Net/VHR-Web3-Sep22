@@ -9,6 +9,7 @@ import { SwitchHorizontalIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import { FC } from 'react'
 import { useInView } from 'react-cool-inview'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { PAGINATION } from 'src/tracking'
 
 import Loader from '../Loader'
@@ -30,36 +31,40 @@ const MIRRORS_QUERY = gql`
 `
 
 interface Props {
-  pubId: string
+  publicationId: string
 }
 
-const Mirrors: FC<Props> = ({ pubId }) => {
+const Mirrors: FC<Props> = ({ publicationId }) => {
+  // Variables
+  const request = { whoMirroredPublicationId: publicationId, limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(MIRRORS_QUERY, {
-    variables: { request: { whoMirroredPublicationId: pubId, limit: 10 } },
-    skip: !pubId
+    variables: { request },
+    skip: !publicationId
   })
 
+  const profiles = data?.profiles?.items
   const pageInfo = data?.profiles?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            whoMirroredPublicationId: pubId,
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.MIRRORS)
-    }
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   if (loading) {
     return <Loader message="Loading mirrors" />
   }
 
-  if (data?.profiles?.items?.length === 0) {
+  if (profiles?.length === 0) {
     return (
       <div className="p-5">
         <EmptyState
@@ -76,13 +81,13 @@ const Mirrors: FC<Props> = ({ pubId }) => {
       <ErrorMessage className="m-5" title="Failed to load mirrors" error={error} />
       <div className="space-y-3">
         <div className="divide-y dark:divide-gray-700">
-          {data?.profiles?.items?.map((profile: Profile) => (
+          {profiles?.map((profile: Profile) => (
             <div className="p-5" key={profile?.id}>
               <UserProfile profile={profile} showBio showFollow isFollowing={profile?.isFollowedByMe} />
             </div>
           ))}
         </div>
-        {pageInfo?.next && data?.profiles?.items?.length !== pageInfo?.totalCount && (
+        {pageInfo?.next && profiles?.length !== pageInfo?.totalCount && (
           <span ref={observe} className="flex justify-center p-5">
             <Spinner size="md" />
           </span>

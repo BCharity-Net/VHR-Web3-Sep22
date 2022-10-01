@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import React, { FC } from 'react'
-import { APP_NAME, ARWEAVE_GATEWAY, DEFAULT_OG, DESCRIPTION, STATIC_ASSETS } from 'src/constants'
+import { APP_NAME, DEFAULT_OG, DESCRIPTION } from 'src/constants'
 
 interface Props {
   title?: string
@@ -16,19 +16,13 @@ const SEO: FC<Props> = ({ title = APP_NAME, description = DESCRIPTION }) => {
 
       <link rel="preconnect" href="https://ik.imagekit.io" />
       <link rel="dns-prefetch" href="https://ik.imagekit.io" />
-      <link rel="preconnect" href="https://assets.bcharity.xyz" />
-      <link rel="dns-prefetch" href="https://assets.bcharity.xyz" />
-      <link rel="preconnect" href={ARWEAVE_GATEWAY} />
-      <link rel="dns-prefetch" href={ARWEAVE_GATEWAY} />
-
-      <link
-        rel="apple-touch-icon"
-        sizes="192x192"
-        href={`${STATIC_ASSETS}/images/icons/apple-touch-icon.png`}
-      />
+      <link rel="preconnect" href="https://assets.bcharity.net" />
+      <link rel="dns-prefetch" href="https://assets.bcharity.net" />
+      <link rel="preconnect" href="https://assets.bcharity.net" />
+      <link rel="dns-prefetch" href="https://assets.bcharity.net" />
 
       <meta property="og:url" content="https://bcharity.xyz" />
-      <meta property="og:site_name" content="BCharity" />
+      <meta property="og:site_name" content={APP_NAME} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={DEFAULT_OG} />
@@ -36,7 +30,7 @@ const SEO: FC<Props> = ({ title = APP_NAME, description = DESCRIPTION }) => {
       <meta property="og:image:height" content="400" />
 
       <meta property="twitter:card" content="summary" />
-      <meta property="twitter:site" content="BCharity" />
+      <meta property="twitter:site" content={APP_NAME} />
       <meta property="twitter:title" content={title} />
       <meta property="twitter:description" content={description} />
       <meta property="twitter:image:src" content={DEFAULT_OG} />

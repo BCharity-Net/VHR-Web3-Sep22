@@ -11,7 +11,7 @@ interface Props {
 
 const ReferralAlert: FC<Props> = ({ mirror, referralFee = 0 }) => {
   const { t } = useTranslation('common')
-  if (mirror?.__typename !== 'Mirror' || referralFee === 0) {
+  if (mirror.__typename !== 'Mirror' || referralFee === 0) {
     return null
   }
 

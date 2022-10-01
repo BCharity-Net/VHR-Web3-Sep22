@@ -108,15 +108,15 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
             datas: followData,
             sig
           }
-          if (RELAY_ON) {
-            const {
-              data: { broadcast: result }
-            } = await broadcast({ request: { id, signature } })
+          if (!RELAY_ON) {
+            return write?.({ recklesslySetUnpreparedArgs: inputStruct })
+          }
 
-            if ('reason' in result) {
-              write?.({ recklesslySetUnpreparedArgs: inputStruct })
-            }
-          } else {
+          const {
+            data: { broadcast: result }
+          } = await broadcast({ request: { id, signature } })
+
+          if ('reason' in result) {
             write?.({ recklesslySetUnpreparedArgs: inputStruct })
           }
         } catch {}
@@ -145,7 +145,7 @@ const Follow: FC<Props> = ({ profile, showText = false, setFollowing }) => {
             follow: {
               profile: profile?.id,
               followModule:
-                profile?.followModule?.__typename === 'ProfileFollowModuleSettings'
+                profile?.followModule.__typename === 'ProfileFollowModuleSettings'
                   ? { profileFollowModule: { profileId: currentProfile?.id } }
                   : null
             }

@@ -11,7 +11,7 @@
 
   "Recommended Users": "Recommended users",
   "No recommended": "No recommendations!",
-  
+
   "Setup profile": "Setup your profile",
   "Set profile name": "Set profile name",
   "Set profile bio": "Set profile bio",
@@ -20,7 +20,7 @@
 
   "Change Language": "Change Language",
 
-  "About": "About",   
+  "About": "About",
   "Twitter": "Twitter",
   "Telegram": "Telegram",
   "Donate": "Donate",
@@ -279,7 +279,7 @@
   "Web description": "Explore top commented, collected and latest publications in the BCharity group.",
 
   "Days ago": "days ago",
-  "Commented on": "commented on your ",  
+  "Commented on": "commented on your ",
 
   "Back": "Back",
   "Mirror description": "When someone mirrors the publication they will get some reward in percentage for referring it.",
@@ -425,7 +425,7 @@
   "Only": "Only ",
   "Super followers": " super followers",
   "Can": " can ",
-  "Followers can comment": " followers can comment",
+  "Followers can collect": " followers can collect",
 
   "New post": "New Post",
 

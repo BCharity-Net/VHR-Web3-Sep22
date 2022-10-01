@@ -7,18 +7,19 @@ import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
 import { BCharityPublication } from '@generated/bcharitytypes'
-import { PaginatedResultInfo } from '@generated/types'
+import { CustomFiltersTypes } from '@generated/types'
 import { CommentFields } from '@gql/CommentFields'
 import { CollectionIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
 import React, { FC } from 'react'
 import { useInView } from 'react-cool-inview'
 import { useTranslation } from 'react-i18next'
+import { PAGINATION_ROOT_MARGIN } from 'src/constants'
 import { useAppStore } from 'src/store/app'
-import { usePublicationPersistStore } from 'src/store/publication'
+import { useTransactionPersistStore } from 'src/store/transaction'
 import { PAGINATION } from 'src/tracking'
 
-import ReferenceAlert from '../Shared/ReferenceAlert'
+import CommentWarning from '../Shared/CommentWarning'
 import NewComment from './New'
 
 const COMMENT_FEED_QUERY = gql`
@@ -45,57 +46,52 @@ const COMMENT_FEED_QUERY = gql`
 interface Props {
   publication: BCharityPublication
   type?: 'comment' | 'group post'
-  onlyFollowers?: boolean
-  isFollowing?: boolean
 }
 
-const Feed: FC<Props> = ({ publication, type = 'comment', onlyFollowers = false, isFollowing = true }) => {
+const Feed: FC<Props> = ({ publication, type = 'comment' }) => {
   const { t } = useTranslation('common')
-  const pubId = publication?.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
+  const publicationId = publication.__typename === 'Mirror' ? publication?.mirrorOf?.id : publication?.id
   const currentProfile = useAppStore((state) => state.currentProfile)
-  const txnQueue = usePublicationPersistStore((state) => state.txnQueue)
+  const txnQueue = useTransactionPersistStore((state) => state.txnQueue)
+
+  // Variables
+  const request = { commentsOf: publicationId, customFilters: [CustomFiltersTypes.Gardeners], limit: 10 }
+  const reactionRequest = currentProfile ? { profileId: currentProfile?.id } : null
+  const profileId = currentProfile?.id ?? null
 
   const { data, loading, error, fetchMore } = useQuery(COMMENT_FEED_QUERY, {
-    variables: {
-      request: { commentsOf: pubId, limit: 10 },
-      reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-      profileId: currentProfile?.id ?? null
-    },
-    skip: !pubId
+    variables: { request, reactionRequest, profileId },
+    skip: !publicationId
   })
 
+  const comments = data?.publications?.items
   const pageInfo = data?.publications?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            commentsOf: pubId,
-            cursor: pageInfo?.next,
-            limit: 10
-          },
-          reactionRequest: currentProfile ? { profileId: currentProfile?.id } : null,
-          profileId: currentProfile?.id ?? null
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next }, reactionRequest, profileId }
       })
-      Mixpanel.track(type === 'comment' ? PAGINATION.COMMENT_FEED : PAGINATION.GROUP_FEED)
-    }
+      Mixpanel.track(PAGINATION.COMMENT_FEED)
+    },
+    rootMargin: PAGINATION_ROOT_MARGIN
   })
 
   const queuedCount = txnQueue.filter((o) => o.type === 'NEW_COMMENT').length
-  const totalComments = data?.publications?.items?.length + queuedCount
+  const totalComments = comments?.length + queuedCount
+  const canComment = publication?.canComment?.result
 
   return (
     <>
       {currentProfile ? (
-        isFollowing || !onlyFollowers ? (
+        canComment ? (
           <NewComment publication={publication} type={type} />
         ) : (
-          <ReferenceAlert
-            handle={publication?.profile?.handle}
-            isSuperFollow={publication?.profile?.followModule?.__typename === 'FeeFollowModuleSettings'}
-            action="comment"
-          />
+          <CommentWarning />
         )
       ) : null}
       {loading && <PublicationsShimmer />}
@@ -118,11 +114,11 @@ const Feed: FC<Props> = ({ publication, type = 'comment', onlyFollowers = false,
                   </div>
                 )
             )}
-            {data?.publications?.items?.map((post: BCharityPublication, index: number) => (
-              <SinglePublication key={`${pubId}_${index}`} publication={post} showType={false} />
+            {comments?.map((comment: BCharityPublication, index: number) => (
+              <SinglePublication key={`${publicationId}_${index}`} publication={comment} showType={false} />
             ))}
           </Card>
-          {pageInfo?.next && data?.publications?.items.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && comments?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>

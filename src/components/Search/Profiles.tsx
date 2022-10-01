@@ -5,7 +5,7 @@ import { Card, CardBody } from '@components/UI/Card'
 import { EmptyState } from '@components/UI/EmptyState'
 import { ErrorMessage } from '@components/UI/ErrorMessage'
 import { Spinner } from '@components/UI/Spinner'
-import { Profile } from '@generated/types'
+import { CustomFiltersTypes, Profile } from '@generated/types'
 import { ProfileFields } from '@gql/ProfileFields'
 import { UsersIcon } from '@heroicons/react/outline'
 import { Mixpanel } from '@lib/mixpanel'
@@ -37,23 +37,26 @@ interface Props {
 
 const Profiles: FC<Props> = ({ query }) => {
   const { t } = useTranslation('common')
+
+  // Variables
+  const request = { query, type: 'PROFILE', customFilters: [CustomFiltersTypes.Gardeners], limit: 10 }
+
   const { data, loading, error, fetchMore } = useQuery(SEARCH_PROFILES_QUERY, {
-    variables: { request: { query, type: 'PROFILE', limit: 10 } },
+    variables: { request },
     skip: !query
   })
 
+  const profiles = data?.search?.items
   const pageInfo = data?.search?.pageInfo
+
   const { observe } = useInView({
-    onEnter: () => {
-      fetchMore({
-        variables: {
-          request: {
-            query,
-            type: 'PROFILE',
-            cursor: pageInfo?.next,
-            limit: 10
-          }
-        }
+    onChange: async ({ inView }) => {
+      if (!inView) {
+        return
+      }
+
+      await fetchMore({
+        variables: { request: { ...request, cursor: pageInfo?.next } }
       })
       Mixpanel.track(PAGINATION.PROFILE_SEARCH)
     }
@@ -62,7 +65,7 @@ const Profiles: FC<Props> = ({ query }) => {
   return (
     <>
       {loading && <UserProfilesShimmer isBig />}
-      {data?.search?.items?.length === 0 && (
+      {profiles?.length === 0 && (
         <EmptyState
           message={
             <div>
@@ -76,7 +79,7 @@ const Profiles: FC<Props> = ({ query }) => {
       {!error && !loading && (
         <>
           <div className="space-y-3">
-            {data?.search?.items?.map((profile: Profile) => (
+            {profiles?.map((profile: Profile) => (
               <Card key={profile?.id}>
                 <CardBody>
                   <UserProfile profile={profile} showBio isBig />
@@ -84,7 +87,7 @@ const Profiles: FC<Props> = ({ query }) => {
               </Card>
             ))}
           </div>
-          {pageInfo?.next && data?.search?.items?.length !== pageInfo?.totalCount && (
+          {pageInfo?.next && profiles?.length !== pageInfo?.totalCount && (
             <span ref={observe} className="flex justify-center p-5">
               <Spinner size="sm" />
             </span>
