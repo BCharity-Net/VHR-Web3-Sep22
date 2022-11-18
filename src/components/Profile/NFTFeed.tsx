@@ -45,7 +45,7 @@ const NFTFeed: FC<Props> = ({ profile }) => {
 
   // Variables
   const request = {
-    chainIds: [CHAIN_ID, IS_MAINNET ? chain.mainnet.id : chain.kovan.id],
+    chainIds: [CHAIN_ID, IS_MAINNET ? chain.polygon.id : chain.polygonMumbai.id],
     ownerAddress: profile?.ownedBy,
     limit: 10
   }
