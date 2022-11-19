@@ -50,7 +50,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
   const [onEnter, setOnEnter] = useState(false)
   const [tableData, setTableData] = useState<Data[]>([])
 
-  const bal = useContractRead({
+  const bal: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'balanceOf',
@@ -65,7 +65,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
     // }
   })
 
-  const balQ = useContractRead({
+  const balQ: any = useContractRead({
     addressOrName: WMATIC_TOKEN,
     contractInterface: WMATIC_ABI,
     functionName: 'balanceOf',
@@ -74,7 +74,7 @@ const FundraiseTable: FC<Props> = ({ profile, getColumns, query, request }) => {
     args: [WMATIC_GOOD_LP]
   })
 
-  const decs = useContractRead({
+  const decs: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'decimals',

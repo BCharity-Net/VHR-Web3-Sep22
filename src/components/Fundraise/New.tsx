@@ -240,6 +240,7 @@ const NewFundraise: NextPage = () => {
           value: category
         }
       ],
+      tags: ['bcharity-fundraise'],
       media: [],
       locale: 'en',
       createdOn: new Date(),

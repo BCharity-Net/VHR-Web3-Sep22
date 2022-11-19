@@ -140,7 +140,7 @@ const Verify: FC<Props> = ({ publication }) => {
     }
   })
 
-  const bal = useContractRead({
+  const bal: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'balanceOf',
@@ -148,7 +148,7 @@ const Verify: FC<Props> = ({ publication }) => {
     args: [GIVE_DAI_LP]
   })
 
-  const balQ = useContractRead({
+  const balQ: any = useContractRead({
     addressOrName: DAI_TOKEN,
     contractInterface: DAI_ABI,
     functionName: 'balanceOf',
@@ -156,7 +156,7 @@ const Verify: FC<Props> = ({ publication }) => {
     args: [GIVE_DAI_LP]
   })
 
-  const decs = useContractRead({
+  const decs: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'decimals',

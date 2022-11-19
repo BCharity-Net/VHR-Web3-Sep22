@@ -12,7 +12,7 @@ import {
 import { useContractRead } from 'wagmi'
 
 export const VhrToGoodRate = () => {
-  const bal = useContractRead({
+  const bal: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'balanceOf',
@@ -20,7 +20,7 @@ export const VhrToGoodRate = () => {
     args: [GIVE_DAI_LP]
   })
 
-  const balQ = useContractRead({
+  const balQ: any = useContractRead({
     addressOrName: DAI_TOKEN,
     contractInterface: DAI_ABI,
     functionName: 'balanceOf',
@@ -28,7 +28,7 @@ export const VhrToGoodRate = () => {
     args: [GIVE_DAI_LP]
   })
 
-  const decs = useContractRead({
+  const decs: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'decimals',
@@ -48,7 +48,7 @@ export const VhrToGoodRate = () => {
 }
 
 export const WmaticToGoodRate = () => {
-  const bal = useContractRead({
+  const bal: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'balanceOf',
@@ -56,7 +56,7 @@ export const WmaticToGoodRate = () => {
     args: [WMATIC_GOOD_LP]
   })
 
-  const balQ = useContractRead({
+  const balQ: any = useContractRead({
     addressOrName: WMATIC_TOKEN,
     contractInterface: WMATIC_ABI,
     functionName: 'balanceOf',
@@ -64,7 +64,7 @@ export const WmaticToGoodRate = () => {
     args: [WMATIC_GOOD_LP]
   })
 
-  const decs = useContractRead({
+  const decs: any = useContractRead({
     addressOrName: GOOD_TOKEN,
     contractInterface: GOOD_ABI,
     functionName: 'decimals',
@@ -77,9 +77,7 @@ export const WmaticToGoodRate = () => {
 
   const quoteTokenAmountTotal = balanceOfQuote / 10 ** decimals
   const tokenAmountTotal = balanceOf / 10 ** decimals
-  const wmaticToGoodPrice = +(quoteTokenAmountTotal / tokenAmountTotal).toFixed(
-    8
-  )
+  const wmaticToGoodPrice = +(quoteTokenAmountTotal / tokenAmountTotal).toFixed(8)
   //   const wmaticToGoodPrice = +(VHR_TO_DAI_PRICE / wmaticToDAIPrice).toFixed(8)
 
   return wmaticToGoodPrice

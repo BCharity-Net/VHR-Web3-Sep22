@@ -75,7 +75,7 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
     watch: true,
     args: [GIVE_DAI_LP],
 
-    onSuccess(data) {
+    onSuccess(data: any) {
       //console.log('Success', data)
       setBalanceOf(parseFloat(data.toString()))
       //console.log(totalSupply);
@@ -89,7 +89,7 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
     watch: true,
     args: [GIVE_DAI_LP],
 
-    onSuccess(data) {
+    onSuccess(data: any) {
       //console.log('Success', data)
       setBalanceOfQuote(parseFloat(data.toString()))
       //console.log(totalSupply);
@@ -101,7 +101,7 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
     contractInterface: GOOD_ABI,
     functionName: 'decimals',
     watch: true,
-    onSuccess(data) {
+    onSuccess(data: any) {
       //console.log('Success', data)
       setDecimals(parseFloat(data.toString()))
       //console.log(totalSupply);
@@ -117,7 +117,9 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
     return Promise.all(
       data.map(async (i: any, index: number) => {
         let verified = false
-        if (i.collectNftAddress) {verified = true}
+        if (i.collectNftAddress) {
+          verified = true
+        }
         return {
           orgName: from ? i.profile.handle : i.metadata.name,
           program: i.metadata.attributes[5].value,
@@ -262,17 +264,17 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
 
   const computeHours = (rows: Row<Data>[]) => {
     let result = 0
-    rows.forEach((row) => {
+    for (const row of rows) {
       result += row.values.totalHours.value * 1
-    })
+    }
     return result
   }
 
   const computeVolunteers = (rows: Row<Data>[]) => {
     let result = new Set()
-    rows.forEach((row) => {
+    for (const row of rows) {
       result.add(row.values.orgName)
-    })
+    }
     return result.size
   }
 
@@ -334,13 +336,11 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
                     const publications = data.publications.items.filter((i: any) => {
                       return ethers.utils.isHexString(i.metadata.content)
                     })
-                    if (publications.length !== 0) {
-                      if (vhrTxnData[index] != publications[0].metadata.content) {
+                    if (publications.length !== 0 && vhrTxnData[index] != publications[0].metadata.content) {
                         vhrTxnData[index] = publications[0].metadata.content
                         setVhrTxnData(vhrTxnData)
                         setTableData([...tableData])
                       }
-                    }
 
                     const good: string[] = []
                     data.publications.items.forEach((i: any) => {
@@ -349,13 +349,11 @@ const VHRTable: FC<Props> = ({ profile, handleQueryComplete, getColumns, query, 
                         good.push(res[0])
                       }
                     })
-                    if (good.length !== 0) {
-                      if (goodTxnData[index] != good[0]) {
+                    if (good.length !== 0 && goodTxnData[index] != good[0]) {
                         goodTxnData[index] = good[0]
                         setGoodTxnData(goodTxnData)
                         setTableData([...tableData])
                       }
-                    }
                   }}
                 />
                 <NFTDetails
